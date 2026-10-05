@@ -19,7 +19,7 @@ Every response carries an `X-Version` header with the build version. Errors are 
 - **GET /note**, **GET /admin**
   - The caregiver view and the client dashboard. They need a session for that role; anyone else is redirected (**303**) to `/`.
   - `/note` shows today's Daily Note (the calendar date in Europe/Stockholm), in a high-contrast red box when it has the Important Flag, or "Inga särskilda instruktioner idag. Allt är som vanligt!" when there is none.
-  - `/admin` is the client's editor for today's Daily Note: a multiline text box, the Important Flag ("Viktigt") checkbox, the time it was last saved and a button to clear it.
+  - `/admin` is the client's editor for today's Daily Note: a multiline text box, the Important Flag ("Viktigt") checkbox, the time it was last saved and a button to clear it. Below it is the same editor for tomorrow's Advance Note ("Morgondagens anteckning").
   - Sessions are a signed, HTTP-only `angel_session` cookie (`SameSite=Lax`, `Secure` unless `COOKIE_SECURE=false`) that carries the role and expiry and lasts `SESSION_TIMEOUT`. The server checks the expiry too, so an old cookie is useless once it has expired.
 
 - **POST /note/ack**
@@ -30,6 +30,9 @@ Every response carries an `X-Version` header with the build version. Errors are 
 - **POST /admin/note**, **POST /admin/note/clear**
   - The editor on `/admin`. `/admin/note` saves today's Daily Note from the form fields `text` (line endings normalized, trimmed, at most 5000 characters, else **400**) and `important` (any value sets the Important Flag). Saving blank text clears the note. `/admin/note/clear` removes today's note, so caregivers see the empty state again.
   - Both redirect (**303**) to `/admin`. They need a client session; anyone else, including caregivers, is redirected (**303**) to `/` and nothing changes.
+
+- **POST /admin/advance**, **POST /admin/advance/clear**
+  - The Advance Note editor on `/admin`. They work like `/admin/note` and `/admin/note/clear`, but for tomorrow's calendar date in Europe/Stockholm. An Advance Note is stored as tomorrow's Daily Note, so caregivers cannot see it today; at midnight (the Rollover) it becomes today's note on `/note` and in the dashboard's today editor, with no publish step or background job.
 
 - **GET /health**
   - Health check. Pings the storage backend and returns an HTML page, or JSON `{"title", "name", "version", "dbStatus"}` when the request's `Accept` header prefers JSON (for example `application/json` or `application/json, text/plain`). Browsers and requests without an `Accept` header get HTML.

@@ -35,6 +35,12 @@ func (h *Handler) today() time.Time {
 	return h.now().In(localZone)
 }
 
+// tomorrow returns the local date after today. AddDate keeps the calendar
+// day right across DST changes.
+func (h *Handler) tomorrow() time.Time {
+	return h.today().AddDate(0, 0, 1)
+}
+
 var (
 	swedishWeekdays = [...]string{"söndag", "måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag"}
 	swedishMonths   = [...]string{"januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"}

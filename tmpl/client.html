@@ -1,21 +1,47 @@
 {{define "content"}}
 <main class="app">
-	<h1>Dagens anteckning</h1>
-	<p class="note-date">{{.date}}</p>
-	<form method="post" action="/admin/note" class="editor-form">
-		<label for="note-text" class="editor-label">Instruktioner till vårdpersonalen</label>
-		<textarea name="text" id="note-text" class="editor-text" rows="10" maxlength="{{.maxDailyNoteLen}}">{{with .note}}{{.Text}}{{end}}</textarea>
-		<label class="editor-important">
-			<input type="checkbox" role="switch" name="important" class="editor-toggle"{{with .note}}{{if .Important}} checked{{end}}{{end}} />
-			<span>Viktigt</span>
-		</label>
-		<button type="submit" class="editor-save">Spara</button>
-	</form>
-	{{with .note}}
-	<p class="editor-saved" role="status">Sparad kl {{$.savedAt}}</p>
-	<form method="post" action="/admin/note/clear" class="editor-clear-form" onsubmit="return confirm('Rensa dagens anteckning? Vårdpersonalen ser då att allt är som vanligt.')">
-		<button type="submit" class="editor-clear">Rensa dagens anteckning</button>
-	</form>
-	{{end}}
+	<section class="editor-section" aria-labelledby="today-heading">
+		<h1 id="today-heading">Dagens anteckning</h1>
+		{{with .today}}
+		<p class="note-date">{{.date}}</p>
+		<form method="post" action="/admin/note" class="editor-form">
+			<label for="note-text" class="editor-label">Instruktioner till vårdpersonalen</label>
+			<textarea name="text" id="note-text" class="editor-text" rows="10" maxlength="{{$.maxDailyNoteLen}}">{{with .note}}{{.Text}}{{end}}</textarea>
+			<label class="editor-important">
+				<input type="checkbox" role="switch" name="important" class="editor-toggle"{{with .note}}{{if .Important}} checked{{end}}{{end}} />
+				<span>Viktigt</span>
+			</label>
+			<button type="submit" class="editor-save">Spara</button>
+		</form>
+		{{if .note}}
+		<p class="editor-saved" role="status">Sparad kl {{.savedAt}}</p>
+		<form method="post" action="/admin/note/clear" class="editor-clear-form" onsubmit="return confirm('Rensa dagens anteckning? Vårdpersonalen ser då att allt är som vanligt.')">
+			<button type="submit" class="editor-clear">Rensa dagens anteckning</button>
+		</form>
+		{{end}}
+		{{end}}
+	</section>
+	<section class="editor-section editor-advance" aria-labelledby="advance-heading">
+		<h2 id="advance-heading">Morgondagens anteckning</h2>
+		{{with .advance}}
+		<p class="note-date">{{.date}}</p>
+		<p class="editor-hint">Visas för vårdpersonalen från midnatt.</p>
+		<form method="post" action="/admin/advance" class="editor-form">
+			<label for="advance-text" class="editor-label">Instruktioner till vårdpersonalen i morgon</label>
+			<textarea name="text" id="advance-text" class="editor-text" rows="6" maxlength="{{$.maxDailyNoteLen}}">{{with .note}}{{.Text}}{{end}}</textarea>
+			<label class="editor-important">
+				<input type="checkbox" role="switch" name="important" class="editor-toggle"{{with .note}}{{if .Important}} checked{{end}}{{end}} />
+				<span>Viktigt</span>
+			</label>
+			<button type="submit" class="editor-save">Spara</button>
+		</form>
+		{{if .note}}
+		<p class="editor-saved" role="status">Sparad kl {{.savedAt}}</p>
+		<form method="post" action="/admin/advance/clear" class="editor-clear-form" onsubmit="return confirm('Rensa morgondagens anteckning?')">
+			<button type="submit" class="editor-clear">Rensa morgondagens anteckning</button>
+		</form>
+		{{end}}
+		{{end}}
+	</section>
 </main>
 {{end}}
