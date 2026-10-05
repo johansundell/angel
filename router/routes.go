@@ -43,6 +43,13 @@ func GetRoutes(handler *handlers.Handler) Routes {
 			Role:        auth.RoleClient,
 		},
 		Route{
+			Name:        "AckFeed",
+			Method:      "GET",
+			Pattern:     "/admin/acks",
+			HandlerFunc: handler.AckFeed,
+			Role:        auth.RoleClient,
+		},
+		Route{
 			Name:        "SaveNote",
 			Method:      "POST",
 			Pattern:     "/admin/note",

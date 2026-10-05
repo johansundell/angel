@@ -87,13 +87,23 @@ func (h *Handler) renderKeypad(c *gin.Context, status int, errMsg string) error 
 }
 
 func (h *Handler) render(c *gin.Context, status int, tmplFile string, data gin.H) error {
-	tmpl, err := h.getTemplate(true, tmplFile)
+	return h.execute(c, status, true, tmplFile, "base", data)
+}
+
+// renderFragment writes only the named template from tmplFile, without the
+// page around it, for a script to swap into an open page.
+func (h *Handler) renderFragment(c *gin.Context, status int, tmplFile, name string, data any) error {
+	return h.execute(c, status, false, tmplFile, name, data)
+}
+
+func (h *Handler) execute(c *gin.Context, status int, withBase bool, tmplFile, name string, data any) error {
+	tmpl, err := h.getTemplate(withBase, tmplFile)
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
 	c.Header("Content-Type", "text/html; charset=utf-8")
 	c.Status(status)
-	if err := tmpl.ExecuteTemplate(c.Writer, "base", data); err != nil {
+	if err := tmpl.ExecuteTemplate(c.Writer, name, data); err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
 	return nil

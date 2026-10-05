@@ -4,12 +4,58 @@
 		<h1 id="today-heading">Dagens anteckning</h1>
 		{{template "editor" .today}}
 	</section>
+	<section class="ack-feed-section" aria-labelledby="ack-feed-heading">
+		<h2 id="ack-feed-heading">Kvitteringar idag</h2>
+		<div id="ack-feed" aria-live="polite">{{template "ack-feed" .acks}}</div>
+	</section>
 	<section class="editor-section editor-advance" aria-labelledby="advance-heading">
 		<h2 id="advance-heading">Morgondagens anteckning</h2>
 		<p class="editor-hint">Visas för vårdpersonalen från midnatt.</p>
 		{{template "editor" .advance}}
 	</section>
 </main>
+<script>
+// Keep the acknowledgement feed live without reloading the page, which would
+// lose unsaved edits. Redirects are not followed: one means the session has
+// ended, so instead of pasting the keypad into the feed, say the feed has
+// stopped and stop polling.
+(function () {
+	var feed = document.getElementById("ack-feed");
+	var timer;
+	function expired() {
+		clearInterval(timer);
+		document.removeEventListener("visibilitychange", onVisible);
+		var p = document.createElement("p");
+		p.className = "ack-feed-expired";
+		p.textContent = "Sessionen har gått ut. Logga in igen för att se nya kvitteringar.";
+		feed.replaceChildren(p);
+	}
+	function refresh() {
+		fetch("/admin/acks", { redirect: "manual", cache: "no-store" })
+			.then(function (r) {
+				if (r.type === "opaqueredirect") { expired(); return null; }
+				return r.ok ? r.text() : null;
+			})
+			.then(function (html) { if (html !== null) feed.innerHTML = html; })
+			.catch(function () {});
+	}
+	function onVisible() { if (!document.hidden) refresh(); }
+	timer = setInterval(onVisible, 30000);
+	document.addEventListener("visibilitychange", onVisible);
+})();
+</script>
+{{end}}
+
+{{define "ack-feed"}}
+{{- if .}}
+<ul class="ack-feed">
+	{{- range .}}
+	<li class="ack-feed-item">{{.Who}} kl {{.At}}</li>
+	{{- end}}
+</ul>
+{{- else}}
+<p class="ack-feed-empty">Inga kvitteringar registrerade idag än.</p>
+{{- end}}
 {{end}}
 
 {{define "editor"}}

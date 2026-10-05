@@ -32,11 +32,55 @@ func (h *Handler) ClientDashboard(c *gin.Context) error {
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
+	acks, err := h.loadAckFeed(c)
+	if err != nil {
+		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
+	}
 	return h.render(c, http.StatusOK, "client.html", gin.H{
 		"title":   "Dagens anteckning",
 		"today":   today,
 		"advance": advance,
+		"acks":    acks,
 	})
+}
+
+// AckFeed renders only the dashboard's acknowledgement feed, which the
+// dashboard polls so the Client sees new Acknowledgements without reloading the page
+// and losing unsaved edits.
+func (h *Handler) AckFeed(c *gin.Context) error {
+	if h.notes == nil {
+		return httperror.ReturnWithHTTPStatus(errNotesNotConfigured, http.StatusInternalServerError)
+	}
+	acks, err := h.loadAckFeed(c)
+	if err != nil {
+		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
+	}
+	return h.renderFragment(c, http.StatusOK, "client.html", "ack-feed", acks)
+}
+
+// ackFeedEntry is one line of the acknowledgement feed, such as
+// "Maria kl 08:35".
+type ackFeedEntry struct {
+	Who string // the Caregiver's first name, or "Okänd ängel"
+	At  string // local time, 15:04
+}
+
+// loadAckFeed returns today's Acknowledgements, newest first. Being keyed by
+// today's date, the feed starts empty at each Rollover.
+func (h *Handler) loadAckFeed(c *gin.Context) ([]ackFeedEntry, error) {
+	acks, err := h.notes.ListAcknowledgements(c.Request.Context(), h.today().Format(dateLayout))
+	if err != nil {
+		return nil, err
+	}
+	feed := make([]ackFeedEntry, len(acks))
+	for i, a := range acks {
+		who := a.Name
+		if who == "" {
+			who = "Okänd ängel"
+		}
+		feed[len(acks)-1-i] = ackFeedEntry{Who: who, At: clockTime(a.CreatedAt)}
+	}
+	return feed, nil
 }
 
 // noteEditor is one note editor on the dashboard: the fixed wording of the
@@ -86,7 +130,7 @@ func (h *Handler) loadEditor(c *gin.Context, day time.Time, e noteEditor) (noteE
 	}
 	if ok {
 		e.Note = &note
-		e.SavedAt = note.UpdatedAt.In(localZone).Format("15:04")
+		e.SavedAt = clockTime(note.UpdatedAt)
 	}
 	return e, nil
 }

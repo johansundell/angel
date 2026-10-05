@@ -46,6 +46,11 @@ var (
 	swedishMonths   = [...]string{"januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"}
 )
 
+// clockTime formats t as the local time of day, like "08:35".
+func clockTime(t time.Time) string {
+	return t.In(localZone).Format("15:04")
+}
+
 // swedishDate formats t like "måndag 5 oktober 2026".
 func swedishDate(t time.Time) string {
 	return fmt.Sprintf("%s %d %s %d", swedishWeekdays[t.Weekday()], t.Day(), swedishMonths[t.Month()-1], t.Year())
@@ -163,7 +168,7 @@ func caregiverName(s string) string {
 // ackConfirmation is the text shown after acknowledging, such as
 // "Kvitterat av Maria kl 08:35".
 func ackConfirmation(a types.Acknowledgement) string {
-	at := a.CreatedAt.In(localZone).Format("15:04")
+	at := clockTime(a.CreatedAt)
 	if a.Name == "" {
 		return "Kvitterat kl " + at
 	}
