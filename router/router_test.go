@@ -177,6 +177,7 @@ func TestGetRoutes(t *testing.T) {
 		"CaregiverView":    {method: "GET", pattern: "/note", useLogger: false, useAuth: false, role: auth.RoleCaregiver},
 		"AcknowledgeNote":  {method: "POST", pattern: "/note/ack", useLogger: false, useAuth: false, role: auth.RoleCaregiver},
 		"ClientDashboard":  {method: "GET", pattern: "/admin", useLogger: false, useAuth: false, role: auth.RoleClient},
+		"AckFeed":          {method: "GET", pattern: "/admin/acks", useLogger: false, useAuth: false, role: auth.RoleClient},
 		"SaveNote":         {method: "POST", pattern: "/admin/note", useLogger: false, useAuth: false, role: auth.RoleClient},
 		"ClearNote":        {method: "POST", pattern: "/admin/note/clear", useLogger: false, useAuth: false, role: auth.RoleClient},
 		"SaveAdvanceNote":  {method: "POST", pattern: "/admin/advance", useLogger: false, useAuth: false, role: auth.RoleClient},

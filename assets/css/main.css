@@ -339,6 +339,35 @@ body {
     touch-action: manipulation;
 }
 
+/* Today's acknowledgement feed, between the two editors. */
+.ack-feed-section {
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--key-border);
+}
+
+.ack-feed {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ack-feed-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--key-border);
+    font-size: 1.2rem;
+    overflow-wrap: anywhere;
+}
+
+.ack-feed-item:last-child {
+    border-bottom: none;
+}
+
+.ack-feed-empty {
+    margin: 0;
+    color: var(--muted);
+}
+
 /* Health check page */
 
 .health-container {
