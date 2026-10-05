@@ -83,7 +83,12 @@ func (h *Handler) CaregiverView(c *gin.Context) error {
 	}
 	data := gin.H{"title": "Dagens anteckning", "date": swedishDate(today), "maxNameLen": maxCaregiverNameLen}
 	if ok {
+		noteHTML, err := renderMarkdown(note.Text)
+		if err != nil {
+			return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
+		}
 		data["note"] = note
+		data["noteHTML"] = noteHTML
 	}
 	confirmation, err := h.takeAckConfirmation(c, date)
 	if err != nil {

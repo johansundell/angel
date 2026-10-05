@@ -5,7 +5,7 @@
 	{{with .note}}
 	<section class="note{{if .Important}} note-important{{end}}"{{if .Important}} role="alert"{{end}}>
 		{{if .Important}}<p class="note-flag">Viktigt</p>{{end}}
-		<p class="note-text">{{.Text}}</p>
+		<div class="note-text note-markdown">{{$.noteHTML}}</div>
 	</section>
 	{{else}}
 	<section class="note note-empty">

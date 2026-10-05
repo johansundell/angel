@@ -18,8 +18,9 @@ Every response carries an `X-Version` header with the build version. Errors are 
 
 - **GET /note**, **GET /admin**
   - The caregiver view and the client dashboard. They need a session for that role; anyone else is redirected (**303**) to `/`.
-  - `/note` shows today's Daily Note (the calendar date in Europe/Stockholm), in a high-contrast red box when it has the Important Flag, or "Inga särskilda instruktioner idag. Allt är som vanligt!" when there is none.
-  - `/admin` is the client's editor for today's Daily Note: a multiline text box, the Important Flag ("Viktigt") checkbox, the time it was last saved and a button to clear it. Between them is "Kvitteringar idag", today's Acknowledgements newest first ("Maria kl 08:35", or "Okänd ängel kl 12:05" without a name), or "Inga kvitteringar registrerade idag än." when there are none. Below it is the same editor for tomorrow's Advance Note ("Morgondagens anteckning").
+  - `/note` shows today's Daily Note (the calendar date in Europe/Stockholm), rendered from Markdown to HTML, in a high-contrast red box when it has the Important Flag, or "Inga särskilda instruktioner idag. Allt är som vanligt!" when there is none.
+  - Notes are written in Markdown (CommonMark, rendered with [goldmark](https://github.com/yuin/goldmark)). A single line break stays a line break, so plain-text notes look as typed. Raw HTML in a note is left out and `javascript:` links are removed, so a note cannot run scripts on caregivers' phones.
+  - `/admin` is the client's editor for today's Daily Note: a multiline text box for the Markdown source, the Important Flag ("Viktigt") checkbox, the time it was last saved and a button to clear it. Between them is "Kvitteringar idag", today's Acknowledgements newest first ("Maria kl 08:35", or "Okänd ängel kl 12:05" without a name), or "Inga kvitteringar registrerade idag än." when there are none. Below it is the same editor for tomorrow's Advance Note ("Morgondagens anteckning").
   - Sessions are a signed, HTTP-only `angel_session` cookie (`SameSite=Lax`, `Secure` unless `COOKIE_SECURE=false`) that carries the role and expiry and lasts `SESSION_TIMEOUT`. The server checks the expiry too, so an old cookie is useless once it has expired.
 
 - **POST /note/ack**
