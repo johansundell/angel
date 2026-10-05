@@ -35,6 +35,7 @@ COPY --from=builder --chown=appuser:appgroup /app/angel .
 # Copy assets and templates
 COPY --from=builder --chown=appuser:appgroup /app/assets ./assets
 COPY --from=builder --chown=appuser:appgroup /app/tmpl ./tmpl
+COPY --from=builder --chown=appuser:appgroup /app/THIRD_PARTY_LICENSES.txt .
 
 USER appuser
 

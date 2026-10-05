@@ -19,6 +19,11 @@ compile:
 	-os="windows" \
 	-output "build/{{.Dir}}_$(VERSION)_{{.OS}}_{{.Arch}}/$(NAME)" \
 	./...
+	@for d in build/*/; do cp THIRD_PARTY_LICENSES.txt "$$d"; done
+
+# Regenerates THIRD_PARTY_LICENSES.txt; run after changing dependencies.
+licenses:
+	./scripts/third-party-licenses.sh
 
 install:
 	go install -ldflags "-X main.Version=$(VERSION)"
@@ -55,4 +60,4 @@ release: dist docker-push
 	github-release $(GHACCOUNT)/$(NAME) $(VERSION) "$$(git rev-parse --abbrev-ref HEAD)" "**Changelog**<br/>$$changelog" 'dist/*'; \
 	git pull
 
-.PHONY: build compile install deps dist release docker docker-push docker-run
+.PHONY: build compile licenses install deps dist release docker docker-push docker-run
