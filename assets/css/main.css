@@ -1,46 +1,116 @@
 :root {
-    --bg: #f6f4ef;
-    --fg: #1d1d1b;
-    --muted: #5b5a55;
-    --key-bg: #ffffff;
-    --key-border: #d6d3cb;
-    --key-active: #e8e5dd;
-    --accent: #1f5f8b;
-    --accent-fg: #ffffff;
-    --error-bg: #fdecea;
-    --error-fg: #8a1c12;
+    /* Color Palette - Modern Scandinavian Warm Minimal */
+    --bg: #f8fafc;
+    --bg-subtle: #f1f5f9;
     --card-bg: #ffffff;
-    --important-bg: #b00020;
+    --card-border: #e2e8f0;
+    --fg: #0f172a;
+    --muted: #64748b;
+    --muted-light: #94a3b8;
+
+    /* Interactive Elements */
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-active: #1e40af;
+    --primary-fg: #ffffff;
+    --primary-subtle: #eff6ff;
+
+    --key-bg: #ffffff;
+    --key-border: #cbd5e1;
+    --key-active: #f1f5f9;
+    --key-shadow: 0 2px 0 #94a3b8, 0 1px 3px rgba(15, 23, 42, 0.08);
+    --key-shadow-active: 0 0 0 transparent, 0 1px 1px rgba(15, 23, 42, 0.08);
+
+    /* Alerts & States */
+    --calm-bg: #ecfdf5;
+    --calm-border: #a7f3d0;
+    --calm-fg: #065f46;
+
+    --important-bg: #b91c1c;
+    --important-border: #991b1b;
     --important-fg: #ffffff;
-    --calm-bg: #e7f2ea;
-    --calm-fg: #1e4d2b;
+
+    --error-bg: #fef2f2;
+    --error-border: #fecaca;
+    --error-fg: #991b1b;
+
+    /* Elevation & Radius */
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.25rem;
+    --radius-full: 9999px;
+
+    --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+    --shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
 }
 
-* {
+*, *::before, *::after {
     box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
 }
 
 body {
     margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
     background-color: var(--bg);
+    background-image: radial-gradient(at 50% 0%, #ffffff 0%, var(--bg) 80%);
     color: var(--fg);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-size: 18px;
-    line-height: 1.5;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
+/* App Shell */
+
 .app {
-    max-width: 28rem;
+    max-width: 32rem;
     margin: 0 auto;
-    padding: 1.5rem 1rem;
+    padding: 2rem 1.25rem 3rem;
 }
 
 .app h1 {
-    font-size: 1.75rem;
-    margin: 0 0 1rem;
+    font-size: 1.85rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin: 0 0 0.5rem;
+    color: var(--fg);
 }
 
-/* PIN keypad */
+.app h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.5rem;
+    color: var(--fg);
+}
+
+/* Header & Date */
+
+.note-date {
+    display: inline-block;
+    margin: 0 0 1.25rem;
+    padding: 0.35rem 0.85rem;
+    background: var(--bg-subtle);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-full);
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-transform: capitalize;
+}
+
+/* ==========================================================================
+   PIN Keypad / Entry Screen
+   ========================================================================== */
 
 .entry {
     min-height: 100vh;
@@ -48,93 +118,151 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    align-items: center;
     text-align: center;
+    padding: 2rem 1.25rem;
+}
+
+.entry h1 {
+    font-size: 1.75rem;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
 }
 
 .pin-form {
+    width: 100%;
+    max-width: 22rem;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.25rem;
 }
 
 .pin-display {
     width: 100%;
-    padding: 0.75rem;
-    font-size: 2rem;
-    letter-spacing: 0.5em;
+    padding: 1rem;
+    font-size: 2.25rem;
+    letter-spacing: 0.4em;
     text-align: center;
-    border: 2px solid var(--key-border);
-    border-radius: 0.75rem;
-    background: var(--key-bg);
+    border: 2px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    background: var(--card-bg);
     color: var(--fg);
+    box-shadow: var(--shadow-sm), inset 0 2px 4px rgba(15, 23, 42, 0.03);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+}
+
+.pin-display:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 .pin-error {
     margin: 0;
-    padding: 0.75rem;
-    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-md);
     background: var(--error-bg);
+    border: 1px solid var(--error-border);
     color: var(--error-fg);
+    font-size: 0.925rem;
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: var(--shadow-sm);
 }
 
 .keypad {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem;
+    gap: 0.85rem;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .key {
     min-height: 4.5rem;
-    font-size: 1.75rem;
+    font-size: 1.85rem;
+    font-weight: 600;
     font-family: inherit;
-    border: 2px solid var(--key-border);
-    border-radius: 1rem;
+    border: 1px solid var(--key-border);
+    border-radius: var(--radius-lg);
     background: var(--key-bg);
     color: var(--fg);
     cursor: pointer;
+    box-shadow: var(--key-shadow);
+    transition: transform 0.05s ease, box-shadow 0.05s ease, background-color 0.15s;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.key:hover {
+    background: #fafafa;
 }
 
 .key:active {
+    transform: translateY(2px);
+    box-shadow: var(--key-shadow-active);
     background: var(--key-active);
 }
 
 .key-action {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--bg-subtle);
+    border-color: #cbd5e1;
+}
+
+.key-action:hover {
+    background: #e2e8f0;
 }
 
 .key-submit {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--accent-fg);
+    background: var(--primary);
+    border-color: #1d4ed8;
+    color: var(--primary-fg);
     font-weight: 700;
+    box-shadow: 0 2px 0 #1e40af, 0 2px 6px rgba(37, 99, 235, 0.3);
 }
 
-/* Daily Note */
-
-.note-date {
-    margin: -0.5rem 0 1rem;
-    color: var(--muted);
+.key-submit:hover {
+    background: var(--primary-hover);
 }
+
+.key-submit:active {
+    background: var(--primary-active);
+    box-shadow: 0 0 0 transparent;
+}
+
+/* ==========================================================================
+   Daily Note Card
+   ========================================================================== */
 
 .note {
-    padding: 1.25rem;
-    border: 2px solid var(--key-border);
-    border-radius: 1rem;
+    position: relative;
+    padding: 1.5rem;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-xl);
     background: var(--card-bg);
+    box-shadow: var(--shadow-md);
+    transition: box-shadow 0.2s;
 }
 
 .note-text {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.15rem;
+    line-height: 1.65;
+    color: var(--fg);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
 }
 
-/* A note rendered from Markdown: line breaks come from <br> and blocks,
-   so the source's newlines must not add space of their own. */
+/* Markdown rendered note */
 .note-markdown {
     white-space: normal;
 }
@@ -151,22 +279,25 @@ body {
 .note-markdown ul,
 .note-markdown ol,
 .note-markdown blockquote {
-    margin: 0 0 0.75em;
+    margin: 0 0 0.85em;
 }
 
 .note-markdown h1,
 .note-markdown h2,
 .note-markdown h3 {
-    margin: 1em 0 0.4em;
-    line-height: 1.25;
+    margin: 1.2em 0 0.5em;
+    line-height: 1.3;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: inherit;
 }
 
 .note-markdown h1 {
-    font-size: 1.5em;
+    font-size: 1.45em;
 }
 
 .note-markdown h2 {
-    font-size: 1.3em;
+    font-size: 1.25em;
 }
 
 .note-markdown h3 {
@@ -179,242 +310,384 @@ body {
 }
 
 .note-markdown li + li {
-    margin-top: 0.25em;
+    margin-top: 0.35em;
 }
 
 .note-markdown a {
-    color: inherit;
+    color: var(--primary);
     text-decoration: underline;
+    text-underline-offset: 3px;
+    font-weight: 500;
 }
 
 .note-markdown blockquote {
-    padding-left: 0.75em;
-    border-left: 4px solid currentColor;
+    padding: 0.5rem 0.85rem;
+    border-left: 4px solid var(--card-border);
+    background: var(--bg-subtle);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-style: italic;
+    color: var(--muted);
 }
 
+/* Important Note Card */
 .note-important {
-    border: 4px solid var(--important-bg);
-    background: var(--important-bg);
-    color: var(--important-fg);
+    border: 3px solid #991b1b;
+    background: #b91c1c;
+    color: #ffffff;
+    box-shadow: 0 10px 25px -4px rgba(185, 28, 28, 0.35), var(--shadow-sm);
 }
 
 .note-flag {
-    margin: 0 0 0.5rem;
-    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 0.85rem;
+    padding: 0.3rem 0.85rem;
+    background: #ffffff;
+    color: #b91c1c;
+    border-radius: var(--radius-full);
+    font-size: 0.85rem;
     font-weight: 800;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .note-important .note-text {
+    color: #ffffff;
     font-weight: 600;
 }
 
-.note-empty {
-    border-color: var(--calm-bg);
-    background: var(--calm-bg);
-    color: var(--calm-fg);
+.note-important .note-markdown a {
+    color: #ffffff;
+    text-decoration: underline;
+    font-weight: 700;
 }
 
-/* Acknowledgement */
+.note-important .note-markdown blockquote {
+    border-left-color: #fecaca;
+    background: rgba(0, 0, 0, 0.2);
+    color: #ffffff;
+}
 
-.ack-confirmation {
-    margin: 1.5rem 0 0;
-    padding: 1rem 1.25rem;
-    border-radius: 1rem;
+/* Empty State Note */
+.note-empty {
+    border: 1px solid var(--calm-border);
     background: var(--calm-bg);
     color: var(--calm-fg);
-    font-size: 1.2rem;
-    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.note-empty .note-text {
+    color: var(--calm-fg);
+    font-weight: 500;
+    font-size: 1.1rem;
+}
+
+/* ==========================================================================
+   Caregiver Acknowledgement Flow
+   ========================================================================== */
+
+.ack-confirmation {
+    margin: 1.25rem 0 0;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-lg);
+    background: var(--calm-bg);
+    border: 1px solid var(--calm-border);
+    color: var(--calm-fg);
+    font-size: 1.05rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: var(--shadow-sm);
     overflow-wrap: anywhere;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .ack-form {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    margin-top: 1.5rem;
+    gap: 0.65rem;
+    margin-top: 1.75rem;
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
 }
 
 .ack-label {
+    font-size: 0.95rem;
+    font-weight: 600;
     color: var(--muted);
 }
 
 .ack-name {
-    padding: 0.75rem 1rem;
-    border: 2px solid var(--key-border);
-    border-radius: 0.75rem;
-    background: var(--key-bg);
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 1.5px solid var(--card-border);
+    border-radius: var(--radius-md);
+    background: var(--bg);
     color: var(--fg);
     font: inherit;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+
+.ack-name:focus {
+    background: #ffffff;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 .ack-submit {
-    min-height: 4rem;
+    min-height: 3.75rem;
     margin-top: 0.5rem;
-    border: 2px solid var(--accent);
-    border-radius: 1rem;
-    background: var(--accent);
-    color: var(--accent-fg);
+    border: none;
+    border-radius: var(--radius-lg);
+    background: var(--primary);
+    color: var(--primary-fg);
     font: inherit;
-    font-size: 1.4rem;
+    font-size: 1.25rem;
     font-weight: 700;
     cursor: pointer;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    transition: background-color 0.15s, transform 0.05s, box-shadow 0.15s;
     touch-action: manipulation;
 }
 
-.ack-submit:active {
-    opacity: 0.85;
+.ack-submit:hover {
+    background: var(--primary-hover);
 }
 
-/* Client dashboard */
+.ack-submit:active {
+    transform: translateY(1px);
+    background: var(--primary-active);
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+}
 
-/* Tomorrow's Advance Note, set apart below today's editor. */
+/* ==========================================================================
+   Client Dashboard & Editors
+   ========================================================================== */
+
+.editor-section {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-xl);
+    padding: 1.75rem;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 2rem;
+}
+
 .editor-advance {
-    margin-top: 2.5rem;
-    padding-top: 2rem;
-    border-top: 2px solid var(--key-border);
+    background: #fdfefe;
+    border-left: 4px solid var(--primary);
 }
 
 .editor-hint {
-    margin: 0 0 1rem;
+    margin: 0 0 1.25rem;
+    font-size: 0.875rem;
     color: var(--muted);
+    line-height: 1.5;
 }
 
 .editor-form {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 1rem;
 }
 
 .editor-label {
-    color: var(--muted);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--fg);
 }
 
 .editor-text {
     width: 100%;
     min-height: 12rem;
-    padding: 0.75rem 1rem;
-    border: 2px solid var(--key-border);
-    border-radius: 0.75rem;
-    background: var(--key-bg);
+    padding: 1rem;
+    border: 1.5px solid var(--card-border);
+    border-radius: var(--radius-md);
+    background: var(--bg);
     color: var(--fg);
     font: inherit;
-    font-size: 1.15rem;
+    font-size: 1.1rem;
+    line-height: 1.6;
     resize: vertical;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
 }
 
+.editor-text:focus {
+    background: #ffffff;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Toggle Switch for Viktigt */
 .editor-important {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.85rem;
     padding: 0.75rem 1rem;
-    border: 2px solid var(--important-bg);
-    border-radius: 0.75rem;
-    color: var(--important-bg);
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    border: 1.5px solid #fca5a5;
+    border-radius: var(--radius-lg);
+    background: #fef2f2;
+    color: #991b1b;
+    font-weight: 700;
+    font-size: 0.95rem;
     cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s, border-color 0.15s;
 }
 
-/* A checkbox drawn as an on/off switch. */
 .editor-toggle {
     appearance: none;
     position: relative;
     flex: none;
-    width: 3.5rem;
-    height: 2rem;
+    width: 3.25rem;
+    height: 1.85rem;
     margin: 0;
-    border-radius: 1rem;
-    background: var(--key-border);
+    border-radius: var(--radius-full);
+    background: #cbd5e1;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: background-color 0.2s ease;
+    outline: none;
 }
 
 .editor-toggle::before {
     content: "";
     position: absolute;
-    top: 0.25rem;
-    left: 0.25rem;
-    width: 1.5rem;
-    height: 1.5rem;
+    top: 0.2rem;
+    left: 0.2rem;
+    width: 1.45rem;
+    height: 1.45rem;
     border-radius: 50%;
-    background: var(--key-bg);
-    transition: transform 0.15s;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .editor-toggle:checked {
-    background: var(--important-bg);
+    background: #dc2626;
 }
 
 .editor-toggle:checked::before {
-    transform: translateX(1.5rem);
+    transform: translateX(1.4rem);
 }
 
 .editor-toggle:focus-visible {
-    outline: 3px solid var(--accent);
-    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.3);
 }
 
 .editor-save {
-    min-height: 4rem;
-    border: 2px solid var(--accent);
-    border-radius: 1rem;
-    background: var(--accent);
-    color: var(--accent-fg);
+    min-height: 3.5rem;
+    border: none;
+    border-radius: var(--radius-lg);
+    background: var(--primary);
+    color: var(--primary-fg);
     font: inherit;
-    font-size: 1.4rem;
+    font-size: 1.25rem;
     font-weight: 700;
     cursor: pointer;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    transition: background-color 0.15s, transform 0.05s, box-shadow 0.15s;
     touch-action: manipulation;
 }
 
-.editor-save:active,
-.editor-clear:active {
-    opacity: 0.85;
+.editor-save:hover {
+    background: var(--primary-hover);
+}
+
+.editor-save:active {
+    transform: translateY(1px);
+    background: var(--primary-active);
 }
 
 .editor-saved {
-    margin: 1rem 0 0;
-    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0.85rem 0 0;
+    padding: 0.35rem 0.75rem;
+    background: var(--calm-bg);
+    border: 1px solid var(--calm-border);
+    border-radius: var(--radius-full);
+    color: var(--calm-fg);
+    font-size: 0.85rem;
+    font-weight: 600;
 }
 
 .editor-clear-form {
-    margin-top: 1.5rem;
+    margin-top: 1rem;
 }
 
 .editor-clear {
     width: 100%;
-    min-height: 3.5rem;
-    border: 2px solid var(--key-border);
-    border-radius: 1rem;
-    background: var(--key-bg);
-    color: var(--fg);
+    min-height: 3rem;
+    border: 1.5px solid var(--card-border);
+    border-radius: var(--radius-md);
+    background: var(--bg);
+    color: var(--muted);
     font: inherit;
-    font-size: 1.1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
     cursor: pointer;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
     touch-action: manipulation;
 }
 
-/* Today's acknowledgement feed, between the two editors. */
+.editor-clear:hover {
+    background: #f1f5f9;
+    color: var(--error-fg);
+    border-color: #fca5a5;
+}
+
+/* ==========================================================================
+   Acknowledgement Feed
+   ========================================================================== */
+
 .ack-feed-section {
-    margin-top: 2.5rem;
-    padding-top: 2rem;
-    border-top: 2px solid var(--key-border);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-xl);
+    padding: 1.75rem;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 2rem;
 }
 
 .ack-feed {
     margin: 0;
     padding: 0;
     list-style: none;
+    display: flex;
+    flex-direction: column;
 }
 
 .ack-feed-item {
-    padding: 0.75rem 0;
-    border-bottom: 1px solid var(--key-border);
-    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    padding: 0.85rem 0.5rem;
+    border-bottom: 1px solid var(--bg-subtle);
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--fg);
     overflow-wrap: anywhere;
 }
 
@@ -424,19 +697,29 @@ body {
 
 .ack-feed-empty {
     margin: 0;
+    padding: 1rem;
+    text-align: center;
+    background: var(--bg);
+    border: 1px dashed var(--card-border);
+    border-radius: var(--radius-lg);
     color: var(--muted);
+    font-size: 0.95rem;
 }
 
 .ack-feed-expired {
     margin: 0;
     padding: 1rem 1.25rem;
-    border-radius: 1rem;
+    border-radius: var(--radius-lg);
     background: var(--error-bg);
+    border: 1px solid var(--error-border);
     color: var(--error-fg);
-    font-weight: 700;
+    font-weight: 600;
+    font-size: 0.95rem;
 }
 
-/* Health check page */
+/* ==========================================================================
+   Health Check Page
+   ========================================================================== */
 
 .health-container {
     display: flex;
@@ -444,23 +727,28 @@ body {
     align-items: center;
     justify-content: center;
     min-height: 100vh;
+    min-height: 100dvh;
     text-align: center;
-    background-color: #000000;
-    color: #ffffff;
-    font-family: courier, monospace;
-    font-size: 160%;
+    background-color: #0f172a;
+    color: #f8fafc;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 1.25rem;
+    padding: 2rem;
 }
 
 .logo {
-    max-width: 200px;
+    max-width: 160px;
     margin-bottom: 2rem;
 }
 
 .status-item {
     margin: 0.5rem 0;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
 }
 
 .accent {
-    color: #00ff00;
-    font-weight: bold;
+    color: #4ade80;
+    font-weight: 700;
 }
