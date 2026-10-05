@@ -33,9 +33,9 @@ The daily transition time (default midnight) when the current day advances and t
 _Avoid_: Expiration, reset, turnover
 
 **Caregiver PIN**:
-A shared 4-digit numeric code entered on the keypad by visiting Caregivers to view the current day's note.
+A shared 4-digit numeric code entered by visiting Caregivers to view the current day's note.
 _Avoid_: Password, door code, passcode, visitor code
 
 **Master PIN**:
-A private numeric code entered on the same keypad by the Client to open the note authoring and management view.
+A private numeric code entered by the Client to open the note authoring and management view.
 _Avoid_: Admin password, master key, credentials

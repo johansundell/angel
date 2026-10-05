@@ -99,7 +99,7 @@ func (a *pinApp) get(path string, cookies ...*http.Cookie) *httptest.ResponseRec
 	return a.do(req)
 }
 
-// submitPIN posts the keypad form from the given client address.
+// submitPIN posts the entry form from the given client address.
 func (a *pinApp) submitPIN(pin, remoteAddr string) *httptest.ResponseRecorder {
 	a.t.Helper()
 	form := url.Values{"pin": {pin}}
@@ -129,7 +129,7 @@ func assertRedirect(t *testing.T, w *httptest.ResponseRecorder, location string)
 	}
 }
 
-func assertKeypad(t *testing.T, w *httptest.ResponseRecorder) {
+func assertEntryPage(t *testing.T, w *httptest.ResponseRecorder) {
 	t.Helper()
 	body := w.Body.String()
 	for _, want := range []string{"Ange PIN-kod", `action="/pin"`, `name="pin"`, `inputmode="numeric"`, "Logga in", `lang="sv"`, `name="viewport"`} {
@@ -144,7 +144,7 @@ func assertKeypad(t *testing.T, w *httptest.ResponseRecorder) {
 	}
 }
 
-func TestEntry_ShowsKeypadWithoutSession(t *testing.T) {
+func TestEntry_ShowsEntryPageWithoutSession(t *testing.T) {
 	app := newPinApp(t)
 
 	w := app.get("/")
@@ -152,7 +152,7 @@ func TestEntry_ShowsKeypadWithoutSession(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", w.Code)
 	}
-	assertKeypad(t, w)
+	assertEntryPage(t, w)
 }
 
 func TestEntry_InvalidPINShowsErrorAndGrantsNothing(t *testing.T) {
@@ -166,7 +166,7 @@ func TestEntry_InvalidPINShowsErrorAndGrantsNothing(t *testing.T) {
 	if !strings.Contains(w.Body.String(), "Fel PIN-kod") {
 		t.Errorf("expected Swedish error message, got %q", w.Body.String())
 	}
-	assertKeypad(t, w)
+	assertEntryPage(t, w)
 	if c := sessionCookie(t, w); c != nil && c.Value != "" {
 		t.Errorf("invalid PIN must not set a session cookie, got %q", c.Value)
 	}
@@ -254,7 +254,7 @@ func TestEntry_CaregiverSessionExpires(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("GET / after expiry status = %d, want 200", w.Code)
 	}
-	assertKeypad(t, w)
+	assertEntryPage(t, w)
 }
 
 func TestEntry_TamperedCookieIsRejected(t *testing.T) {
