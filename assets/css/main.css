@@ -133,6 +133,65 @@ body {
     overflow-wrap: anywhere;
 }
 
+/* A note rendered from Markdown: line breaks come from <br> and blocks,
+   so the source's newlines must not add space of their own. */
+.note-markdown {
+    white-space: normal;
+}
+
+.note-markdown > :first-child {
+    margin-top: 0;
+}
+
+.note-markdown > :last-child {
+    margin-bottom: 0;
+}
+
+.note-markdown p,
+.note-markdown ul,
+.note-markdown ol,
+.note-markdown blockquote {
+    margin: 0 0 0.75em;
+}
+
+.note-markdown h1,
+.note-markdown h2,
+.note-markdown h3 {
+    margin: 1em 0 0.4em;
+    line-height: 1.25;
+}
+
+.note-markdown h1 {
+    font-size: 1.5em;
+}
+
+.note-markdown h2 {
+    font-size: 1.3em;
+}
+
+.note-markdown h3 {
+    font-size: 1.1em;
+}
+
+.note-markdown ul,
+.note-markdown ol {
+    padding-left: 1.5em;
+}
+
+.note-markdown li + li {
+    margin-top: 0.25em;
+}
+
+.note-markdown a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.note-markdown blockquote {
+    padding-left: 0.75em;
+    border-left: 4px solid currentColor;
+}
+
 .note-important {
     border: 4px solid var(--important-bg);
     background: var(--important-bg);

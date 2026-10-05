@@ -9,6 +9,7 @@ require (
 	github.com/kardianos/service v1.3.0
 	github.com/ncruces/go-sqlite3 v0.35.5
 	github.com/stretchr/testify v1.12.1
+	github.com/yuin/goldmark v1.8.6
 )
 
 require (

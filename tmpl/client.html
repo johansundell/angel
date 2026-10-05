@@ -63,7 +63,8 @@
 <form method="post" action="{{.Action}}" class="editor-form">
 	<input type="hidden" name="date" value="{{.Date}}" />
 	<label for="{{.ID}}" class="editor-label">{{.TextLabel}}</label>
-	<textarea name="text" id="{{.ID}}" class="editor-text" rows="{{.Rows}}" maxlength="{{.MaxLen}}">{{with .Note}}{{.Text}}{{end}}</textarea>
+	<textarea name="text" id="{{.ID}}" class="editor-text" rows="{{.Rows}}" maxlength="{{.MaxLen}}" aria-describedby="{{.ID}}-hint">{{with .Note}}{{.Text}}{{end}}</textarea>
+	<p id="{{.ID}}-hint" class="editor-hint">Du kan använda Markdown: **fet**, *kursiv*, ## rubrik, - punktlista, [länk](https://…).</p>
 	<label class="editor-important">
 		<input type="checkbox" role="switch" name="important" class="editor-toggle"{{with .Note}}{{if .Important}} checked{{end}}{{end}} />
 		<span>Viktigt</span>
