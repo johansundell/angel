@@ -17,17 +17,31 @@
 <script>
 // Keep the acknowledgement feed live without reloading the page, which would
 // lose unsaved edits. Redirects are not followed: one means the session has
-// ended, and the keypad must not be pasted into the feed.
+// ended, so instead of pasting the keypad into the feed, say the feed has
+// stopped and stop polling.
 (function () {
 	var feed = document.getElementById("ack-feed");
+	var timer;
+	function expired() {
+		clearInterval(timer);
+		document.removeEventListener("visibilitychange", onVisible);
+		var p = document.createElement("p");
+		p.className = "ack-feed-expired";
+		p.textContent = "Sessionen har gått ut. Logga in igen för att se nya kvitteringar.";
+		feed.replaceChildren(p);
+	}
 	function refresh() {
 		fetch("/admin/acks", { redirect: "manual", cache: "no-store" })
-			.then(function (r) { return r.ok ? r.text() : null; })
+			.then(function (r) {
+				if (r.type === "opaqueredirect") { expired(); return null; }
+				return r.ok ? r.text() : null;
+			})
 			.then(function (html) { if (html !== null) feed.innerHTML = html; })
 			.catch(function () {});
 	}
-	setInterval(function () { if (!document.hidden) refresh(); }, 30000);
-	document.addEventListener("visibilitychange", function () { if (!document.hidden) refresh(); });
+	function onVisible() { if (!document.hidden) refresh(); }
+	timer = setInterval(onVisible, 30000);
+	document.addEventListener("visibilitychange", onVisible);
 })();
 </script>
 {{end}}

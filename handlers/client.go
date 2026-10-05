@@ -32,7 +32,7 @@ func (h *Handler) ClientDashboard(c *gin.Context) error {
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
-	acks, err := h.ackFeed(c)
+	acks, err := h.loadAckFeed(c)
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
@@ -45,26 +45,17 @@ func (h *Handler) ClientDashboard(c *gin.Context) error {
 }
 
 // AckFeed renders only the dashboard's acknowledgement feed, which the
-// dashboard polls so the Client sees new visits without reloading the page
+// dashboard polls so the Client sees new Acknowledgements without reloading the page
 // and losing unsaved edits.
 func (h *Handler) AckFeed(c *gin.Context) error {
 	if h.notes == nil {
 		return httperror.ReturnWithHTTPStatus(errNotesNotConfigured, http.StatusInternalServerError)
 	}
-	acks, err := h.ackFeed(c)
+	acks, err := h.loadAckFeed(c)
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
-	tmpl, err := h.getTemplate(false, "client.html")
-	if err != nil {
-		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
-	}
-	c.Header("Content-Type", "text/html; charset=utf-8")
-	c.Status(http.StatusOK)
-	if err := tmpl.ExecuteTemplate(c.Writer, "ack-feed", acks); err != nil {
-		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
-	}
-	return nil
+	return h.renderFragment(c, http.StatusOK, "client.html", "ack-feed", acks)
 }
 
 // ackFeedEntry is one line of the acknowledgement feed, such as
@@ -74,9 +65,9 @@ type ackFeedEntry struct {
 	At  string // local time, 15:04
 }
 
-// ackFeed returns today's Acknowledgements, newest first. Being keyed by
+// loadAckFeed returns today's Acknowledgements, newest first. Being keyed by
 // today's date, the feed starts empty at each Rollover.
-func (h *Handler) ackFeed(c *gin.Context) ([]ackFeedEntry, error) {
+func (h *Handler) loadAckFeed(c *gin.Context) ([]ackFeedEntry, error) {
 	acks, err := h.notes.ListAcknowledgements(c.Request.Context(), h.today().Format(dateLayout))
 	if err != nil {
 		return nil, err
@@ -87,7 +78,7 @@ func (h *Handler) ackFeed(c *gin.Context) ([]ackFeedEntry, error) {
 		if who == "" {
 			who = "Anonym"
 		}
-		feed[len(acks)-1-i] = ackFeedEntry{Who: who, At: a.CreatedAt.In(localZone).Format("15:04")}
+		feed[len(acks)-1-i] = ackFeedEntry{Who: who, At: clockTime(a.CreatedAt)}
 	}
 	return feed, nil
 }
@@ -139,7 +130,7 @@ func (h *Handler) loadEditor(c *gin.Context, day time.Time, e noteEditor) (noteE
 	}
 	if ok {
 		e.Note = &note
-		e.SavedAt = note.UpdatedAt.In(localZone).Format("15:04")
+		e.SavedAt = clockTime(note.UpdatedAt)
 	}
 	return e, nil
 }

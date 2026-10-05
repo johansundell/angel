@@ -368,6 +368,15 @@ body {
     color: var(--muted);
 }
 
+.ack-feed-expired {
+    margin: 0;
+    padding: 1rem 1.25rem;
+    border-radius: 1rem;
+    background: var(--error-bg);
+    color: var(--error-fg);
+    font-weight: 700;
+}
+
 /* Health check page */
 
 .health-container {

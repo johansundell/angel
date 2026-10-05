@@ -61,22 +61,22 @@ func TestAckFeed_EmptyState(t *testing.T) {
 func TestAckFeed_StartsFreshAfterRollover(t *testing.T) {
 	app := newPinApp(t)
 	// 21:55 UTC is 23:55 on Monday in Stockholm.
-	app.acknowledgeAt("Kvällspersonal", time.Date(2026, 10, 5, 21, 55, 0, 0, time.UTC))
+	app.acknowledgeAt("Elin", time.Date(2026, 10, 5, 21, 55, 0, 0, time.UTC))
 	// 22:05 UTC is 00:05 on Tuesday.
 	app.clock.now = time.Date(2026, 10, 5, 22, 5, 0, 0, time.UTC)
 
 	body := app.get("/admin", app.clientSession()).Body.String()
 
-	if strings.Contains(body, "Kvällspersonal") {
+	if strings.Contains(body, "Elin") {
 		t.Error("yesterday's acknowledgement in today's feed")
 	}
 	if !strings.Contains(body, emptyFeed) {
 		t.Errorf("missing empty state after rollover, got %q", body)
 	}
 
-	app.acknowledgeAt("Nattpersonal", time.Date(2026, 10, 5, 22, 10, 0, 0, time.UTC))
+	app.acknowledgeAt("Omar", time.Date(2026, 10, 5, 22, 10, 0, 0, time.UTC))
 	body = app.get("/admin", app.clientSession()).Body.String()
-	if !strings.Contains(body, "Nattpersonal kl 00:10") || strings.Contains(body, "Kvällspersonal") {
+	if !strings.Contains(body, "Omar kl 00:10") || strings.Contains(body, "Elin") {
 		t.Errorf("feed after rollover = %q", body)
 	}
 }
