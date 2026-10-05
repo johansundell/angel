@@ -5,39 +5,7 @@
 		<input type="password" name="pin" id="pin" class="pin-display" inputmode="numeric" pattern="[0-9]*"
 			maxlength="12" autocomplete="off" aria-label="PIN-kod" required autofocus />
 		{{if .error}}<p class="pin-error" role="alert">{{.error}}</p>{{end}}
-		<div class="keypad">
-			<button type="button" class="key" data-digit="1">1</button>
-			<button type="button" class="key" data-digit="2">2</button>
-			<button type="button" class="key" data-digit="3">3</button>
-			<button type="button" class="key" data-digit="4">4</button>
-			<button type="button" class="key" data-digit="5">5</button>
-			<button type="button" class="key" data-digit="6">6</button>
-			<button type="button" class="key" data-digit="7">7</button>
-			<button type="button" class="key" data-digit="8">8</button>
-			<button type="button" class="key" data-digit="9">9</button>
-			<button type="button" class="key key-action" data-action="backspace">Radera</button>
-			<button type="button" class="key" data-digit="0">0</button>
-			<button type="submit" class="key key-submit">OK</button>
-		</div>
+		<button type="submit" class="pin-submit">Logga in</button>
 	</form>
 </main>
-<script>
-	(function () {
-		var input = document.getElementById("pin");
-		// The on-screen keypad replaces the phone keyboard.
-		input.readOnly = true;
-		input.removeAttribute("autofocus");
-		input.blur();
-		document.querySelectorAll(".key[data-digit]").forEach(function (key) {
-			key.addEventListener("click", function () {
-				if (input.value.length < input.maxLength) {
-					input.value += key.dataset.digit;
-				}
-			});
-		});
-		document.querySelector(".key[data-action=backspace]").addEventListener("click", function () {
-			input.value = input.value.slice(0, -1);
-		});
-	})();
-</script>
 {{end}}

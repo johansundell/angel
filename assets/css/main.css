@@ -109,7 +109,7 @@ body {
 }
 
 /* ==========================================================================
-   PIN Keypad / Entry Screen
+   PIN Entry Screen
    ========================================================================== */
 
 .entry {
@@ -173,71 +173,32 @@ body {
     box-shadow: var(--shadow-sm);
 }
 
-.keypad {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.85rem;
-    user-select: none;
-    -webkit-user-select: none;
-}
-
-.key {
-    min-height: 4.5rem;
-    font-size: 1.85rem;
-    font-weight: 600;
-    font-family: inherit;
-    border: 1px solid var(--key-border);
+.pin-submit {
+    min-height: 3.75rem;
+    margin-top: 0.5rem;
+    border: none;
     border-radius: var(--radius-lg);
-    background: var(--key-bg);
-    color: var(--fg);
-    cursor: pointer;
-    box-shadow: var(--key-shadow);
-    transition: transform 0.05s ease, box-shadow 0.05s ease, background-color 0.15s;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.key:hover {
-    background: #fafafa;
-}
-
-.key:active {
-    transform: translateY(2px);
-    box-shadow: var(--key-shadow-active);
-    background: var(--key-active);
-}
-
-.key-action {
-    font-size: 1.05rem;
-    font-weight: 600;
-    color: var(--muted);
-    background: var(--bg-subtle);
-    border-color: #cbd5e1;
-}
-
-.key-action:hover {
-    background: #e2e8f0;
-}
-
-.key-submit {
     background: var(--primary);
-    border-color: #1d4ed8;
     color: var(--primary-fg);
+    font: inherit;
+    font-size: 1.25rem;
     font-weight: 700;
-    box-shadow: 0 2px 0 #1e40af, 0 2px 6px rgba(37, 99, 235, 0.3);
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    transition: background-color 0.15s, transform 0.05s, box-shadow 0.15s;
+    touch-action: manipulation;
 }
 
-.key-submit:hover {
+.pin-submit:hover {
     background: var(--primary-hover);
 }
 
-.key-submit:active {
+.pin-submit:active {
+    transform: translateY(1px);
     background: var(--primary-active);
-    box-shadow: 0 0 0 transparent;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
 }
+
 
 /* ==========================================================================
    Daily Note Card

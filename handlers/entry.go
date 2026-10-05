@@ -22,7 +22,7 @@ const (
 
 var errAuthNotConfigured = errors.New("PIN authentication is not configured")
 
-// Entry shows the PIN keypad, or sends a Caregiver or Client with a valid
+// Entry shows the PIN entry screen, or sends a Caregiver or Client with a valid
 // session straight to their view.
 func (h *Handler) Entry(c *gin.Context) error {
 	if h.auth == nil {
@@ -32,11 +32,11 @@ func (h *Handler) Entry(c *gin.Context) error {
 		c.Redirect(http.StatusSeeOther, homeFor[role])
 		return nil
 	}
-	return h.renderKeypad(c, http.StatusOK, "")
+	return h.renderEntry(c, http.StatusOK, "")
 }
 
-// SubmitPIN checks the PIN posted from the keypad. A correct PIN starts a
-// session and redirects to that role's view; a wrong one shows the keypad
+// SubmitPIN checks the PIN posted from the entry form. A correct PIN starts a
+// session and redirects to that role's view; a wrong one shows the entry screen
 // again with an error.
 func (h *Handler) SubmitPIN(c *gin.Context) error {
 	if h.auth == nil {
@@ -45,9 +45,9 @@ func (h *Handler) SubmitPIN(c *gin.Context) error {
 	role, err := h.auth.Login(c.ClientIP(), c.PostForm("pin"))
 	switch {
 	case errors.Is(err, auth.ErrRateLimited):
-		return h.renderKeypad(c, http.StatusTooManyRequests, msgRateLimited)
+		return h.renderEntry(c, http.StatusTooManyRequests, msgRateLimited)
 	case errors.Is(err, auth.ErrInvalidPIN):
-		return h.renderKeypad(c, http.StatusUnauthorized, msgInvalidPIN)
+		return h.renderEntry(c, http.StatusUnauthorized, msgInvalidPIN)
 	case err != nil:
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
@@ -57,7 +57,7 @@ func (h *Handler) SubmitPIN(c *gin.Context) error {
 }
 
 // RequireRole lets the request through only with a valid session for role;
-// anyone else is sent back to the keypad.
+// anyone else is sent back to the entry screen.
 func (h *Handler) RequireRole(role auth.Role) func(func(*gin.Context) error) func(*gin.Context) error {
 	return func(inner func(*gin.Context) error) func(*gin.Context) error {
 		return func(c *gin.Context) error {
@@ -81,7 +81,7 @@ func (h *Handler) AuthConfigured() bool {
 	return h.auth != nil
 }
 
-func (h *Handler) renderKeypad(c *gin.Context, status int, errMsg string) error {
+func (h *Handler) renderEntry(c *gin.Context, status int, errMsg string) error {
 	c.Header("Cache-Control", "no-store")
 	return h.render(c, status, "entry.html", gin.H{"title": "Ange PIN-kod", "error": errMsg})
 }

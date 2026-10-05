@@ -34,7 +34,7 @@ type Route struct {
 	UseLogger   bool
 	UseAuth     bool
 	// Role, when set, requires a PIN session for that role; other visitors
-	// are redirected to the keypad.
+	// are redirected to the entry screen.
 	Role auth.Role
 }
 
