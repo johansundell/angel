@@ -9,7 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/johansundell/angel/httperror"
-	"github.com/johansundell/angel/store"
 )
 
 // Daily Notes are keyed by the calendar date in the Client's home.
@@ -26,16 +25,6 @@ func mustLoadLocation(name string) *time.Location {
 }
 
 var errNotesNotConfigured = errors.New("note storage is not configured")
-
-// WithNotes sets where Daily Notes are stored.
-func WithNotes(n store.NoteStore) Option {
-	return func(h *Handler) { h.notes = n }
-}
-
-// WithClock replaces time.Now, so tests can choose the current date.
-func WithClock(now func() time.Time) Option {
-	return func(h *Handler) { h.now = now }
-}
 
 // today returns the current local date.
 func (h *Handler) today() time.Time {

@@ -30,6 +30,16 @@ func WithAuth(a *auth.Authenticator) Option {
 	return func(h *Handler) { h.auth = a }
 }
 
+// WithNotes sets where Daily Notes are stored.
+func WithNotes(n store.NoteStore) Option {
+	return func(h *Handler) { h.notes = n }
+}
+
+// WithClock replaces time.Now, so tests can choose the current date.
+func WithClock(now func() time.Time) Option {
+	return func(h *Handler) { h.now = now }
+}
+
 // NewHandler creates the handlers. With useFileSystem, templates are read
 // from the tmpl folder next to the binary on every request (edit without
 // rebuilding) and embedded is ignored; otherwise the embedded filesystem is

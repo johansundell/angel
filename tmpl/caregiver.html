@@ -3,16 +3,10 @@
 	<h1>Dagens anteckning</h1>
 	<p class="note-date">{{.date}}</p>
 	{{with .note}}
-	{{if .Important}}
-	<section class="note note-important" role="alert">
-		<p class="note-flag">Viktigt</p>
+	<section class="note{{if .Important}} note-important{{end}}"{{if .Important}} role="alert"{{end}}>
+		{{if .Important}}<p class="note-flag">Viktigt</p>{{end}}
 		<p class="note-text">{{.Text}}</p>
 	</section>
-	{{else}}
-	<section class="note">
-		<p class="note-text">{{.Text}}</p>
-	</section>
-	{{end}}
 	{{else}}
 	<section class="note note-empty">
 		<p class="note-text">Inga särskilda instruktioner idag. Allt är som vanligt!</p>

@@ -10,8 +10,8 @@
     --error-bg: #fdecea;
     --error-fg: #8a1c12;
     --card-bg: #ffffff;
-    --alert-bg: #b00020;
-    --alert-fg: #ffffff;
+    --important-bg: #b00020;
+    --important-fg: #ffffff;
     --calm-bg: #e7f2ea;
     --calm-fg: #1e4d2b;
 }
@@ -134,9 +134,9 @@ body {
 }
 
 .note-important {
-    border: 4px solid var(--alert-bg);
-    background: var(--alert-bg);
-    color: var(--alert-fg);
+    border: 4px solid var(--important-bg);
+    background: var(--important-bg);
+    color: var(--important-fg);
 }
 
 .note-flag {
