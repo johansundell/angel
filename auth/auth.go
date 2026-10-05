@@ -155,6 +155,11 @@ func (a *Authenticator) Session(r *http.Request) (Role, bool) {
 	return a.verify(c.Value)
 }
 
+// SecureCookies reports whether cookies should be marked Secure (HTTPS only).
+func (a *Authenticator) SecureCookies() bool {
+	return a.secure
+}
+
 // sign encodes "role|unix-expiry" and its HMAC as base64url, joined by ".".
 func (a *Authenticator) sign(role Role, expires time.Time) string {
 	payload := []byte(string(role) + "|" + strconv.FormatInt(expires.Unix(), 10))

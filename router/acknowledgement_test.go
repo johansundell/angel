@@ -24,13 +24,24 @@ func (a *pinApp) acknowledge(name string, cookies ...*http.Cookie) *httptest.Res
 	return a.do(req)
 }
 
-// follow GETs the redirect target of w with the given cookies.
+// follow GETs the redirect target of w as a browser would: with the given
+// cookies plus any cookies w set.
 func (a *pinApp) follow(w *httptest.ResponseRecorder, cookies ...*http.Cookie) *httptest.ResponseRecorder {
 	a.t.Helper()
-	if w.Code != http.StatusSeeOther {
-		a.t.Fatalf("status = %d, want %d (body %q)", w.Code, http.StatusSeeOther, w.Body.String())
+	assertRedirect(a.t, w, "/note")
+	return a.get("/note", append(cookies, w.Result().Cookies()...)...)
+}
+
+// ackCookie returns the one-time confirmation cookie set by w.
+func ackCookie(t *testing.T, w *httptest.ResponseRecorder) *http.Cookie {
+	t.Helper()
+	for _, c := range w.Result().Cookies() {
+		if c.Name == "angel_ack" {
+			return c
+		}
 	}
-	return a.get(w.Header().Get("Location"), cookies...)
+	t.Fatal("expected an angel_ack cookie")
+	return nil
 }
 
 func (a *pinApp) acknowledgements(date string) []types.Acknowledgement {
@@ -155,22 +166,52 @@ func TestAcknowledgement_NameIsEscapedAndCapped(t *testing.T) {
 	}
 }
 
+func TestAcknowledgement_ConfirmationIsShownOnce(t *testing.T) {
+	app := newPinApp(t)
+	c := app.caregiverSession()
+
+	w := app.acknowledge("Maria", c)
+	flash := ackCookie(t, w)
+	if !flash.HttpOnly || !flash.Secure || flash.Path != "/note" {
+		t.Errorf("angel_ack cookie = %+v, want HttpOnly, Secure, Path=/note", flash)
+	}
+	first := app.get("/note", c, flash)
+	if !strings.Contains(first.Body.String(), "Kvitterat av Maria") {
+		t.Fatal("missing confirmation right after acknowledging")
+	}
+	cleared := ackCookie(t, first)
+	if cleared.MaxAge >= 0 {
+		t.Errorf("confirmation cookie not cleared: MaxAge = %d", cleared.MaxAge)
+	}
+
+	// A caregiver picking up the same phone later must not be told the note
+	// is already acknowledged.
+	if strings.Contains(app.get("/note", c).Body.String(), "Kvitterat") {
+		t.Error("confirmation shown again on the next visit")
+	}
+	for _, path := range []string{"/note?kvitterat=1", "/note?ack=1"} {
+		if strings.Contains(app.get(path, c).Body.String(), "Kvitterat") {
+			t.Errorf("GET %s: confirmation shown without the cookie", path)
+		}
+	}
+}
+
 func TestAcknowledgement_ConfirmationIsOnlyForTodaysAcknowledgement(t *testing.T) {
 	app := newPinApp(t)
 	app.clock.now = time.Date(2026, 10, 5, 6, 0, 0, 0, time.UTC)
 	c := app.caregiverSession()
-	confirmURL := app.acknowledge("Maria", c).Header().Get("Location")
+	flash := ackCookie(t, app.acknowledge("Maria", c))
 
-	// The next morning the same link must not claim today is acknowledged.
+	// The next morning a leftover cookie must not claim today is acknowledged.
 	app.clock.now = time.Date(2026, 10, 6, 6, 0, 0, 0, time.UTC)
 	c = app.caregiverSession()
-	for _, path := range []string{confirmURL, "/note?kvitterat=999", "/note?kvitterat=abc"} {
-		w := app.get(path, c)
+	for _, value := range []string{flash.Value, "999", "abc"} {
+		w := app.get("/note", c, &http.Cookie{Name: "angel_ack", Value: value})
 		if w.Code != http.StatusOK {
-			t.Fatalf("GET %s: status = %d, want 200", path, w.Code)
+			t.Fatalf("angel_ack=%s: status = %d, want 200", value, w.Code)
 		}
 		if strings.Contains(w.Body.String(), "Kvitterat") {
-			t.Errorf("GET %s: confirmation shown for an acknowledgement that is not today's", path)
+			t.Errorf("angel_ack=%s: confirmation shown for an acknowledgement that is not today's", value)
 		}
 	}
 }

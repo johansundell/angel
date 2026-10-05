@@ -23,7 +23,7 @@ Every response carries an `X-Version` header with the build version. Errors are 
 
 - **POST /note/ack**
   - The "Kvittera" button on `/note`. Records an Acknowledgement of today's Daily Note with the time and the optional form field `name` (the caregiver's first name, trimmed and capped at 40 characters; blank means anonymous). Every submission is a new Acknowledgement, so each visit during the day records its own.
-  - Redirects (**303**) to `/note?kvitterat=<id>`, which shows "Kvitterat av Maria kl 08:35" (or "Kvitterat kl 08:35" without a name). The confirmation only appears for an Acknowledgement made today.
+  - Redirects (**303**) to `/note`, which shows "Kvitterat av Maria kl 08:35" (or "Kvitterat kl 08:35" without a name). The confirmation travels in a one-time `angel_ack` cookie (HTTP-only, `Path=/note`, one minute) that `/note` clears once shown, so the next caregiver on a shared phone is not told the note is already acknowledged. It only appears for an Acknowledgement made today.
   - Needs a caregiver session; anyone else, including the client, is redirected (**303**) to `/`.
 
 - **GET /health**

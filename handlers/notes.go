@@ -45,9 +45,14 @@ func swedishDate(t time.Time) string {
 	return fmt.Sprintf("%s %d %s %d", swedishWeekdays[t.Weekday()], t.Day(), swedishMonths[t.Month()-1], t.Year())
 }
 
-// ackQueryParam carries the ID of the caregiver's own Acknowledgement from
-// AcknowledgeNote back to CaregiverView.
-const ackQueryParam = "kvitterat"
+// ackCookieName is a one-time cookie carrying the ID of the caregiver's own
+// Acknowledgement from AcknowledgeNote to CaregiverView. Unlike a link, it is
+// cleared once shown, so the next caregiver on a shared phone is not told the
+// note is already acknowledged.
+const ackCookieName = "angel_ack"
+
+// ackCookieTTL only needs to outlast the redirect.
+const ackCookieTTL = time.Minute
 
 // maxCaregiverNameLen caps the stored first name, in characters.
 const maxCaregiverNameLen = 40
@@ -59,10 +64,9 @@ func (h *Handler) CaregiverView(c *gin.Context) error {
 	if h.notes == nil {
 		return httperror.ReturnWithHTTPStatus(errNotesNotConfigured, http.StatusInternalServerError)
 	}
-	ctx := c.Request.Context()
 	today := h.today()
 	date := today.Format(dateLayout)
-	note, ok, err := h.notes.GetDailyNote(ctx, date)
+	note, ok, err := h.notes.GetDailyNote(c.Request.Context(), date)
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
@@ -70,16 +74,12 @@ func (h *Handler) CaregiverView(c *gin.Context) error {
 	if ok {
 		data["note"] = note
 	}
-	if id, err := strconv.ParseInt(c.Query(ackQueryParam), 10, 64); err == nil {
-		// Only today's acknowledgements are confirmed, so a stale link does
-		// not claim a new day's note has been read.
-		acks, err := h.notes.ListAcknowledgements(ctx, date)
-		if err != nil {
-			return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
-		}
-		if i := slices.IndexFunc(acks, func(a types.Acknowledgement) bool { return a.ID == id }); i >= 0 {
-			data["confirmation"] = ackConfirmation(acks[i])
-		}
+	confirmation, err := h.takeAckConfirmation(c, date)
+	if err != nil {
+		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
+	}
+	if confirmation != "" {
+		data["confirmation"] = confirmation
 	}
 	return h.render(c, http.StatusOK, "caregiver.html", data)
 }
@@ -100,10 +100,49 @@ func (h *Handler) AcknowledgeNote(c *gin.Context) error {
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
+	h.setAckCookie(c, strconv.FormatInt(id, 10), int(ackCookieTTL/time.Second))
 	// Redirect after POST, so reloading the confirmation does not
 	// acknowledge again.
-	c.Redirect(http.StatusSeeOther, "/note?"+ackQueryParam+"="+strconv.FormatInt(id, 10))
+	c.Redirect(http.StatusSeeOther, "/note")
 	return nil
+}
+
+// setAckCookie sets the one-time confirmation cookie; a negative maxAge
+// clears it.
+func (h *Handler) setAckCookie(c *gin.Context, value string, maxAge int) {
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     ackCookieName,
+		Value:    value,
+		Path:     "/note",
+		MaxAge:   maxAge,
+		HttpOnly: true,
+		Secure:   h.auth == nil || h.auth.SecureCookies(),
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+// takeAckConfirmation consumes the one-time cookie set by AcknowledgeNote
+// and returns its confirmation text, or "" when there is nothing to confirm.
+// Only today's acknowledgements are confirmed, so a leftover cookie does not
+// claim a new day's note has been read.
+func (h *Handler) takeAckConfirmation(c *gin.Context, date string) (string, error) {
+	v, err := c.Cookie(ackCookieName)
+	if err != nil {
+		return "", nil
+	}
+	h.setAckCookie(c, "", -1)
+	id, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return "", nil
+	}
+	acks, err := h.notes.ListAcknowledgements(c.Request.Context(), date)
+	if err != nil {
+		return "", err
+	}
+	if i := slices.IndexFunc(acks, func(a types.Acknowledgement) bool { return a.ID == id }); i >= 0 {
+		return ackConfirmation(acks[i]), nil
+	}
+	return "", nil
 }
 
 // caregiverName trims the optional first name and caps its length.
