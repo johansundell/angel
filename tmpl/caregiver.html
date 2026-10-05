@@ -1,5 +1,6 @@
 {{define "content"}}
 <main class="app">
+	{{template "logout"}}
 	<h1>Dagens anteckning</h1>
 	<p class="note-date">{{.date}}</p>
 	{{with .note}}

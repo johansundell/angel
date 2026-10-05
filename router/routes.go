@@ -22,6 +22,12 @@ func GetRoutes(handler *handlers.Handler) Routes {
 			HandlerFunc: handler.SubmitPIN,
 		},
 		Route{
+			Name:        "Logout",
+			Method:      "POST",
+			Pattern:     "/logout",
+			HandlerFunc: handler.Logout,
+		},
+		Route{
 			Name:        "CaregiverView",
 			Method:      "GET",
 			Pattern:     "/note",
