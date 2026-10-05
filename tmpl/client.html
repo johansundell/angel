@@ -4,9 +4,9 @@
 	<p class="note-date">{{.date}}</p>
 	<form method="post" action="/admin/note" class="editor-form">
 		<label for="note-text" class="editor-label">Instruktioner till vårdpersonalen</label>
-		<textarea name="text" id="note-text" class="editor-text" rows="10" maxlength="{{.maxNoteLen}}">{{with .note}}{{.Text}}{{end}}</textarea>
+		<textarea name="text" id="note-text" class="editor-text" rows="10" maxlength="{{.maxDailyNoteLen}}">{{with .note}}{{.Text}}{{end}}</textarea>
 		<label class="editor-important">
-			<input type="checkbox" name="important" class="editor-toggle"{{with .note}}{{if .Important}} checked{{end}}{{end}} />
+			<input type="checkbox" role="switch" name="important" class="editor-toggle"{{with .note}}{{if .Important}} checked{{end}}{{end}} />
 			<span>Viktigt</span>
 		</label>
 		<button type="submit" class="editor-save">Spara</button>

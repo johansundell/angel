@@ -11,8 +11,8 @@ import (
 	"github.com/johansundell/angel/types"
 )
 
-// maxNoteLen caps a Daily Note, in characters.
-const maxNoteLen = 5000
+// maxDailyNoteLen caps a Daily Note, in characters.
+const maxDailyNoteLen = 5000
 
 // ClientDashboard is the Client's authoring page: an editor for today's
 // Daily Note with the Important Flag, and a way to clear it.
@@ -25,7 +25,7 @@ func (h *Handler) ClientDashboard(c *gin.Context) error {
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
-	data := gin.H{"title": "Översikt", "date": swedishDate(today), "maxNoteLen": maxNoteLen}
+	data := gin.H{"title": "Dagens anteckning", "date": swedishDate(today), "maxDailyNoteLen": maxDailyNoteLen}
 	if ok {
 		data["note"] = note
 		data["savedAt"] = note.UpdatedAt.In(localZone).Format("15:04")
@@ -41,8 +41,8 @@ func (h *Handler) SaveNote(c *gin.Context) error {
 		return httperror.ReturnWithHTTPStatus(errNotesNotConfigured, http.StatusInternalServerError)
 	}
 	text := noteText(c.PostForm("text"))
-	if n := utf8.RuneCountInString(text); n > maxNoteLen {
-		return httperror.ReturnWithHTTPStatus(fmt.Errorf("note is %d characters, at most %d allowed", n, maxNoteLen), http.StatusBadRequest)
+	if n := utf8.RuneCountInString(text); n > maxDailyNoteLen {
+		return httperror.ReturnWithHTTPStatus(fmt.Errorf("note is %d characters, at most %d allowed", n, maxDailyNoteLen), http.StatusBadRequest)
 	}
 	date := h.today().Format(dateLayout)
 	var err error

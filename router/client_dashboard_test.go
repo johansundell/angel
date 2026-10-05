@@ -180,9 +180,10 @@ func TestClientDashboard_RejectsOverlongNote(t *testing.T) {
 func TestClientDashboard_RequiresClientSession(t *testing.T) {
 	app := newPinApp(t)
 	app.saveNote(types.DailyNote{Date: "2026-10-05", Text: "Privat anteckning"})
-	caregiver := app.caregiverSession()
 	expired := app.clientSession()
 	app.clock.Advance(testSessionTTL + time.Second)
+	// Taken after the clock moved, so it is a live caregiver session.
+	caregiver := app.caregiverSession()
 
 	for name, cookies := range map[string][]*http.Cookie{
 		"no session":     nil,
