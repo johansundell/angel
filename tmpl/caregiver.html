@@ -15,7 +15,7 @@
 	{{with .confirmation}}<p class="ack-confirmation" role="status">✓ {{.}}</p>{{end}}
 	<form method="post" action="/note/ack" class="ack-form">
 		<label for="ack-name" class="ack-label">Förnamn (valfritt)</label>
-		<input type="text" name="name" id="ack-name" class="ack-name" maxlength="40" autocomplete="given-name" />
+		<input type="text" name="name" id="ack-name" class="ack-name" maxlength="{{.maxNameLen}}" autocomplete="given-name" />
 		<button type="submit" class="ack-submit">Kvittera</button>
 	</form>
 </main>

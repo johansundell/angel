@@ -66,7 +66,7 @@ func (h *Handler) CaregiverView(c *gin.Context) error {
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
-	data := gin.H{"title": "Dagens anteckning", "date": swedishDate(today)}
+	data := gin.H{"title": "Dagens anteckning", "date": swedishDate(today), "maxNameLen": maxCaregiverNameLen}
 	if ok {
 		data["note"] = note
 	}
@@ -90,11 +90,11 @@ func (h *Handler) AcknowledgeNote(c *gin.Context) error {
 	if h.notes == nil {
 		return httperror.ReturnWithHTTPStatus(errNotesNotConfigured, http.StatusInternalServerError)
 	}
-	now := h.now()
+	today := h.today()
 	ack := types.Acknowledgement{
-		Date:      now.In(localZone).Format(dateLayout),
+		Date:      today.Format(dateLayout),
 		Name:      caregiverName(c.PostForm("name")),
-		CreatedAt: now,
+		CreatedAt: today,
 	}
 	id, err := h.notes.AddAcknowledgement(c.Request.Context(), ack)
 	if err != nil {
