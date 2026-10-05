@@ -45,6 +45,7 @@ func TestAuthCheck(t *testing.T) {
 		Settings: settings,
 		Assets:   fstest.MapFS{},
 		Version:  "dev",
+		Routes:   testRoutes(),
 	})
 	if err != nil {
 		t.Fatalf("NewRouter failed: %v", err)
@@ -80,18 +81,12 @@ func TestAuthCheck(t *testing.T) {
 			body:       `{"test":"data"}`,
 			wantStatus: http.StatusOK,
 		},
-		{
-			name:       "Valid Auth With Invalid JSON",
-			authHeader: "secret-token",
-			body:       `{invalid`,
-			wantStatus: http.StatusBadRequest,
-		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
-			req, _ := http.NewRequest("POST", "/pong", bytes.NewBufferString(tc.body))
+			req, _ := http.NewRequest("POST", "/echo", bytes.NewBufferString(tc.body))
 			req.Header.Set("Content-Type", "application/json")
 			if tc.authHeader != "" {
 				req.Header.Set("Authorization", tc.authHeader)
@@ -108,7 +103,7 @@ func TestAuthCheck(t *testing.T) {
 func TestStartupAuthValidation(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	// AuthToken is empty, but default routes contain protected routes (Pong, GetLogs)
+	// AuthToken is empty, but default routes contain a protected route (GetLogs)
 	settings := types.AppSettings{
 		AuthToken: "",
 	}
@@ -183,8 +178,6 @@ func TestGetRoutes(t *testing.T) {
 		"SaveAdvanceNote":  {method: "POST", pattern: "/admin/advance", useLogger: false, useAuth: false, role: auth.RoleClient},
 		"ClearAdvanceNote": {method: "POST", pattern: "/admin/advance/clear", useLogger: false, useAuth: false, role: auth.RoleClient},
 		"HealthCheck":      {method: "GET", pattern: "/health", useLogger: false, useAuth: false},
-		"Ping":             {method: "GET", pattern: "/ping/:argument", useLogger: true, useAuth: false},
-		"Pong":             {method: "POST", pattern: "/pong", useLogger: true, useAuth: true},
 		"GetLogs":          {method: "GET", pattern: "/logs/:from/:to", useLogger: false, useAuth: true},
 	}
 
@@ -247,11 +240,12 @@ func TestStartupLogSinkValidation(t *testing.T) {
 		Handler:  h,
 		LogSink:  nil,
 		Settings: settings,
+		Routes:   testRoutes(),
 	})
 	if err == nil {
 		t.Fatalf("Expected NewRouter to fail when logged routes exist without a log sink, got nil")
 	}
-	expected := `log sink must be configured for logged route "Ping"`
+	expected := `log sink must be configured for logged route "Echo"`
 	if err.Error() != expected {
 		t.Errorf("Expected error %q, got %q", expected, err.Error())
 	}
@@ -353,6 +347,7 @@ func TestNewRouter_InjectedLogger(t *testing.T) {
 		Assets:   fstest.MapFS{},
 		Version:  "dev",
 		Logger:   tl,
+		Routes:   testRoutes(),
 	})
 	if err != nil {
 		t.Fatalf("NewRouter failed: %v", err)
@@ -360,7 +355,7 @@ func TestNewRouter_InjectedLogger(t *testing.T) {
 
 	// An authorized logged request is handed to the sink.
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/pong", bytes.NewBufferString(`{"test":"data"}`))
+	req, _ := http.NewRequest("POST", "/echo", bytes.NewBufferString(`{"test":"data"}`))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "secret-token")
 	r.ServeHTTP(w, req)
@@ -368,18 +363,18 @@ func TestNewRouter_InjectedLogger(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Errorf("Expected status 200, got %d", w.Code)
 	}
-	if len(sink.entries) != 1 || sink.entries[0].Method != "POST" || sink.entries[0].Status != http.StatusOK || !strings.HasSuffix(sink.entries[0].Endpoint, "/pong") {
-		t.Fatalf("Expected one POST /pong 200 entry in the sink, got %+v", sink.entries)
+	if len(sink.entries) != 1 || sink.entries[0].Method != "POST" || sink.entries[0].Status != http.StatusOK || !strings.HasSuffix(sink.entries[0].Endpoint, "/echo") {
+		t.Fatalf("Expected one POST /echo 200 entry in the sink, got %+v", sink.entries)
 	}
 
 	// A rejected request is reported through the injected logger.
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("POST", "/pong", bytes.NewBufferString(`{}`))
+	req, _ = http.NewRequest("POST", "/echo", bytes.NewBufferString(`{}`))
 	r.ServeHTTP(w, req)
 
 	found := false
 	for _, entry := range tl.entries {
-		if entry.level == "WARN" && strings.Contains(entry.message, "unauthorized request: POST /pong") {
+		if entry.level == "WARN" && strings.Contains(entry.message, "unauthorized request: POST /echo") {
 			found = true
 			break
 		}
@@ -475,6 +470,19 @@ func TestAuthMiddleware_Logs401OnInvalidToken(t *testing.T) {
 	}
 	if strings.Contains(entry.message, "super-secret-wrong-token") || strings.Contains(entry.message, "secret-token") {
 		t.Errorf("Log message should not contain token values, got %q", entry.message)
+	}
+}
+
+// testRoutes returns routes for testing the logger and token middleware,
+// since no production route is logged and only GetLogs needs the token.
+func testRoutes() router.Routes {
+	ok := func(c *gin.Context) error {
+		c.Status(http.StatusOK)
+		return nil
+	}
+	return router.Routes{
+		{Name: "Echo", Method: "POST", Pattern: "/echo", HandlerFunc: ok, UseLogger: true, UseAuth: true},
+		{Name: "Hello", Method: "GET", Pattern: "/hello/:name", HandlerFunc: ok, UseLogger: true},
 	}
 }
 
@@ -611,6 +619,7 @@ func TestNewRouter_Debug(t *testing.T) {
 			Settings: types.AppSettings{AuthToken: "secret-token", Debug: debug},
 			Assets:   fstest.MapFS{},
 			Logger:   tl,
+			Routes:   testRoutes(),
 		})
 		if err != nil {
 			t.Fatalf("NewRouter failed: %v", err)
@@ -627,25 +636,25 @@ func TestNewRouter_Debug(t *testing.T) {
 				routes++
 			}
 		}
-		if want := len(router.GetRoutes(mustNewHandler(t, nopStore{}, false, fstest.MapFS{}, "test", "dev"))); routes != want {
+		if want := len(testRoutes()); routes != want {
 			t.Errorf("Expected %d route lines, got %d: %v", want, routes, tl.messages)
 		}
 		found := false
 		for _, m := range tl.messages {
-			if strings.Contains(m, "route POST /pong (Pong) auth=true logged=true") {
+			if strings.Contains(m, "route POST /echo (Echo) auth=true logged=true") {
 				found = true
 			}
 		}
 		if !found {
-			t.Errorf("Expected a route line for Pong, got %v", tl.messages)
+			t.Errorf("Expected a route line for Echo, got %v", tl.messages)
 		}
 
 		before := len(tl.entries)
 		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest("GET", "/ping/hello?token=abc", nil))
+		r.ServeHTTP(w, httptest.NewRequest("GET", "/hello/world?token=abc", nil))
 		access := tl.entries[before:]
-		if len(access) != 1 || access[0].level != "INFO" || !strings.HasPrefix(access[0].message, "GET /ping/hello 200 ") {
-			t.Fatalf("Expected one access log line for GET /ping/hello 200, got %v", access)
+		if len(access) != 1 || access[0].level != "INFO" || !strings.HasPrefix(access[0].message, "GET /hello/world 200 ") {
+			t.Fatalf("Expected one access log line for GET /hello/world 200, got %v", access)
 		}
 		if strings.Contains(access[0].message, "token=abc") {
 			t.Errorf("Access log must not include the query string, got %q", access[0].message)
@@ -655,7 +664,7 @@ func TestNewRouter_Debug(t *testing.T) {
 	t.Run("off", func(t *testing.T) {
 		r, tl := newRouter(false)
 		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest("GET", "/ping/hello", nil))
+		r.ServeHTTP(w, httptest.NewRequest("GET", "/hello/world", nil))
 		if len(tl.entries) != 0 {
 			t.Errorf("Expected no debug logging, got %v", tl.messages)
 		}

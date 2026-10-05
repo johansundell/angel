@@ -10,6 +10,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/johansundell/angel/handlers"
+	"github.com/johansundell/angel/router"
 	"github.com/johansundell/angel/store"
 	"github.com/johansundell/angel/types"
 )
@@ -109,6 +112,21 @@ func TestRun_ServeFailureIsReported(t *testing.T) {
 func TestStop_DrainsRequestLogs(t *testing.T) {
 	addr := freeAddr(t)
 	useTestSettings(t, addr)
+	// No production route is logged yet, so serve a logged one for the test.
+	originalRoutes := routesFor
+	routesFor = func(h *handlers.Handler) router.Routes {
+		return append(originalRoutes(h), router.Route{
+			Name:    "Drained",
+			Method:  http.MethodGet,
+			Pattern: "/drained",
+			HandlerFunc: func(c *gin.Context) error {
+				c.Status(http.StatusOK)
+				return nil
+			},
+			UseLogger: true,
+		})
+	}
+	t.Cleanup(func() { routesFor = originalRoutes })
 
 	p := newProgram()
 	if err := p.startWorker(); err != nil {
@@ -116,7 +134,7 @@ func TestStop_DrainsRequestLogs(t *testing.T) {
 	}
 
 	// Logged route; the entry waits in the queue (flush interval 1s).
-	resp, err := http.Get("http://" + addr + "/ping/drained")
+	resp, err := http.Get("http://" + addr + "/drained")
 	if err != nil {
 		t.Fatalf("expected the request to succeed, got %v", err)
 	}
@@ -137,7 +155,7 @@ func TestStop_DrainsRequestLogs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetLogs failed: %v", err)
 	}
-	if len(logs) != 1 || !strings.HasSuffix(logs[0].Endpoint, "/ping/drained") {
-		t.Errorf("expected the /ping/drained entry to be persisted on Stop, got %+v", logs)
+	if len(logs) != 1 || !strings.HasSuffix(logs[0].Endpoint, "/drained") {
+		t.Errorf("expected the /drained entry to be persisted on Stop, got %+v", logs)
 	}
 }

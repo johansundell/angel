@@ -19,13 +19,17 @@ Every response carries an `X-Version` header with the build version. Errors are 
 - **GET /note**, **GET /admin**
   - The caregiver view and the client dashboard. They need a session for that role; anyone else is redirected (**303**) to `/`.
   - `/note` shows today's Daily Note (the calendar date in Europe/Stockholm), in a high-contrast red box when it has the Important Flag, or "Inga särskilda instruktioner idag. Allt är som vanligt!" when there is none.
-  - `/admin` is the client's editor for today's Daily Note: a multiline text box, the Important Flag ("Viktigt") checkbox, the time it was last saved and a button to clear it. Below it is the same editor for tomorrow's Advance Note ("Morgondagens anteckning").
+  - `/admin` is the client's editor for today's Daily Note: a multiline text box, the Important Flag ("Viktigt") checkbox, the time it was last saved and a button to clear it. Between them is "Kvitteringar idag", today's Acknowledgements newest first ("Maria kl 08:35", or "Okänd ängel kl 12:05" without a name), or "Inga kvitteringar registrerade idag än." when there are none. Below it is the same editor for tomorrow's Advance Note ("Morgondagens anteckning").
   - Sessions are a signed, HTTP-only `angel_session` cookie (`SameSite=Lax`, `Secure` unless `COOKIE_SECURE=false`) that carries the role and expiry and lasts `SESSION_TIMEOUT`. The server checks the expiry too, so an old cookie is useless once it has expired.
 
 - **POST /note/ack**
   - The "Kvittera" button on `/note`. Records an Acknowledgement of today's Daily Note with the time and the optional form field `name` (the caregiver's first name, trimmed and capped at 40 characters; blank means anonymous). Every submission is a new Acknowledgement, so each visit during the day records its own.
   - Redirects (**303**) to `/note`, which shows "Kvitterat av Maria kl 08:35" (or "Kvitterat kl 08:35" without a name). The confirmation travels in a one-time `angel_ack` cookie (HTTP-only, `Path=/note`, one minute) that `/note` clears once shown, so the next caregiver on a shared phone is not told the note is already acknowledged. It only appears for an Acknowledgement made today.
   - Needs a caregiver session; anyone else, including the client, is redirected (**303**) to `/`.
+
+- **GET /admin/acks**
+  - Only the "Kvitteringar idag" list from `/admin`, as an HTML fragment. The dashboard fetches it every 30 seconds, and when the tab becomes visible again, so new Acknowledgements appear without reloading the page and losing unsaved editor text. It shows only today's Acknowledgements (the calendar date in Europe/Stockholm), so the list starts empty at midnight.
+  - Needs a client session; anyone else is redirected (**303**) to `/`. When the dashboard's fetch gets that redirect, the session has ended: the list is replaced with "Sessionen har gått ut. Logga in igen för att se nya kvitteringar." and polling stops.
 
 - **POST /admin/note**, **POST /admin/note/clear**
   - The editor on `/admin`. `/admin/note` saves today's Daily Note from the form fields `text` (line endings normalized, trimmed, at most 5000 characters, else **400**) and `important` (any value sets the Important Flag). Saving blank text clears the note. `/admin/note/clear` removes today's note, so caregivers see the empty state again.
@@ -39,20 +43,12 @@ Every response carries an `X-Version` header with the build version. Errors are 
   - Health check. Pings the storage backend and returns an HTML page, or JSON `{"title", "name", "version", "dbStatus"}` when the request's `Accept` header prefers JSON (for example `application/json` or `application/json, text/plain`). Browsers and requests without an `Accept` header get HTML.
   - `dbStatus` is `OK`, or the storage error. The status is **200** when storage answers and **503** when it doesn't, so Docker's `HEALTHCHECK` and load balancers see the service as unhealthy.
 
-- **GET /ping/:argument**
-  - Echo endpoint. Returns `{"result": "<argument>"}`. `/ping/notfound` returns **404** (an example of an error response).
-  - Logged to the database (see [Request logging](#request-logging)).
-
 - **GET /assets/\***
   - Static files (CSS, images), embedded in the binary or read from disk with `USE_FILE_SYSTEM=true`.
 
 ### Protected Endpoints
 
 These endpoints require an `Authorization` header with the configured `AUTH_TOKEN` (e.g., `Authorization: Bearer <token>` or `Authorization: <token>`). A missing or wrong token gets **401**.
-
-- **POST /pong**
-  - Echo endpoint. Accepts a JSON **object** and returns `{"message": <input>}`. Anything else (invalid JSON, an array, an empty body) gets **400**.
-  - Logged to the database.
 
 - **GET /logs/:from/:to**
   - Retrieve usage logs within a date range, oldest first (by time, then ID), one page at a time:
@@ -70,11 +66,11 @@ These endpoints require an `Authorization` header with the configured `AUTH_TOKE
 
 ### Request logging
 
-`GET /ping/:argument` and `POST /pong` are logged to the storage backend: method, endpoint (including query strings), status, error, and the full request and response bodies. **Warning:** Because the full endpoint with query strings is logged, avoid passing sensitive data (like tokens) in URL parameters to prevent them from being stored in the database. Bodies over **1 MiB** on these routes are rejected with **413** and not logged. In `GET /logs`, a body that is valid JSON appears as JSON; any other body (plain text or truncated data) appears as a JSON string, and an empty body as `{}`. For requests that end in an error, the response body is written after logging, so the entry has `"response": null` with the status and error message in their own fields.
+No route is logged at the moment. A route with `UseLogger: true` in `router/routes.go` is logged to the storage backend: method, endpoint (including query strings), status, error, and the full request and response bodies. **Warning:** Because the full endpoint with query strings is logged, avoid passing sensitive data (like tokens) in URL parameters to prevent them from being stored in the database. Bodies over **1 MiB** on these routes are rejected with **413** and not logged. In `GET /logs`, a body that is valid JSON appears as JSON; any other body (plain text or truncated data) appears as a JSON string, and an empty body as `{}`. For requests that end in an error, the response body is written after logging, so the entry has `"response": null` with the status and error message in their own fields.
 
 Entries are written in the background (see Features), so logging never slows a request, but entries **can be lost**: when more than 1,000 are waiting (a slow or unreachable database), new ones are dropped; a batch that keeps failing is dropped after about 60 seconds of retries; and at shutdown, entries not written within 5 seconds are dropped. Each of these is logged as a warning or error with the number of entries.
 
-`/ping` is public, so anyone who can reach the service can add rows to the log table. Put the service behind a firewall or proxy, or turn `UseLogger` off for public routes in `router/routes.go`, if that matters for your deployment.
+A logged public route lets anyone who can reach the service add rows to the log table, so think twice before setting `UseLogger` on one. Never set it on `POST /pin`, or PINs end up in the log table.
 
 ### Authentication token
 
