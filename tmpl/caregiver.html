@@ -12,5 +12,11 @@
 		<p class="note-text">Inga särskilda instruktioner idag. Allt är som vanligt!</p>
 	</section>
 	{{end}}
+	{{with .confirmation}}<p class="ack-confirmation" role="status">✓ {{.}}</p>{{end}}
+	<form method="post" action="/note/ack" class="ack-form">
+		<label for="ack-name" class="ack-label">Förnamn (valfritt)</label>
+		<input type="text" name="name" id="ack-name" class="ack-name" maxlength="40" autocomplete="given-name" />
+		<button type="submit" class="ack-submit">Kvittera</button>
+	</form>
 </main>
 {{end}}

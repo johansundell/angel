@@ -29,6 +29,13 @@ func GetRoutes(handler *handlers.Handler) Routes {
 			Role:        auth.RoleCaregiver,
 		},
 		Route{
+			Name:        "AcknowledgeNote",
+			Method:      "POST",
+			Pattern:     "/note/ack",
+			HandlerFunc: handler.AcknowledgeNote,
+			Role:        auth.RoleCaregiver,
+		},
+		Route{
 			Name:        "ClientDashboard",
 			Method:      "GET",
 			Pattern:     "/client",

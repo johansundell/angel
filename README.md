@@ -21,6 +21,11 @@ Every response carries an `X-Version` header with the build version. Errors are 
   - `/note` shows today's Daily Note (the calendar date in Europe/Stockholm), in a high-contrast red box when it has the Important Flag, or "Inga särskilda instruktioner idag. Allt är som vanligt!" when there is none.
   - Sessions are a signed, HTTP-only `angel_session` cookie (`SameSite=Lax`, `Secure` unless `COOKIE_SECURE=false`) that carries the role and expiry and lasts `SESSION_TIMEOUT`. The server checks the expiry too, so an old cookie is useless once it has expired.
 
+- **POST /note/ack**
+  - The "Kvittera" button on `/note`. Records an Acknowledgement of today's Daily Note with the time and the optional form field `name` (the caregiver's first name, trimmed and capped at 40 characters; blank means anonymous). Every submission is a new Acknowledgement, so each visit during the day records its own.
+  - Redirects (**303**) to `/note?kvitterat=<id>`, which shows "Kvitterat av Maria kl 08:35" (or "Kvitterat kl 08:35" without a name). The confirmation only appears for an Acknowledgement made today.
+  - Needs a caregiver session; anyone else, including the client, is redirected (**303**) to `/`.
+
 - **GET /health**
   - Health check. Pings the storage backend and returns an HTML page, or JSON `{"title", "name", "version", "dbStatus"}` when the request's `Accept` header prefers JSON (for example `application/json` or `application/json, text/plain`). Browsers and requests without an `Accept` header get HTML.
   - `dbStatus` is `OK`, or the storage error. The status is **200** when storage answers and **503** when it doesn't, so Docker's `HEALTHCHECK` and load balancers see the service as unhealthy.
