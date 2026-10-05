@@ -87,4 +87,23 @@ func loadSettings(filenames ...string) {
 	settings.FileMaker.CAFile = os.Getenv("FMS_CA_FILE")
 	settings.FileMaker.InsecureSkipVerify, _ = strconv.ParseBool(os.Getenv("FMS_INSECURE_SKIP_VERIFY"))
 
+	settings.PIN.CaregiverPIN = strings.TrimSpace(os.Getenv("CAREGIVER_PIN"))
+	settings.PIN.MasterPIN = strings.TrimSpace(os.Getenv("MASTER_PIN"))
+	settings.PIN.SessionTTL = 20 * time.Minute
+	if v := os.Getenv("SESSION_TIMEOUT"); v != "" {
+		// An invalid value becomes 0, which Validate rejects.
+		settings.PIN.SessionTTL, _ = time.ParseDuration(v)
+	}
+	settings.PIN.SessionSecret = os.Getenv("SESSION_SECRET")
+	// Secure by default: the service is meant to be reached over HTTPS.
+	settings.PIN.SecureCookie = true
+	if v := os.Getenv("COOKIE_SECURE"); v != "" {
+		settings.PIN.SecureCookie, _ = strconv.ParseBool(v)
+	}
+	for _, p := range strings.Split(os.Getenv("TRUSTED_PROXIES"), ",") {
+		if p = strings.TrimSpace(p); p != "" {
+			settings.TrustedProxies = append(settings.TrustedProxies, p)
+		}
+	}
+
 }

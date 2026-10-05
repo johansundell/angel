@@ -10,6 +10,19 @@ STORAGE=sqlite
 SQLITE_PATH=""
 # leave empty to generate a temporary token on each start
 AUTH_TOKEN=""
+# keypad PINs (required): caregivers enter exactly 4 digits, the client 4-12 digits
+CAREGIVER_PIN=""
+MASTER_PIN=""
+# how long a PIN session lasts, between 15m and 30m
+SESSION_TIMEOUT="20m"
+# signs session cookies, at least 32 characters; leave empty to generate one per
+# start (everyone then enters the PIN again after a restart)
+SESSION_SECRET=""
+# false only when testing over plain HTTP on another host than localhost
+COOKIE_SECURE=true
+# comma-separated proxy IPs/CIDRs whose X-Forwarded-For is trusted, e.g.
+# 127.0.0.1 behind cloudflared or a local reverse proxy; empty trusts none
+TRUSTED_PROXIES=""
 MYSQL_USERNAME=""
 MYSQL_PASSWORD=""
 MYSQL_HOST="127.0.0.1"

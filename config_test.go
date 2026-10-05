@@ -238,7 +238,7 @@ func TestLoadSettings_FileMaker(t *testing.T) {
 		t.Errorf("unexpected defaults: %+v", fm)
 	}
 
-	fm = load(t, "STORAGE=filemaker\nFMS_HOST=https://fms.example.com\nFMS_DATABASE=Logging\nFMS_USERNAME=u\nFMS_PASSWORD=p\nFMS_TIMEOUT=3s\nFMS_LOG_TABLE=ServiceLogs\nFMS_CA_FILE=/etc/ca.pem\nFMS_INSECURE_SKIP_VERIFY=true\n")
+	fm = load(t, "CAREGIVER_PIN=1234\nMASTER_PIN=987654\nSTORAGE=filemaker\nFMS_HOST=https://fms.example.com\nFMS_DATABASE=Logging\nFMS_USERNAME=u\nFMS_PASSWORD=p\nFMS_TIMEOUT=3s\nFMS_LOG_TABLE=ServiceLogs\nFMS_CA_FILE=/etc/ca.pem\nFMS_INSECURE_SKIP_VERIFY=true\n")
 	want := types.FileMakerSettings{Host: "https://fms.example.com", Database: "Logging", Username: "u", Password: "p", Timeout: 3 * time.Second, LogTable: "ServiceLogs", CAFile: "/etc/ca.pem", InsecureSkipVerify: true}
 	if fm != want {
 		t.Errorf("expected %+v, got %+v", want, fm)
@@ -275,5 +275,40 @@ func TestLoadSettings_Timeout(t *testing.T) {
 	}
 	if got := load("TIMEOUT=soon\n"); got != 0 {
 		t.Errorf("expected an invalid TIMEOUT to become 0 for Validate to reject, got %v", got)
+	}
+}
+
+func TestLoadSettings_PIN(t *testing.T) {
+	keys := []string{"CAREGIVER_PIN", "MASTER_PIN", "SESSION_TIMEOUT", "SESSION_SECRET", "COOKIE_SECURE", "TRUSTED_PROXIES"}
+	defer unsetEnv(keys...)()
+	defer loadSettings()
+
+	load := func(t *testing.T, content string) types.AppSettings {
+		t.Helper()
+		defer unsetEnv(keys...)()
+		path := filepath.Join(t.TempDir(), ".env")
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		loadSettings(path)
+		return settings
+	}
+
+	s := load(t, "PORT=:9999\n")
+	if s.PIN.SessionTTL != 20*time.Minute || !s.PIN.SecureCookie || s.TrustedProxies != nil {
+		t.Errorf("unexpected defaults: %+v, proxies %v", s.PIN, s.TrustedProxies)
+	}
+
+	s = load(t, "CAREGIVER_PIN=1234\nMASTER_PIN= 987654 \nSESSION_TIMEOUT=25m\nSESSION_SECRET=abc\nCOOKIE_SECURE=false\nTRUSTED_PROXIES=127.0.0.1, 10.0.0.0/8,\n")
+	want := types.PINSettings{CaregiverPIN: "1234", MasterPIN: "987654", SessionTTL: 25 * time.Minute, SessionSecret: "abc", SecureCookie: false}
+	if s.PIN != want {
+		t.Errorf("expected %+v, got %+v", want, s.PIN)
+	}
+	if len(s.TrustedProxies) != 2 || s.TrustedProxies[0] != "127.0.0.1" || s.TrustedProxies[1] != "10.0.0.0/8" {
+		t.Errorf("unexpected trusted proxies %q", s.TrustedProxies)
+	}
+
+	if s = load(t, "SESSION_TIMEOUT=soon\n"); s.PIN.SessionTTL != 0 {
+		t.Errorf("invalid SESSION_TIMEOUT should become 0 for Validate to reject, got %v", s.PIN.SessionTTL)
 	}
 }

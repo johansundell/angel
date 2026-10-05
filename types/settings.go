@@ -46,8 +46,56 @@ type AppSettings struct {
 	Storage       string            `json:"storage"`
 	AuthToken     string            `json:"authToken"`
 	SqlitePath    string            `json:"sqlitePath"`
-	MySQL MySQLSettings     `json:"mysql"`
+	MySQL         MySQLSettings     `json:"mysql"`
 	FileMaker     FileMakerSettings `json:"filemaker"`
+	PIN           PINSettings       `json:"pin"`
+	// TrustedProxies lists proxy addresses/CIDRs whose X-Forwarded-For is
+	// believed (TRUSTED_PROXIES); empty trusts none.
+	TrustedProxies []string `json:"trustedProxies"`
+}
+
+// PINSettings configures keypad entry and sessions.
+type PINSettings struct {
+	CaregiverPIN  string        `json:"-"`            // CAREGIVER_PIN, exactly 4 digits
+	MasterPIN     string        `json:"-"`            // MASTER_PIN, 4-12 digits
+	SessionTTL    time.Duration `json:"sessionTTL"`   // SESSION_TIMEOUT, 15m-30m
+	SessionSecret string        `json:"-"`            // SESSION_SECRET; generated per run when empty
+	SecureCookie  bool          `json:"secureCookie"` // COOKIE_SECURE
+}
+
+// Session lifetime bounds; a caregiver must re-enter the PIN after a visit.
+const (
+	MinSessionTTL = 15 * time.Minute
+	MaxSessionTTL = 30 * time.Minute
+)
+
+// Validate verifies the PIN and session settings.
+func (p PINSettings) Validate() error {
+	if len(p.CaregiverPIN) != 4 || !isDigits(p.CaregiverPIN) {
+		return fmt.Errorf("CAREGIVER_PIN must be exactly 4 digits")
+	}
+	if len(p.MasterPIN) < 4 || len(p.MasterPIN) > 12 || !isDigits(p.MasterPIN) {
+		return fmt.Errorf("MASTER_PIN must be 4 to 12 digits")
+	}
+	if p.MasterPIN == p.CaregiverPIN {
+		return fmt.Errorf("MASTER_PIN must differ from CAREGIVER_PIN")
+	}
+	if p.SessionTTL < MinSessionTTL || p.SessionTTL > MaxSessionTTL {
+		return fmt.Errorf("SESSION_TIMEOUT must be between %v and %v, got %v", MinSessionTTL, MaxSessionTTL, p.SessionTTL)
+	}
+	if p.SessionSecret != "" && len(p.SessionSecret) < 32 {
+		return fmt.Errorf("SESSION_SECRET must be at least 32 characters")
+	}
+	return nil
+}
+
+func isDigits(s string) bool {
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // Validate verifies required settings and returns an error when configuration is invalid.
@@ -57,6 +105,9 @@ func (s AppSettings) Validate() error {
 	}
 	if s.Timeout <= 0 {
 		return fmt.Errorf("TIMEOUT must be > 0")
+	}
+	if err := s.PIN.Validate(); err != nil {
+		return err
 	}
 	switch s.Storage {
 	case StorageSQLite:

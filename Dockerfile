@@ -44,8 +44,8 @@ USER appuser
 ENV PORT=:8080
 EXPOSE 8080
 
-# GET / answers 503 when storage is down, so the container turns unhealthy.
+# GET /health answers 503 when storage is down, so the container turns unhealthy.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget -qO- http://localhost:8080/ || exit 1
+  CMD wget -qO- http://localhost:8080/health || exit 1
 
 CMD ["./angel"]

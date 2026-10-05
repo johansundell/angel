@@ -11,7 +11,7 @@ import (
 
 func TestStart_WithMySQLStorage_UsesMockedConstructor(t *testing.T) {
 	originalSettings := settings
-	settings = types.AppSettings{Port: freeAddr(t), Timeout: 15 * time.Second, Storage: types.StorageMySQL, AuthToken: "test-token"}
+	settings = types.AppSettings{Port: freeAddr(t), Timeout: 15 * time.Second, Storage: types.StorageMySQL, AuthToken: "test-token", PIN: testPINSettings}
 	settings.MySQL.Username = "user"
 	settings.MySQL.Host = "localhost"
 	settings.MySQL.Port = "3306"

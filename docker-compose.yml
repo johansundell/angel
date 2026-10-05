@@ -19,6 +19,11 @@ services:
       - STORAGE=sqlite
       - SQLITE_PATH=/app/data/angel.db
       - DEBUG=false
+      # Passed through from the host environment or an .env file next to
+      # this file; the service refuses to start without them.
+      - CAREGIVER_PIN
+      - MASTER_PIN
+      - SESSION_SECRET
     restart: unless-stopped
 
 volumes:

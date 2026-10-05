@@ -25,6 +25,9 @@ func freeAddr(t *testing.T) string {
 	return l.Addr().String()
 }
 
+// testPINSettings is a valid keypad configuration for service tests.
+var testPINSettings = types.PINSettings{CaregiverPIN: "1234", MasterPIN: "987654", SessionTTL: 20 * time.Minute}
+
 func useTestSettings(t *testing.T, port string) {
 	t.Helper()
 	originalSettings := settings
@@ -34,6 +37,7 @@ func useTestSettings(t *testing.T, port string) {
 		Storage:    types.StorageSQLite,
 		SqlitePath: filepath.Join(t.TempDir(), "test_stop.db"),
 		AuthToken:  "test-token",
+		PIN:        testPINSettings,
 	}
 	t.Cleanup(func() { settings = originalSettings })
 }

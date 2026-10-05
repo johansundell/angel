@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/johansundell/angel/auth"
 	"github.com/johansundell/angel/handlers"
 	"github.com/johansundell/angel/router"
 	"github.com/johansundell/angel/store"
@@ -169,11 +170,16 @@ func TestGetRoutes(t *testing.T) {
 		pattern   string
 		useLogger bool
 		useAuth   bool
+		role      auth.Role
 	}{
-		"HealthCheck": {method: "GET", pattern: "/", useLogger: false, useAuth: false},
-		"Ping":        {method: "GET", pattern: "/ping/:argument", useLogger: true, useAuth: false},
-		"Pong":        {method: "POST", pattern: "/pong", useLogger: true, useAuth: true},
-		"GetLogs":     {method: "GET", pattern: "/logs/:from/:to", useLogger: false, useAuth: true},
+		"Entry":           {method: "GET", pattern: "/", useLogger: false, useAuth: false},
+		"SubmitPIN":       {method: "POST", pattern: "/pin", useLogger: false, useAuth: false},
+		"CaregiverView":   {method: "GET", pattern: "/caregiver", useLogger: false, useAuth: false, role: auth.RoleCaregiver},
+		"ClientDashboard": {method: "GET", pattern: "/client", useLogger: false, useAuth: false, role: auth.RoleClient},
+		"HealthCheck":     {method: "GET", pattern: "/health", useLogger: false, useAuth: false},
+		"Ping":            {method: "GET", pattern: "/ping/:argument", useLogger: true, useAuth: false},
+		"Pong":            {method: "POST", pattern: "/pong", useLogger: true, useAuth: true},
+		"GetLogs":         {method: "GET", pattern: "/logs/:from/:to", useLogger: false, useAuth: true},
 	}
 
 	if len(routes) != len(expectedRoutes) {
@@ -197,6 +203,9 @@ func TestGetRoutes(t *testing.T) {
 		}
 		if route.UseAuth != expected.useAuth {
 			t.Errorf("Route %q: expected UseAuth=%v, got %v", route.Name, expected.useAuth, route.UseAuth)
+		}
+		if route.Role != expected.role {
+			t.Errorf("Route %q: expected Role=%q, got %q", route.Name, expected.role, route.Role)
 		}
 		if route.HandlerFunc == nil {
 			t.Errorf("Route %q: HandlerFunc should not be nil", route.Name)
@@ -568,7 +577,16 @@ func TestLoggerMiddleware_CapturesWriteString(t *testing.T) {
 
 func mustNewHandler(t *testing.T, s store.Store, useFileSystem bool, embedded fs.FS, name, version string) *handlers.Handler {
 	t.Helper()
-	h, err := handlers.NewHandler(s, useFileSystem, embedded, name, version)
+	authn, err := auth.New(auth.Config{
+		CaregiverPIN: testCaregiverPIN,
+		MasterPIN:    testMasterPIN,
+		Secret:       []byte("test-secret-test-secret-test-secret"),
+		SessionTTL:   testSessionTTL,
+	})
+	if err != nil {
+		t.Fatalf("auth.New failed: %v", err)
+	}
+	h, err := handlers.NewHandler(s, useFileSystem, embedded, name, version, handlers.WithAuth(authn))
 	if err != nil {
 		t.Fatalf("NewHandler failed: %v", err)
 	}

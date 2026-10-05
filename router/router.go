@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/johansundell/angel/auth"
 	"github.com/johansundell/angel/handlers"
 	"github.com/johansundell/angel/httperror"
 	"github.com/johansundell/angel/logging"
@@ -32,6 +33,9 @@ type Route struct {
 	HandlerFunc HandlerFuncWithError
 	UseLogger   bool
 	UseAuth     bool
+	// Role, when set, requires a PIN session for that role; other visitors
+	// are redirected to the keypad.
+	Role auth.Role
 }
 
 // Routes is a collection of Route definitions
@@ -67,6 +71,13 @@ func NewRouter(cfg Config) (*gin.Engine, error) {
 	router := gin.New()
 	router.Use(gin.Recovery())
 
+	// ClientIP keys the PIN rate limiter, so forwarding headers are only
+	// believed from configured proxies; otherwise anyone could pick their
+	// own address with X-Forwarded-For.
+	if err := router.SetTrustedProxies(cfg.Settings.TrustedProxies); err != nil {
+		return nil, fmt.Errorf("invalid TRUSTED_PROXIES: %w", err)
+	}
+
 	if cfg.Version != "" {
 		router.Use(func(c *gin.Context) {
 			c.Header("X-Version", cfg.Version)
@@ -94,6 +105,9 @@ func NewRouter(cfg Config) (*gin.Engine, error) {
 		if route.UseAuth && cfg.Settings.AuthToken == "" {
 			return nil, fmt.Errorf("AUTH_TOKEN must be configured for route %q", route.Name)
 		}
+		if route.Role != "" && !cfg.Handler.AuthConfigured() {
+			return nil, fmt.Errorf("PIN authentication must be configured for route %q", route.Name)
+		}
 		if route.UseLogger && cfg.LogSink == nil {
 			return nil, fmt.Errorf("log sink must be configured for logged route %q", route.Name)
 		}
@@ -110,6 +124,10 @@ func NewRouter(cfg Config) (*gin.Engine, error) {
 		// unauthenticated requests before the logger reads or stores the body.
 		if route.UseAuth {
 			fn = AuthMiddleware(cfg.Settings.AuthToken, l)(fn)
+		}
+
+		if route.Role != "" {
+			fn = cfg.Handler.RequireRole(route.Role)(fn)
 		}
 
 		router.Handle(route.Method, route.Pattern, WrapHandler(fn))
