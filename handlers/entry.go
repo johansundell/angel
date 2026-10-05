@@ -58,12 +58,15 @@ func (h *Handler) SubmitPIN(c *gin.Context) error {
 
 // Logout ends the session on this device and returns to the entry screen,
 // so a shared phone can be handed over or used with the other PIN. It needs
-// no session: logging out twice, or after expiry, does no harm.
+// no session: logging out twice, or after expiry, does no harm. A pending
+// acknowledgement confirmation is dropped too, so it is not shown to the
+// next caregiver on the phone.
 func (h *Handler) Logout(c *gin.Context) error {
 	if h.auth == nil {
 		return httperror.ReturnWithHTTPStatus(errAuthNotConfigured, http.StatusInternalServerError)
 	}
 	h.auth.EndSession(c.Writer)
+	h.setAckCookie(c, "", -1)
 	c.Header("Cache-Control", "no-store")
 	c.Redirect(http.StatusSeeOther, "/")
 	return nil

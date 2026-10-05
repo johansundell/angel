@@ -92,7 +92,7 @@ body {
     color: var(--fg);
 }
 
-/* Logga ut: quiet, top right, out of the way of the note. */
+/* Logout */
 
 .logout-form {
     display: flex;

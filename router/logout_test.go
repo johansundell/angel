@@ -54,12 +54,32 @@ func TestLogout_AllowsLoggingInAgainAsOtherRole(t *testing.T) {
 	// With a session, the entry screen sends the caregiver straight back.
 	assertRedirect(t, app.get("/", caregiver), "/note")
 
-	assertRedirect(t, app.logout(caregiver), "/")
+	w := app.logout(caregiver)
+	assertRedirect(t, w, "/")
+	assertSessionCleared(t, w)
 
-	// The browser has dropped the cookie: the entry screen shows again,
-	// and the Master PIN opens the dashboard on the same phone.
+	// So the browser drops the cookie: the entry screen shows again, and
+	// the Master PIN opens the dashboard on the same phone.
 	assertEntryPage(t, app.get("/"))
 	assertRedirect(t, app.submitPIN(testMasterPIN, "10.0.0.1:1111"), "/admin")
+}
+
+func TestLogout_DropsPendingAckConfirmation(t *testing.T) {
+	app := newPinApp(t)
+	c := app.caregiverSession()
+	ack := ackCookie(t, app.acknowledge("Maria", c))
+
+	w := app.logout(c, ack)
+
+	cleared := false
+	for _, k := range w.Result().Cookies() {
+		if k.Name == "angel_ack" && k.MaxAge < 0 && k.Path == "/note" {
+			cleared = true
+		}
+	}
+	if !cleared {
+		t.Error("logout left the acknowledgement confirmation cookie for the next caregiver")
+	}
 }
 
 func TestLogout_WithoutSessionIsHarmless(t *testing.T) {
