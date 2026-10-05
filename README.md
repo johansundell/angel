@@ -9,10 +9,10 @@ Every response carries an `X-Version` header with the build version. Errors are 
 ### Public Endpoints
 
 - **GET /**
-  - Entry screen: a numeric keypad (Swedish, "Ange PIN-kod") for the Caregiver PIN or Master PIN. With a valid session it redirects (**303**) to `/note` or `/admin` instead.
+  - Entry screen: a numeric PIN entry screen (Swedish, "Ange PIN-kod") for the Caregiver PIN or Master PIN. With a valid session it redirects (**303**) to `/note` or `/admin` instead.
 
 - **POST /pin**
-  - Form field `pin`. The Caregiver PIN starts a caregiver session and redirects (**303**) to `/note`; the Master PIN starts a client session and redirects to `/admin`. A wrong PIN shows the keypad again with an error (**401**).
+  - Form field `pin`. The Caregiver PIN starts a caregiver session and redirects (**303**) to `/note`; the Master PIN starts a client session and redirects to `/admin`. A wrong PIN shows the entry screen again with an error (**401**).
   - Rate limited: after **5** wrong PINs from one client address within **15 minutes**, that address gets **429** (without the PIN being checked) until the 15 minutes have passed. See `TRUSTED_PROXIES` for running behind a proxy.
   - Never request-logged, so PINs are not stored.
 
@@ -198,9 +198,9 @@ The application is configured via environment variables. You can set these in a 
 | `STORAGE` | string | `sqlite` | Storage backend for request logs: `sqlite`, `mysql` or `filemaker`. |
 | `SQLITE_PATH` | string | `<binary dir>/<nameOfService>.db` | Path to the SQLite database file. Daily Notes are always kept here; with `STORAGE=sqlite` the request log is too. Set it when using `go run .`, whose binary dir is temporary. |
 | `AUTH_TOKEN` | string | random per start | Token required for protected endpoints. When unset, a temporary token is generated and logged (see [Authentication token](#authentication-token)). |
-| `CAREGIVER_PIN` | string | - | **Required.** Shared 4-digit PIN that caregivers enter on the keypad. |
+| `CAREGIVER_PIN` | string | - | **Required.** Shared 4-digit PIN that caregivers enter on the entry screen. |
 | `MASTER_PIN` | string | - | **Required.** The client's 4–12 digit PIN for the dashboard; must differ from `CAREGIVER_PIN`. |
-| `SESSION_TIMEOUT` | duration | `20m` | How long a PIN session lasts before the keypad is shown again. Must be between `15m` and `30m`. |
+| `SESSION_TIMEOUT` | duration | `20m` | How long a PIN session lasts before the entry screen is shown again. Must be between `15m` and `30m`. |
 | `SESSION_SECRET` | string | random per start | Key that signs session cookies, at least 32 characters. When unset, a random key is generated at start, so everyone enters the PIN again after a restart. It is never logged. |
 | `COOKIE_SECURE` | bool | `true` | Mark the session cookie `Secure` (sent over HTTPS only). Browsers also accept it on `http://localhost`; set `false` only to test over plain HTTP from another device. |
 | `TRUSTED_PROXIES` | string | - | Comma-separated IPs or CIDRs of reverse proxies (for example `127.0.0.1` for cloudflared on the same host). Only these may set the client address through `X-Forwarded-For`, which the PIN rate limit is keyed on. Leave empty when clients connect directly; behind a proxy, set it, or every caregiver shares one rate limit. |

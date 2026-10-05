@@ -132,14 +132,14 @@ func assertRedirect(t *testing.T, w *httptest.ResponseRecorder, location string)
 func assertKeypad(t *testing.T, w *httptest.ResponseRecorder) {
 	t.Helper()
 	body := w.Body.String()
-	for _, want := range []string{"Ange PIN-kod", `action="/pin"`, `name="pin"`, "Radera", "OK", `lang="sv"`, `name="viewport"`} {
+	for _, want := range []string{"Ange PIN-kod", `action="/pin"`, `name="pin"`, `inputmode="numeric"`, "Logga in", `lang="sv"`, `name="viewport"`} {
 		if !strings.Contains(body, want) {
-			t.Errorf("keypad page missing %q", want)
+			t.Errorf("entry page missing %q", want)
 		}
 	}
-	for d := '0'; d <= '9'; d++ {
-		if !strings.Contains(body, `data-digit="`+string(d)+`"`) {
-			t.Errorf("keypad missing digit %c", d)
+	for _, unwanted := range []string{"keypad", "data-digit", "Radera"} {
+		if strings.Contains(body, unwanted) {
+			t.Errorf("entry page should not contain on-screen keypad artifact %q", unwanted)
 		}
 	}
 }
