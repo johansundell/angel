@@ -61,7 +61,7 @@ func (h *Handler) AckFeed(c *gin.Context) error {
 // ackFeedEntry is one line of the acknowledgement feed, such as
 // "Maria kl 08:35".
 type ackFeedEntry struct {
-	Who string // the Caregiver's first name, or "Anonym"
+	Who string // the Caregiver's first name, or "Okänd ängel"
 	At  string // local time, 15:04
 }
 
@@ -76,7 +76,7 @@ func (h *Handler) loadAckFeed(c *gin.Context) ([]ackFeedEntry, error) {
 	for i, a := range acks {
 		who := a.Name
 		if who == "" {
-			who = "Anonym"
+			who = "Okänd ängel"
 		}
 		feed[len(acks)-1-i] = ackFeedEntry{Who: who, At: clockTime(a.CreatedAt)}
 	}

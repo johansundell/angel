@@ -42,7 +42,7 @@ func TestAckFeed_DashboardListsTodaysAcknowledgementsNewestFirst(t *testing.T) {
 		t.Fatalf("status = %d, want 200", w.Code)
 	}
 	body := w.Body.String()
-	assertInOrder(t, body, "Kvitteringar idag", "Ahmed kl 17:00", "Anonym kl 12:05", "Maria kl 08:35")
+	assertInOrder(t, body, "Kvitteringar idag", "Ahmed kl 17:00", "Okänd ängel kl 12:05", "Maria kl 08:35")
 	if strings.Contains(body, emptyFeed) {
 		t.Error("empty state shown alongside acknowledgements")
 	}
