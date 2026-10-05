@@ -59,6 +59,9 @@ var newFileMakerStore = func(ctx context.Context, cfg types.FileMakerSettings) (
 }
 var netListen = net.Listen
 
+// routesFor picks the routes to serve, so tests can add their own.
+var routesFor = router.GetRoutes
+
 func (p *program) Start(s service.Service) error {
 	loadSettings()
 	if err := settings.Validate(); err != nil {
@@ -155,6 +158,7 @@ func (p *program) run(startup chan<- error) error {
 		Assets:   embeddedAssets,
 		Version:  Version,
 		Logger:   appLogger(),
+		Routes:   routesFor(handler),
 	})
 	if err != nil {
 		logError("failed to create router: %v", err)

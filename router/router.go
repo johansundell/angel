@@ -58,6 +58,7 @@ type Config struct {
 	Assets   fs.FS
 	Version  string
 	Logger   Logger // Optional: defaults to standard logger when nil
+	Routes   Routes // Optional: defaults to GetRoutes(Handler) when nil
 }
 
 // NewRouter creates a new web handler with middleware and registered routes
@@ -93,7 +94,10 @@ func NewRouter(cfg Config) (*gin.Engine, error) {
 		c.String(http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed))
 	})
 
-	routes := GetRoutes(cfg.Handler)
+	routes := cfg.Routes
+	if routes == nil {
+		routes = GetRoutes(cfg.Handler)
+	}
 
 	l := logging.OrStd(cfg.Logger)
 	debug := cfg.Settings.Debug

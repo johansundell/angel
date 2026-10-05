@@ -84,21 +84,6 @@ func GetRoutes(handler *handlers.Handler) Routes {
 			HandlerFunc: handler.HealthCheck,
 		},
 		Route{
-			Name:        "Ping",
-			Method:      "GET",
-			Pattern:     "/ping/:argument",
-			HandlerFunc: handler.Ping,
-			UseLogger:   true,
-		},
-		Route{
-			Name:        "Pong",
-			Method:      "POST",
-			Pattern:     "/pong",
-			HandlerFunc: handler.Pong,
-			UseLogger:   true,
-			UseAuth:     true,
-		},
-		Route{
 			Name:        "GetLogs",
 			Method:      "GET",
 			Pattern:     "/logs/:from/:to",
