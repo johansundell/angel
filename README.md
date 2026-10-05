@@ -9,15 +9,16 @@ Every response carries an `X-Version` header with the build version. Errors are 
 ### Public Endpoints
 
 - **GET /**
-  - Entry screen: a numeric keypad (Swedish, "Ange PIN-kod") for the Caregiver PIN or Master PIN. With a valid session it redirects (**303**) to `/caregiver` or `/client` instead.
+  - Entry screen: a numeric keypad (Swedish, "Ange PIN-kod") for the Caregiver PIN or Master PIN. With a valid session it redirects (**303**) to `/note` or `/client` instead.
 
 - **POST /pin**
-  - Form field `pin`. The Caregiver PIN starts a caregiver session and redirects (**303**) to `/caregiver`; the Master PIN starts a client session and redirects to `/client`. A wrong PIN shows the keypad again with an error (**401**).
+  - Form field `pin`. The Caregiver PIN starts a caregiver session and redirects (**303**) to `/note`; the Master PIN starts a client session and redirects to `/client`. A wrong PIN shows the keypad again with an error (**401**).
   - Rate limited: after **5** wrong PINs from one client address within **15 minutes**, that address gets **429** (without the PIN being checked) until the 15 minutes have passed. See `TRUSTED_PROXIES` for running behind a proxy.
   - Never request-logged, so PINs are not stored.
 
-- **GET /caregiver**, **GET /client**
+- **GET /note**, **GET /client**
   - The caregiver view and the client dashboard. They need a session for that role; anyone else is redirected (**303**) to `/`.
+  - `/note` shows today's Daily Note (the calendar date in Europe/Stockholm), in a red alert box when it has the Important Flag, or "Inga särskilda instruktioner idag. Allt är som vanligt!" when there is none.
   - Sessions are a signed, HTTP-only `angel_session` cookie (`SameSite=Lax`, `Secure` unless `COOKIE_SECURE=false`) that carries the role and expiry and lasts `SESSION_TIMEOUT`. The server checks the expiry too, so an old cookie is useless once it has expired.
 
 - **GET /health**
@@ -184,7 +185,7 @@ The application is configured via environment variables. You can set these in a 
 | `USE_FILE_SYSTEM` | bool | `false` | If true, serves assets and templates from the `assets` and `tmpl` folders next to the binary (edit them without rebuilding). If false, uses the embedded copies. Doesn't work with `go run .` (see [Running Locally](#running-locally)). |
 | `TIMEOUT` | int | `15` | Request timeout in seconds. |
 | `STORAGE` | string | `sqlite` | Storage backend for request logs: `sqlite`, `mysql` or `filemaker`. |
-| `SQLITE_PATH` | string | `<binary dir>/<nameOfService>.db` | Path to SQLite database file (`STORAGE=sqlite`). Set it when using `go run .`, whose binary dir is temporary. |
+| `SQLITE_PATH` | string | `<binary dir>/<nameOfService>.db` | Path to the SQLite database file. Daily Notes are always kept here; with `STORAGE=sqlite` the request log is too. Set it when using `go run .`, whose binary dir is temporary. |
 | `AUTH_TOKEN` | string | random per start | Token required for protected endpoints. When unset, a temporary token is generated and logged (see [Authentication token](#authentication-token)). |
 | `CAREGIVER_PIN` | string | - | **Required.** Shared 4-digit PIN that caregivers enter on the keypad. |
 | `MASTER_PIN` | string | - | **Required.** The client's 4–12 digit PIN for the dashboard; must differ from `CAREGIVER_PIN`. |

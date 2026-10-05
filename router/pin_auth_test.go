@@ -38,6 +38,7 @@ type pinApp struct {
 	t     *testing.T
 	r     *gin.Engine
 	clock *fakeClock
+	store *store.SQLiteStore
 }
 
 func newPinApp(t *testing.T) *pinApp {
@@ -64,7 +65,8 @@ func newPinApp(t *testing.T) *pinApp {
 	}
 
 	repoRoot := os.DirFS("..")
-	h, err := handlers.NewHandler(s, false, repoRoot, "angel", "dev", handlers.WithAuth(authn))
+	h, err := handlers.NewHandler(s, false, repoRoot, "angel", "dev",
+		handlers.WithAuth(authn), handlers.WithNotes(s), handlers.WithClock(clock.Now))
 	if err != nil {
 		t.Fatalf("NewHandler: %v", err)
 	}
@@ -78,7 +80,7 @@ func newPinApp(t *testing.T) *pinApp {
 	if err != nil {
 		t.Fatalf("NewRouter: %v", err)
 	}
-	return &pinApp{t: t, r: r, clock: clock}
+	return &pinApp{t: t, r: r, clock: clock, store: s}
 }
 
 func (a *pinApp) do(req *http.Request) *httptest.ResponseRecorder {
@@ -175,7 +177,7 @@ func TestEntry_CaregiverPINOpensCaregiverView(t *testing.T) {
 
 	w := app.submitPIN(testCaregiverPIN, "10.0.0.1:1111")
 
-	assertRedirect(t, w, "/caregiver")
+	assertRedirect(t, w, "/note")
 	c := sessionCookie(t, w)
 	if c == nil {
 		t.Fatal("expected a session cookie")
@@ -193,13 +195,13 @@ func TestEntry_CaregiverPINOpensCaregiverView(t *testing.T) {
 		t.Errorf("cookie MaxAge = %v, want between 15 and 30 minutes", got)
 	}
 
-	view := app.get("/caregiver", c)
+	view := app.get("/note", c)
 	if view.Code != http.StatusOK {
-		t.Fatalf("GET /caregiver status = %d, want 200", view.Code)
+		t.Fatalf("GET /note status = %d, want 200", view.Code)
 	}
 
 	// Coming back to the entry URL during the visit goes straight to the view.
-	assertRedirect(t, app.get("/", c), "/caregiver")
+	assertRedirect(t, app.get("/", c), "/note")
 
 	// A caregiver session does not open the client dashboard.
 	assertRedirect(t, app.get("/client", c), "/")
@@ -221,13 +223,13 @@ func TestEntry_MasterPINOpensClientDashboard(t *testing.T) {
 		t.Fatalf("GET /client status = %d, want 200", view.Code)
 	}
 	assertRedirect(t, app.get("/", c), "/client")
-	assertRedirect(t, app.get("/caregiver", c), "/")
+	assertRedirect(t, app.get("/note", c), "/")
 }
 
 func TestEntry_ProtectedViewsRequireSession(t *testing.T) {
 	app := newPinApp(t)
 
-	assertRedirect(t, app.get("/caregiver"), "/")
+	assertRedirect(t, app.get("/note"), "/")
 	assertRedirect(t, app.get("/client"), "/")
 }
 
@@ -239,14 +241,14 @@ func TestEntry_CaregiverSessionExpires(t *testing.T) {
 	}
 
 	app.clock.Advance(testSessionTTL - time.Minute)
-	if w := app.get("/caregiver", c); w.Code != http.StatusOK {
+	if w := app.get("/note", c); w.Code != http.StatusOK {
 		t.Fatalf("session should still be valid, got status %d", w.Code)
 	}
 
 	// The browser would drop the cookie by MaxAge; the server must refuse it
 	// too, in case it is replayed.
 	app.clock.Advance(2 * time.Minute)
-	assertRedirect(t, app.get("/caregiver", c), "/")
+	assertRedirect(t, app.get("/note", c), "/")
 
 	w := app.get("/", c)
 	if w.Code != http.StatusOK {
@@ -283,7 +285,7 @@ func TestEntry_TamperedCookieIsRejected(t *testing.T) {
 	} {
 		forged := &http.Cookie{Name: auth.CookieName, Value: value}
 		assertRedirect(t, app.get("/client", forged), "/")
-		assertRedirect(t, app.get("/caregiver", &http.Cookie{Name: auth.CookieName, Value: value + "garbage"}), "/")
+		assertRedirect(t, app.get("/note", &http.Cookie{Name: auth.CookieName, Value: value + "garbage"}), "/")
 	}
 }
 
@@ -310,11 +312,11 @@ func TestEntry_RateLimitsRepeatedFailures(t *testing.T) {
 	}
 
 	// Another device is not affected.
-	assertRedirect(t, app.submitPIN(testCaregiverPIN, "198.51.100.2:5000"), "/caregiver")
+	assertRedirect(t, app.submitPIN(testCaregiverPIN, "198.51.100.2:5000"), "/note")
 
 	// The block lifts after the window.
 	app.clock.Advance(auth.DefaultFailureWindow + time.Second)
-	assertRedirect(t, app.submitPIN(testCaregiverPIN, attacker), "/caregiver")
+	assertRedirect(t, app.submitPIN(testCaregiverPIN, attacker), "/note")
 }
 
 func TestEntry_ForwardedForIsIgnoredWithoutTrustedProxies(t *testing.T) {

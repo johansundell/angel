@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io/fs"
 	"os"
+	"time"
 
 	"github.com/johansundell/angel/auth"
 	"github.com/johansundell/angel/store"
@@ -17,6 +18,8 @@ type Handler struct {
 	nameOfService    string
 	versionOfService string
 	auth             *auth.Authenticator // nil: PIN entry and role-protected views fail closed
+	notes            store.NoteStore     // nil: the note views fail closed
+	now              func() time.Time
 }
 
 // Option configures optional Handler dependencies.
@@ -43,6 +46,7 @@ func NewHandler(s store.Store, useFileSystem bool, embedded fs.FS, name, version
 		templates:        templates,
 		nameOfService:    name,
 		versionOfService: version,
+		now:              time.Now,
 	}
 	for _, opt := range opts {
 		opt(h)

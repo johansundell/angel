@@ -132,7 +132,16 @@ func (p *program) run(startup chan<- error) error {
 		return err
 	}
 
-	handler, err := handlers.NewHandler(st, settings.UseFileSystem, embeddedTemplates, nameOfService, Version, handlers.WithAuth(authn))
+	notes, closeNotes, err := openNotes(st)
+	if err != nil {
+		logError("failed to open note storage: %v", err)
+		startup <- err
+		return err
+	}
+	defer closeNotes()
+
+	handler, err := handlers.NewHandler(st, settings.UseFileSystem, embeddedTemplates, nameOfService, Version,
+		handlers.WithAuth(authn), handlers.WithNotes(notes))
 	if err != nil {
 		logError("failed to create handlers: %v", err)
 		startup <- err
@@ -234,6 +243,20 @@ func openStore() (store.Store, time.Duration, error) {
 		return nil, 0, fmt.Errorf("unsupported STORAGE %q", settings.Storage)
 	}
 	return open()
+}
+
+// openNotes returns where Daily Notes are kept. They always live in SQLite
+// (ADR-0003): the main store when STORAGE=sqlite, otherwise a separate SQLite
+// file at SQLITE_PATH. The returned func closes what openNotes opened.
+func openNotes(st store.Store) (store.NoteStore, func() error, error) {
+	if ns, ok := st.(store.NoteStore); ok {
+		return ns, func() error { return nil }, nil
+	}
+	s, err := store.NewSQLite(settings.SqlitePath)
+	if err != nil {
+		return nil, nil, err
+	}
+	return s, s.Close, nil
 }
 
 // Stop waits for graceful shutdown to finish: once it returns,

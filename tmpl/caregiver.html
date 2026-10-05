@@ -1,6 +1,22 @@
 {{define "content"}}
 <main class="app">
 	<h1>Dagens anteckning</h1>
-	<p>Du är inloggad.</p>
+	<p class="note-date">{{.date}}</p>
+	{{with .note}}
+	{{if .Important}}
+	<section class="note note-important" role="alert">
+		<p class="note-flag">Viktigt</p>
+		<p class="note-text">{{.Text}}</p>
+	</section>
+	{{else}}
+	<section class="note">
+		<p class="note-text">{{.Text}}</p>
+	</section>
+	{{end}}
+	{{else}}
+	<section class="note note-empty">
+		<p class="note-text">Inga särskilda instruktioner idag. Allt är som vanligt!</p>
+	</section>
+	{{end}}
 </main>
 {{end}}
