@@ -14,6 +14,7 @@ func TestAppSettingsValidate_MySQLRequirements(t *testing.T) {
 		{
 			name: "mysql enabled missing required fields",
 			s: AppSettings{
+				PIN:     validPIN,
 				Port:    ":8080",
 				Timeout: 10 * time.Second,
 				Storage: StorageMySQL,
@@ -30,6 +31,7 @@ func TestAppSettingsValidate_MySQLRequirements(t *testing.T) {
 		{
 			name: "mysql enabled with required fields",
 			s: AppSettings{
+				PIN:     validPIN,
 				Port:    ":8080",
 				Timeout: 10 * time.Second,
 				Storage: StorageMySQL,

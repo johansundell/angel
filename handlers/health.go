@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/johansundell/angel/httperror"
 )
 
 // HealthCheck reports the service and storage state. It answers 503 when
@@ -17,7 +16,7 @@ func (h *Handler) HealthCheck(c *gin.Context) error {
 		dbStatus = err.Error()
 	}
 
-	data := map[string]interface{}{
+	data := gin.H{
 		"title":    "Health Check",
 		"name":     h.nameOfService,
 		"version":  h.versionOfService,
@@ -31,16 +30,5 @@ func (h *Handler) HealthCheck(c *gin.Context) error {
 		return nil
 	}
 
-	const tmplFile = "health.html"
-
-	tmpl, err := h.getTemplate(true, tmplFile)
-	if err != nil {
-		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
-	}
-
-	c.Status(status)
-	if err := tmpl.ExecuteTemplate(c.Writer, "base", data); err != nil {
-		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
-	}
-	return nil
+	return h.render(c, status, "health.html", data)
 }

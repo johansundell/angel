@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/johansundell/angel/auth"
 	"github.com/johansundell/angel/handlers"
 	"github.com/johansundell/angel/logging"
 	"github.com/johansundell/angel/logqueue"
@@ -117,7 +118,21 @@ func (p *program) run(startup chan<- error) error {
 		logQueue.Close(ctx)
 	}()
 
-	handler, err := handlers.NewHandler(st, settings.UseFileSystem, embeddedTemplates, nameOfService, Version)
+	ensureSessionSecret()
+	authn, err := auth.New(auth.Config{
+		CaregiverPIN: settings.PIN.CaregiverPIN,
+		MasterPIN:    settings.PIN.MasterPIN,
+		Secret:       []byte(settings.PIN.SessionSecret),
+		SessionTTL:   settings.PIN.SessionTTL,
+		SecureCookie: settings.PIN.SecureCookie,
+	})
+	if err != nil {
+		logError("failed to set up PIN authentication: %v", err)
+		startup <- err
+		return err
+	}
+
+	handler, err := handlers.NewHandler(st, settings.UseFileSystem, embeddedTemplates, nameOfService, Version, handlers.WithAuth(authn))
 	if err != nil {
 		logError("failed to create handlers: %v", err)
 		startup <- err
@@ -242,6 +257,18 @@ func ensureAuthToken() {
 	}
 	settings.AuthToken = rand.Text()
 	logWarning("AUTH_TOKEN is not set; using temporary token for this run: %s", settings.AuthToken)
+}
+
+// ensureSessionSecret generates a random signing secret when SESSION_SECRET
+// is not configured. Sessions then end whenever the service restarts, which
+// only means caregivers enter the PIN again. Unlike the AUTH_TOKEN, the secret
+// is never logged.
+func ensureSessionSecret() {
+	if settings.PIN.SessionSecret != "" {
+		return
+	}
+	settings.PIN.SessionSecret = rand.Text() + rand.Text()
+	logInfo("SESSION_SECRET is not set; sessions will not survive a restart.")
 }
 
 // serviceLogger adapts the kardianos/service logger, whose methods return an

@@ -9,6 +9,18 @@ Every response carries an `X-Version` header with the build version. Errors are 
 ### Public Endpoints
 
 - **GET /**
+  - Entry screen: a numeric keypad (Swedish, "Ange PIN-kod") for the Caregiver PIN or Master PIN. With a valid session it redirects (**303**) to `/caregiver` or `/client` instead.
+
+- **POST /pin**
+  - Form field `pin`. The Caregiver PIN starts a caregiver session and redirects (**303**) to `/caregiver`; the Master PIN starts a client session and redirects to `/client`. A wrong PIN shows the keypad again with an error (**401**).
+  - Rate limited: after **5** wrong PINs from one client address within **15 minutes**, that address gets **429** (without the PIN being checked) until the 15 minutes have passed. See `TRUSTED_PROXIES` for running behind a proxy.
+  - Never request-logged, so PINs are not stored.
+
+- **GET /caregiver**, **GET /client**
+  - The caregiver view and the client dashboard. They need a session for that role; anyone else is redirected (**303**) to `/`.
+  - Sessions are a signed, HTTP-only `angel_session` cookie (`SameSite=Lax`, `Secure` unless `COOKIE_SECURE=false`) that carries the role and expiry and lasts `SESSION_TIMEOUT`. The server checks the expiry too, so an old cookie is useless once it has expired.
+
+- **GET /health**
   - Health check. Pings the storage backend and returns an HTML page, or JSON `{"title", "name", "version", "dbStatus"}` when the request's `Accept` header prefers JSON (for example `application/json` or `application/json, text/plain`). Browsers and requests without an `Accept` header get HTML.
   - `dbStatus` is `OK`, or the storage error. The status is **200** when storage answers and **503** when it doesn't, so Docker's `HEALTHCHECK` and load balancers see the service as unhealthy.
 
@@ -136,7 +148,7 @@ The cross-platform targets (`make compile`, `make dist`, `make release`) need `g
 
 The service resolves paths relative to **its binary's folder**: the `assets` and `tmpl` folders when `USE_FILE_SYSTEM=true`, a `.env` file (after the current directory), and the default `SQLITE_PATH`. `go run .` builds the binary in a temporary Go folder, which has two effects:
 
-- **`USE_FILE_SYSTEM=true` doesn't work with `go run .`**: the assets and templates aren't found, so `GET /` returns 500 and `/assets/...` returns 404. Use embedded assets (the default), or build first with `go build` or `make build` and run the binary from the repo, as above.
+- **`USE_FILE_SYSTEM=true` doesn't work with `go run .`**: the assets and templates aren't found, so pages such as `GET /health` return 500 and `/assets/...` returns 404. Use embedded assets (the default), or build first with `go build` or `make build` and run the binary from the repo, as above.
 - **The default SQLite file lands in that temporary folder** and is gone after the next build. With `go run .`, set `SQLITE_PATH`, for example `SQLITE_PATH=./angel.db go run .` (`*.db` is gitignored).
 
 ### Running with Docker
@@ -159,7 +171,7 @@ To copy the database out, for a backup or to inspect it:
 docker compose cp angel:/app/data/angel.db ./angel.db
 ```
 
-Inside the container the service always listens on **8080** (the image sets `PORT=:8080`), which the image's `EXPOSE` and health check rely on. Choose the port on the host instead: `HOST_PORT=9090 docker compose up`, or `docker run -p 9090:8080 ...`. Don't set `PORT` for the container. The health check calls `GET /`, so the container turns unhealthy when the storage backend is unreachable.
+Inside the container the service always listens on **8080** (the image sets `PORT=:8080`), which the image's `EXPOSE` and health check rely on. Choose the port on the host instead: `HOST_PORT=9090 docker compose up`, or `docker run -p 9090:8080 ...`. Don't set `PORT` for the container. The health check calls `GET /health`, so the container turns unhealthy when the storage backend is unreachable.
 
 ## Configuration
 
@@ -174,6 +186,12 @@ The application is configured via environment variables. You can set these in a 
 | `STORAGE` | string | `sqlite` | Storage backend for request logs: `sqlite`, `mysql` or `filemaker`. |
 | `SQLITE_PATH` | string | `<binary dir>/<nameOfService>.db` | Path to SQLite database file (`STORAGE=sqlite`). Set it when using `go run .`, whose binary dir is temporary. |
 | `AUTH_TOKEN` | string | random per start | Token required for protected endpoints. When unset, a temporary token is generated and logged (see [Authentication token](#authentication-token)). |
+| `CAREGIVER_PIN` | string | - | **Required.** Shared 4-digit PIN that caregivers enter on the keypad. |
+| `MASTER_PIN` | string | - | **Required.** The client's 4–12 digit PIN for the dashboard; must differ from `CAREGIVER_PIN`. |
+| `SESSION_TIMEOUT` | duration | `20m` | How long a PIN session lasts before the keypad is shown again. Must be between `15m` and `30m`. |
+| `SESSION_SECRET` | string | random per start | Key that signs session cookies, at least 32 characters. When unset, a random key is generated at start, so everyone enters the PIN again after a restart. It is never logged. |
+| `COOKIE_SECURE` | bool | `true` | Mark the session cookie `Secure` (sent over HTTPS only). Browsers also accept it on `http://localhost`; set `false` only to test over plain HTTP from another device. |
+| `TRUSTED_PROXIES` | string | - | Comma-separated IPs or CIDRs of reverse proxies (for example `127.0.0.1` for cloudflared on the same host). Only these may set the client address through `X-Forwarded-For`, which the PIN rate limit is keyed on. Leave empty when clients connect directly; behind a proxy, set it, or every caregiver shares one rate limit. |
 | `MYSQL_USERNAME` | string | - | MySQL username (required when `STORAGE=mysql`, as are `MYSQL_HOST` and `MYSQL_DATABASE`). |
 | `MYSQL_PASSWORD` | string | - | MySQL password. |
 | `MYSQL_HOST` | string | - | MySQL host address. |

@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/johansundell/angel/auth"
 	"github.com/johansundell/angel/handlers"
 )
 
@@ -8,9 +9,36 @@ import (
 func GetRoutes(handler *handlers.Handler) Routes {
 	return Routes{
 		Route{
-			Name:        "HealthCheck",
+			Name:        "Entry",
 			Method:      "GET",
 			Pattern:     "/",
+			HandlerFunc: handler.Entry,
+		},
+		// Never UseLogger: the request log would store the submitted PIN.
+		Route{
+			Name:        "SubmitPIN",
+			Method:      "POST",
+			Pattern:     "/pin",
+			HandlerFunc: handler.SubmitPIN,
+		},
+		Route{
+			Name:        "CaregiverView",
+			Method:      "GET",
+			Pattern:     "/caregiver",
+			HandlerFunc: handler.CaregiverView,
+			Role:        auth.RoleCaregiver,
+		},
+		Route{
+			Name:        "ClientDashboard",
+			Method:      "GET",
+			Pattern:     "/client",
+			HandlerFunc: handler.ClientDashboard,
+			Role:        auth.RoleClient,
+		},
+		Route{
+			Name:        "HealthCheck",
+			Method:      "GET",
+			Pattern:     "/health",
 			HandlerFunc: handler.HealthCheck,
 		},
 		Route{
