@@ -473,8 +473,8 @@ func TestAuthMiddleware_Logs401OnInvalidToken(t *testing.T) {
 	}
 }
 
-// testRoutes give the logger and token middleware routes to wrap: no
-// production route is logged, and only GetLogs needs the token.
+// testRoutes returns routes for testing the logger and token middleware,
+// since no production route is logged and only GetLogs needs the token.
 func testRoutes() router.Routes {
 	ok := func(c *gin.Context) error {
 		c.Status(http.StatusOK)
