@@ -1,6 +1,7 @@
 package router_test
 
 import (
+	"net/url"
 	"strings"
 	"testing"
 
@@ -77,7 +78,25 @@ func TestMarkdownNote_EditorShowsSource(t *testing.T) {
 	if strings.Contains(body, "<strong>Två</strong>") || strings.Contains(body, "<h2>Medicin</h2>") {
 		t.Error("editor shows rendered HTML instead of the source")
 	}
-	if strings.Count(body, "Markdown") < 2 {
-		t.Error("both editors should say Markdown is supported")
+	for _, id := range []string{`id="note-text-hint"`, `id="advance-text-hint"`} {
+		assertInOrder(t, body, id, "Du kan använda Markdown")
 	}
+}
+
+func TestMarkdownNote_SavedFromEditorAndRendered(t *testing.T) {
+	app := newPinApp(t)
+	client := app.clientSession()
+	src := "## Medicin\r\n**Två** tabletter.\r\n- Morgon\r\n- Kväll"
+
+	assertRedirect(t, app.postForm("/admin/note", url.Values{"date": {"2026-10-05"}, "text": {src}}, client), "/admin")
+
+	n, _ := app.note("2026-10-05")
+	if want := "## Medicin\n**Två** tabletter.\n- Morgon\n- Kväll"; n.Text != want {
+		t.Errorf("saved %q, want the Markdown source %q", n.Text, want)
+	}
+	if body := app.get("/admin", client).Body.String(); !strings.Contains(body, "## Medicin\n**Två** tabletter.") {
+		t.Errorf("editor does not show the saved source: %q", body)
+	}
+	body := app.get("/note", app.caregiverSession()).Body.String()
+	assertInOrder(t, body, "<h2>Medicin</h2>", "<strong>Två</strong> tabletter.", "<li>Morgon</li>", "<li>Kväll</li>")
 }
