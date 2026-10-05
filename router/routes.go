@@ -38,8 +38,22 @@ func GetRoutes(handler *handlers.Handler) Routes {
 		Route{
 			Name:        "ClientDashboard",
 			Method:      "GET",
-			Pattern:     "/client",
+			Pattern:     "/admin",
 			HandlerFunc: handler.ClientDashboard,
+			Role:        auth.RoleClient,
+		},
+		Route{
+			Name:        "SaveNote",
+			Method:      "POST",
+			Pattern:     "/admin/note",
+			HandlerFunc: handler.SaveNote,
+			Role:        auth.RoleClient,
+		},
+		Route{
+			Name:        "ClearNote",
+			Method:      "POST",
+			Pattern:     "/admin/note/clear",
+			HandlerFunc: handler.ClearNote,
 			Role:        auth.RoleClient,
 		},
 		Route{

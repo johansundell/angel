@@ -209,6 +209,124 @@ body {
     opacity: 0.85;
 }
 
+/* Client dashboard */
+
+.editor-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.editor-label {
+    color: var(--muted);
+}
+
+.editor-text {
+    width: 100%;
+    min-height: 12rem;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--key-border);
+    border-radius: 0.75rem;
+    background: var(--key-bg);
+    color: var(--fg);
+    font: inherit;
+    font-size: 1.15rem;
+    resize: vertical;
+}
+
+.editor-important {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--important-bg);
+    border-radius: 0.75rem;
+    color: var(--important-bg);
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+/* A checkbox drawn as an on/off switch. */
+.editor-toggle {
+    appearance: none;
+    position: relative;
+    flex: none;
+    width: 3.5rem;
+    height: 2rem;
+    margin: 0;
+    border-radius: 1rem;
+    background: var(--key-border);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.editor-toggle::before {
+    content: "";
+    position: absolute;
+    top: 0.25rem;
+    left: 0.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: var(--key-bg);
+    transition: transform 0.15s;
+}
+
+.editor-toggle:checked {
+    background: var(--important-bg);
+}
+
+.editor-toggle:checked::before {
+    transform: translateX(1.5rem);
+}
+
+.editor-toggle:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.editor-save {
+    min-height: 4rem;
+    border: 2px solid var(--accent);
+    border-radius: 1rem;
+    background: var(--accent);
+    color: var(--accent-fg);
+    font: inherit;
+    font-size: 1.4rem;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.editor-save:active,
+.editor-clear:active {
+    opacity: 0.85;
+}
+
+.editor-saved {
+    margin: 1rem 0 0;
+    color: var(--muted);
+}
+
+.editor-clear-form {
+    margin-top: 1.5rem;
+}
+
+.editor-clear {
+    width: 100%;
+    min-height: 3.5rem;
+    border: 2px solid var(--key-border);
+    border-radius: 1rem;
+    background: var(--key-bg);
+    color: var(--fg);
+    font: inherit;
+    font-size: 1.1rem;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
 /* Health check page */
 
 .health-container {

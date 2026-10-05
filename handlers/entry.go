@@ -12,7 +12,7 @@ import (
 // homeFor is where each role lands after entering its PIN.
 var homeFor = map[auth.Role]string{
 	auth.RoleCaregiver: "/note",
-	auth.RoleClient:    "/client",
+	auth.RoleClient:    "/admin",
 }
 
 const (
@@ -79,11 +79,6 @@ func (h *Handler) RequireRole(role auth.Role) func(func(*gin.Context) error) fun
 // AuthConfigured reports whether WithAuth was given.
 func (h *Handler) AuthConfigured() bool {
 	return h.auth != nil
-}
-
-// ClientDashboard is the client's authoring and overview page.
-func (h *Handler) ClientDashboard(c *gin.Context) error {
-	return h.render(c, http.StatusOK, "client.html", gin.H{"title": "Översikt"})
 }
 
 func (h *Handler) renderKeypad(c *gin.Context, status int, errMsg string) error {

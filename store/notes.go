@@ -18,6 +18,8 @@ type NoteStore interface {
 	// SaveDailyNote creates or replaces the note for n.Date. CreatedAt and
 	// UpdatedAt are set by the store.
 	SaveDailyNote(ctx context.Context, n types.DailyNote) error
+	// DeleteDailyNote removes the note for date (YYYY-MM-DD), if any.
+	DeleteDailyNote(ctx context.Context, date string) error
 	// AddAcknowledgement records a and returns its ID. The caller sets Date
 	// and CreatedAt.
 	AddAcknowledgement(ctx context.Context, a types.Acknowledgement) (id int64, err error)
@@ -51,5 +53,10 @@ func (s *SQLiteStore) SaveDailyNote(ctx context.Context, n types.DailyNote) erro
 	_, err := s.db.ExecContext(ctx, `INSERT INTO daily_notes (date, text, important, created_at, updated_at) VALUES (?, ?, ?, ?, ?)
 		ON CONFLICT(date) DO UPDATE SET text = excluded.text, important = excluded.important, updated_at = excluded.updated_at`,
 		n.Date, n.Text, n.Important, now, now)
+	return err
+}
+
+func (s *SQLiteStore) DeleteDailyNote(ctx context.Context, date string) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM daily_notes WHERE date = ?`, date)
 	return err
 }
