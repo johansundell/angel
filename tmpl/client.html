@@ -1,5 +1,6 @@
 {{define "content"}}
 <main class="app">
+	{{template "logout"}}
 	<section class="editor-section" aria-labelledby="today-heading">
 		<h1 id="today-heading">Dagens anteckning</h1>
 		{{template "editor" .today}}

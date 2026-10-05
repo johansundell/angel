@@ -16,6 +16,10 @@ Every response carries an `X-Version` header with the build version. Errors are 
   - Rate limited: after **5** wrong PINs from one client address within **15 minutes**, that address gets **429** (without the PIN being checked) until the 15 minutes have passed. See `TRUSTED_PROXIES` for running behind a proxy.
   - Never request-logged, so PINs are not stored.
 
+- **POST /logout**
+  - The "Logga ut" button at the top of `/note` and `/admin`. Deletes the session cookie and redirects (**303**) to `/`, so the entry screen shows again and either PIN can be entered on the same phone. Needs no session; without one it just redirects. `GET /logout` gets **405**, so a link prefetch cannot log anyone out.
+  - Sessions are stateless, so this ends the session on the device that logs out. A copy of the cookie kept elsewhere stays valid until it expires (`SESSION_TIMEOUT`).
+
 - **GET /note**, **GET /admin**
   - The caregiver view and the client dashboard. They need a session for that role; anyone else is redirected (**303**) to `/`.
   - `/note` shows today's Daily Note (the calendar date in Europe/Stockholm), rendered from Markdown to HTML, in a high-contrast red box when it has the Important Flag, or "Inga särskilda instruktioner idag. Allt är som vanligt!" when there is none.

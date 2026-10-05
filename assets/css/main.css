@@ -92,6 +92,39 @@ body {
     color: var(--fg);
 }
 
+/* Logga ut: quiet, top right, out of the way of the note. */
+
+.logout-form {
+    display: flex;
+    justify-content: flex-end;
+    margin: -0.75rem 0 0.75rem;
+}
+
+.logout-button {
+    min-height: 2.5rem;
+    padding: 0.4rem 1rem;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-full);
+    background: var(--card-bg);
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+    touch-action: manipulation;
+}
+
+.logout-button:hover,
+.logout-button:focus-visible {
+    border-color: var(--key-border);
+    color: var(--fg);
+}
+
+.logout-button:active {
+    background: var(--key-active);
+}
+
 /* Header & Date */
 
 .note-date {

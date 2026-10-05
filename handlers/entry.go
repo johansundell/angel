@@ -56,6 +56,19 @@ func (h *Handler) SubmitPIN(c *gin.Context) error {
 	return nil
 }
 
+// Logout ends the session on this device and returns to the entry screen,
+// so a shared phone can be handed over or used with the other PIN. It needs
+// no session: logging out twice, or after expiry, does no harm.
+func (h *Handler) Logout(c *gin.Context) error {
+	if h.auth == nil {
+		return httperror.ReturnWithHTTPStatus(errAuthNotConfigured, http.StatusInternalServerError)
+	}
+	h.auth.EndSession(c.Writer)
+	c.Header("Cache-Control", "no-store")
+	c.Redirect(http.StatusSeeOther, "/")
+	return nil
+}
+
 // RequireRole lets the request through only with a valid session for role;
 // anyone else is sent back to the entry screen.
 func (h *Handler) RequireRole(role auth.Role) func(func(*gin.Context) error) func(*gin.Context) error {

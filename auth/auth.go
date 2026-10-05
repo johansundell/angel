@@ -146,6 +146,20 @@ func (a *Authenticator) StartSession(w http.ResponseWriter, role Role) {
 	})
 }
 
+// EndSession tells the browser on w to delete the session cookie. Sessions
+// are stateless, so a copy of the cookie kept elsewhere stays valid until it
+// expires; this ends the session on the device that logs out.
+func (a *Authenticator) EndSession(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     CookieName,
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   a.secure,
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
 // Session returns the role of a valid, unexpired session cookie on r.
 func (a *Authenticator) Session(r *http.Request) (Role, bool) {
 	c, err := r.Cookie(CookieName)
