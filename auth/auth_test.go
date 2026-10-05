@@ -1,7 +1,10 @@
 package auth
 
 import (
+	"errors"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -38,10 +41,36 @@ func TestLimiter_PrunesFinishedWindows(t *testing.T) {
 	l := newLimiter(2, time.Minute)
 	now := time.Unix(0, 0)
 	for i := 0; i < 100; i++ {
-		l.fail(string(rune('a'+i)), now)
+		l.reserve(string(rune('a'+i)), now)
 	}
-	l.allow("x", now.Add(time.Minute))
-	if len(l.failures) != 0 {
+	l.reserve("x", now.Add(time.Minute))
+	if len(l.failures) != 1 {
 		t.Fatalf("expected finished windows to be pruned, %d left", len(l.failures))
+	}
+}
+
+func TestLogin_ConcurrentFailuresCannotExceedLimit(t *testing.T) {
+	a, err := New(Config{CaregiverPIN: "1234", MasterPIN: "987654", Secret: []byte(strings.Repeat("s", 32)), SessionTTL: 20 * time.Minute})
+	if err != nil {
+		t.Fatal(err)
+	}
+	const attempts = 200
+	var checked atomic.Int32
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	for i := 0; i < attempts; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			if _, err := a.Login("203.0.113.7", "0000"); errors.Is(err, ErrInvalidPIN) {
+				checked.Add(1)
+			}
+		}()
+	}
+	close(start)
+	wg.Wait()
+	if got := checked.Load(); got != DefaultMaxFailures {
+		t.Fatalf("%d PINs were checked in a burst, want exactly %d", got, DefaultMaxFailures)
 	}
 }

@@ -24,23 +24,24 @@ func newLimiter(max int, window time.Duration) *limiter {
 	return &limiter{max: max, window: window, failures: make(map[string]*failureWindow)}
 }
 
-func (l *limiter) allow(addr string, now time.Time) bool {
+// reserve counts an attempt from addr as a failure up front and reports
+// whether it may go ahead. Checking and counting under one lock means a
+// burst of parallel requests cannot all slip in before the first failure is
+// recorded; a successful attempt calls reset.
+func (l *limiter) reserve(addr string, now time.Time) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.pruneLocked(now)
 	f, ok := l.failures[addr]
-	return !ok || f.count < l.max
-}
-
-func (l *limiter) fail(addr string, now time.Time) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	f, ok := l.failures[addr]
-	if !ok || l.expired(f, now) {
+	if !ok {
 		l.failures[addr] = &failureWindow{start: now, count: 1}
-		return
+		return true
+	}
+	if f.count >= l.max {
+		return false
 	}
 	f.count++
+	return true
 }
 
 func (l *limiter) reset(addr string) {

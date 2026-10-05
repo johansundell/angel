@@ -22,8 +22,8 @@ const (
 
 var errAuthNotConfigured = errors.New("PIN authentication is not configured")
 
-// Entry shows the PIN keypad, or sends a visitor with a valid session
-// straight to their view.
+// Entry shows the PIN keypad, or sends a Caregiver or Client with a valid
+// session straight to their view.
 func (h *Handler) Entry(c *gin.Context) error {
 	if h.auth == nil {
 		return httperror.ReturnWithHTTPStatus(errAuthNotConfigured, http.StatusInternalServerError)
@@ -49,7 +49,7 @@ func (h *Handler) SubmitPIN(c *gin.Context) error {
 	case errors.Is(err, auth.ErrInvalidPIN):
 		return h.renderKeypad(c, http.StatusUnauthorized, msgInvalidPIN)
 	case err != nil:
-		return err
+		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
 	h.auth.StartSession(c.Writer, role)
 	c.Redirect(http.StatusSeeOther, homeFor[role])

@@ -111,10 +111,9 @@ func New(cfg Config) (*Authenticator, error) {
 
 // Login checks pin for a request from clientAddr. It returns ErrRateLimited
 // without checking the PIN when clientAddr is blocked, and ErrInvalidPIN
-// (counting the failure) when the PIN is wrong.
+// when the PIN is wrong; that attempt counts towards the block.
 func (a *Authenticator) Login(clientAddr, pin string) (Role, error) {
-	now := a.now()
-	if !a.limiter.allow(clientAddr, now) {
+	if !a.limiter.reserve(clientAddr, a.now()) {
 		return "", ErrRateLimited
 	}
 	// Compare against both PINs every time so timing does not reveal which
@@ -129,7 +128,6 @@ func (a *Authenticator) Login(clientAddr, pin string) (Role, error) {
 		a.limiter.reset(clientAddr)
 		return RoleClient, nil
 	}
-	a.limiter.fail(clientAddr, now)
 	return "", ErrInvalidPIN
 }
 
