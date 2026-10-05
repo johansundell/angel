@@ -53,7 +53,7 @@ func TestAdvanceNote_SaveStoresUnderTomorrow(t *testing.T) {
 	app := newPinApp(t)
 	client := app.clientSession()
 
-	w := app.postForm("/admin/advance", url.Values{"text": {" Handla mjölk.\r\nRing doktorn. "}, "important": {"on"}}, client)
+	w := app.postForm("/admin/advance", url.Values{"date": {"2026-10-06"}, "text": {" Handla mjölk.\r\nRing doktorn. "}, "important": {"on"}}, client)
 
 	assertRedirect(t, w, "/admin")
 	n, ok := app.note("2026-10-06")
@@ -68,7 +68,7 @@ func TestAdvanceNote_SaveStoresUnderTomorrow(t *testing.T) {
 	}
 
 	// Editing replaces it and can drop the Important Flag.
-	assertRedirect(t, app.postForm("/admin/advance", url.Values{"text": {"Bara mjölk."}}, client), "/admin")
+	assertRedirect(t, app.postForm("/admin/advance", url.Values{"date": {"2026-10-06"}, "text": {"Bara mjölk."}}, client), "/admin")
 	if n, _ := app.note("2026-10-06"); n.Text != "Bara mjölk." || n.Important {
 		t.Errorf("after edit saved %+v", n)
 	}
@@ -80,7 +80,7 @@ func TestAdvanceNote_SavesForStockholmTomorrow(t *testing.T) {
 	// Wednesday.
 	app.clock.now = time.Date(2026, 10, 5, 22, 30, 0, 0, time.UTC)
 
-	app.postForm("/admin/advance", url.Values{"text": {"Onsdagens anteckning"}}, app.clientSession())
+	app.postForm("/admin/advance", url.Values{"date": {"2026-10-07"}, "text": {"Onsdagens anteckning"}}, app.clientSession())
 
 	if _, ok := app.note("2026-10-07"); !ok {
 		t.Error("advance note not saved for the local tomorrow")
@@ -95,7 +95,7 @@ func TestAdvanceNote_HiddenFromCaregiversUntilRollover(t *testing.T) {
 	// 23:50 on Monday in Stockholm (CEST, UTC+2).
 	app.clock.now = time.Date(2026, 10, 5, 21, 50, 0, 0, time.UTC)
 	app.saveNote(types.DailyNote{Date: "2026-10-05", Text: "Måndagens anteckning"})
-	assertRedirect(t, app.postForm("/admin/advance", url.Values{"text": {"Tisdagens anteckning"}, "important": {"on"}}, app.clientSession()), "/admin")
+	assertRedirect(t, app.postForm("/admin/advance", url.Values{"date": {"2026-10-06"}, "text": {"Tisdagens anteckning"}, "important": {"on"}}, app.clientSession()), "/admin")
 
 	body := app.get("/note", app.caregiverSession()).Body.String()
 	if strings.Contains(body, "Tisdagens anteckning") {
@@ -126,7 +126,7 @@ func TestAdvanceNote_HiddenFromCaregiversUntilRollover(t *testing.T) {
 
 func TestAdvanceNote_BecomesTodaysNoteInDashboardAfterRollover(t *testing.T) {
 	app := newPinApp(t)
-	app.postForm("/admin/advance", url.Values{"text": {"Tisdagens anteckning"}}, app.clientSession())
+	app.postForm("/admin/advance", url.Values{"date": {"2026-10-06"}, "text": {"Tisdagens anteckning"}}, app.clientSession())
 
 	// 00:05 on Tuesday in Stockholm.
 	app.clock.now = time.Date(2026, 10, 5, 22, 5, 0, 0, time.UTC)
@@ -152,7 +152,7 @@ func TestAdvanceNote_ClearRemovesOnlyTomorrow(t *testing.T) {
 	app.saveNote(types.DailyNote{Date: "2026-10-05", Text: "Dagens anteckning"})
 	app.saveNote(types.DailyNote{Date: "2026-10-06", Text: "Morgondagens anteckning"})
 
-	assertRedirect(t, app.postForm("/admin/advance/clear", nil, app.clientSession()), "/admin")
+	assertRedirect(t, app.postForm("/admin/advance/clear", url.Values{"date": {"2026-10-06"}}, app.clientSession()), "/admin")
 
 	if _, ok := app.note("2026-10-06"); ok {
 		t.Error("advance note still stored after clearing")
@@ -166,7 +166,7 @@ func TestAdvanceNote_SavingBlankTextClears(t *testing.T) {
 	app := newPinApp(t)
 	app.saveNote(types.DailyNote{Date: "2026-10-06", Text: "Morgondagens anteckning"})
 
-	assertRedirect(t, app.postForm("/admin/advance", url.Values{"text": {" \r\n "}}, app.clientSession()), "/admin")
+	assertRedirect(t, app.postForm("/admin/advance", url.Values{"date": {"2026-10-06"}, "text": {" \r\n "}}, app.clientSession()), "/admin")
 
 	if _, ok := app.note("2026-10-06"); ok {
 		t.Error("blank advance note stored instead of clearing")
@@ -177,7 +177,7 @@ func TestAdvanceNote_RejectsOverlongNote(t *testing.T) {
 	app := newPinApp(t)
 	app.saveNote(types.DailyNote{Date: "2026-10-06", Text: "Befintlig anteckning"})
 
-	w := app.postForm("/admin/advance", url.Values{"text": {strings.Repeat("å", 5001)}}, app.clientSession())
+	w := app.postForm("/admin/advance", url.Values{"date": {"2026-10-06"}, "text": {strings.Repeat("å", 5001)}}, app.clientSession())
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400", w.Code)
@@ -200,6 +200,46 @@ func TestAdvanceNote_RequiresClientSession(t *testing.T) {
 			assertRedirect(t, app.postForm("/admin/advance/clear", nil, cookies...), "/")
 			if n, ok := app.note("2026-10-06"); !ok || n.Text != "Privat anteckning" {
 				t.Errorf("advance note modified: %+v, %v", n, ok)
+			}
+		})
+	}
+}
+
+func TestAdvanceNote_StaleFormAfterRolloverChangesNothing(t *testing.T) {
+	app := newPinApp(t)
+	// 23:58 on Monday in Stockholm: the client opens the dashboard.
+	app.clock.now = time.Date(2026, 10, 5, 21, 58, 0, 0, time.UTC)
+	client := app.clientSession()
+	body := app.get("/admin", client).Body.String()
+	for _, want := range []string{`name="date" value="2026-10-05"`, `name="date" value="2026-10-06"`} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("dashboard missing %q", want)
+		}
+	}
+	app.saveNote(types.DailyNote{Date: "2026-10-06", Text: "Tisdagens anteckning"})
+
+	// The forms are submitted after midnight, still carrying Monday's dates.
+	app.clock.Advance(3 * time.Minute)
+	for name, req := range map[string]struct {
+		path string
+		form url.Values
+	}{
+		"save today":    {"/admin/note", url.Values{"date": {"2026-10-05"}, "text": {"Måndagens anteckning"}}},
+		"clear today":   {"/admin/note/clear", url.Values{"date": {"2026-10-05"}}},
+		"save advance":  {"/admin/advance", url.Values{"date": {"2026-10-06"}, "text": {"Ska bli tisdag"}}},
+		"clear advance": {"/admin/advance/clear", url.Values{"date": {"2026-10-06"}}},
+		"missing date":  {"/admin/note", url.Values{"text": {"Utan datum"}}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			w := app.postForm(req.path, req.form, client)
+			if w.Code != http.StatusConflict {
+				t.Errorf("status = %d, want 409", w.Code)
+			}
+			if n, ok := app.note("2026-10-06"); !ok || n.Text != "Tisdagens anteckning" {
+				t.Errorf("rolled-over note changed: %+v, %v", n, ok)
+			}
+			if _, ok := app.note("2026-10-07"); ok {
+				t.Error("stale advance form saved for the day after tomorrow")
 			}
 		})
 	}

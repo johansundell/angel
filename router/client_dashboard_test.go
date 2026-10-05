@@ -89,7 +89,7 @@ func TestClientDashboard_SaveUpdatesCaregiverView(t *testing.T) {
 	app := newPinApp(t)
 	client := app.clientSession()
 
-	w := app.postForm("/admin/note", url.Values{"text": {"  Ge medicin klockan 10.\r\nVattna blommorna.  "}, "important": {"on"}}, client)
+	w := app.postForm("/admin/note", url.Values{"date": {"2026-10-05"}, "text": {"  Ge medicin klockan 10.\r\nVattna blommorna.  "}, "important": {"on"}}, client)
 
 	assertRedirect(t, w, "/admin")
 	n, ok := app.note("2026-10-05")
@@ -108,7 +108,7 @@ func TestClientDashboard_SaveUpdatesCaregiverView(t *testing.T) {
 	}
 
 	// Editing again replaces the text and can drop the Important Flag.
-	assertRedirect(t, app.postForm("/admin/note", url.Values{"text": {"Allt som vanligt, men handla mjölk."}}, client), "/admin")
+	assertRedirect(t, app.postForm("/admin/note", url.Values{"date": {"2026-10-05"}, "text": {"Allt som vanligt, men handla mjölk."}}, client), "/admin")
 	n, _ = app.note("2026-10-05")
 	if n.Text != "Allt som vanligt, men handla mjölk." || n.Important {
 		t.Errorf("after edit saved %+v", n)
@@ -123,7 +123,7 @@ func TestClientDashboard_SavesForStockholmDate(t *testing.T) {
 	// 22:30 UTC is already 00:30 on Tuesday in Stockholm (CEST, UTC+2).
 	app.clock.now = time.Date(2026, 10, 5, 22, 30, 0, 0, time.UTC)
 
-	app.postForm("/admin/note", url.Values{"text": {"Tisdagens anteckning"}}, app.clientSession())
+	app.postForm("/admin/note", url.Values{"date": {"2026-10-06"}, "text": {"Tisdagens anteckning"}}, app.clientSession())
 
 	if _, ok := app.note("2026-10-06"); !ok {
 		t.Error("note not saved for the local date")
@@ -138,7 +138,7 @@ func TestClientDashboard_ClearRestoresEmptyState(t *testing.T) {
 	app.saveNote(types.DailyNote{Date: "2026-10-05", Text: "Ring sjuksköterskan.", Important: true})
 	app.saveNote(types.DailyNote{Date: "2026-10-06", Text: "Morgondagens anteckning"})
 
-	assertRedirect(t, app.postForm("/admin/note/clear", nil, app.clientSession()), "/admin")
+	assertRedirect(t, app.postForm("/admin/note/clear", url.Values{"date": {"2026-10-05"}}, app.clientSession()), "/admin")
 
 	if _, ok := app.note("2026-10-05"); ok {
 		t.Error("today's note still stored after clearing")
@@ -156,7 +156,7 @@ func TestClientDashboard_SavingBlankTextClears(t *testing.T) {
 	app := newPinApp(t)
 	app.saveNote(types.DailyNote{Date: "2026-10-05", Text: "Ring sjuksköterskan."})
 
-	assertRedirect(t, app.postForm("/admin/note", url.Values{"text": {" \r\n "}, "important": {"on"}}, app.clientSession()), "/admin")
+	assertRedirect(t, app.postForm("/admin/note", url.Values{"date": {"2026-10-05"}, "text": {" \r\n "}, "important": {"on"}}, app.clientSession()), "/admin")
 
 	if _, ok := app.note("2026-10-05"); ok {
 		t.Error("blank note stored instead of clearing")
@@ -167,7 +167,7 @@ func TestClientDashboard_RejectsOverlongNote(t *testing.T) {
 	app := newPinApp(t)
 	app.saveNote(types.DailyNote{Date: "2026-10-05", Text: "Befintlig anteckning"})
 
-	w := app.postForm("/admin/note", url.Values{"text": {strings.Repeat("å", 5001)}}, app.clientSession())
+	w := app.postForm("/admin/note", url.Values{"date": {"2026-10-05"}, "text": {strings.Repeat("å", 5001)}}, app.clientSession())
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400", w.Code)

@@ -29,10 +29,11 @@ Every response carries an `X-Version` header with the build version. Errors are 
 
 - **POST /admin/note**, **POST /admin/note/clear**
   - The editor on `/admin`. `/admin/note` saves today's Daily Note from the form fields `text` (line endings normalized, trimmed, at most 5000 characters, else **400**) and `important` (any value sets the Important Flag). Saving blank text clears the note. `/admin/note/clear` removes today's note, so caregivers see the empty state again.
+  - Both also need the form field `date`: the day (`YYYY-MM-DD`) the editor was loaded for. If it is not today, for example because the dashboard was opened before midnight and submitted after it, nothing changes and the response is **409**, so a stale page cannot overwrite or delete the note that has just rolled over.
   - Both redirect (**303**) to `/admin`. They need a client session; anyone else, including caregivers, is redirected (**303**) to `/` and nothing changes.
 
 - **POST /admin/advance**, **POST /admin/advance/clear**
-  - The Advance Note editor on `/admin`. They work like `/admin/note` and `/admin/note/clear`, but for tomorrow's calendar date in Europe/Stockholm. An Advance Note is stored as tomorrow's Daily Note, so caregivers cannot see it today; at midnight (the Rollover) it becomes today's note on `/note` and in the dashboard's today editor, with no publish step or background job.
+  - The Advance Note editor on `/admin`. They work like `/admin/note` and `/admin/note/clear`, but for tomorrow's calendar date in Europe/Stockholm, so `date` must be tomorrow. An Advance Note is stored as tomorrow's Daily Note, so caregivers cannot see it today; at midnight (the Rollover) it becomes today's note on `/note` and in the dashboard's today editor, with no publish step or background job.
 
 - **GET /health**
   - Health check. Pings the storage backend and returns an HTML page, or JSON `{"title", "name", "version", "dbStatus"}` when the request's `Accept` header prefers JSON (for example `application/json` or `application/json, text/plain`). Browsers and requests without an `Accept` header get HTML.
