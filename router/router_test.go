@@ -172,17 +172,19 @@ func TestGetRoutes(t *testing.T) {
 		useAuth   bool
 		role      auth.Role
 	}{
-		"Entry":           {method: "GET", pattern: "/", useLogger: false, useAuth: false},
-		"SubmitPIN":       {method: "POST", pattern: "/pin", useLogger: false, useAuth: false},
-		"CaregiverView":   {method: "GET", pattern: "/note", useLogger: false, useAuth: false, role: auth.RoleCaregiver},
-		"AcknowledgeNote": {method: "POST", pattern: "/note/ack", useLogger: false, useAuth: false, role: auth.RoleCaregiver},
-		"ClientDashboard": {method: "GET", pattern: "/admin", useLogger: false, useAuth: false, role: auth.RoleClient},
-		"SaveNote":        {method: "POST", pattern: "/admin/note", useLogger: false, useAuth: false, role: auth.RoleClient},
-		"ClearNote":       {method: "POST", pattern: "/admin/note/clear", useLogger: false, useAuth: false, role: auth.RoleClient},
-		"HealthCheck":     {method: "GET", pattern: "/health", useLogger: false, useAuth: false},
-		"Ping":            {method: "GET", pattern: "/ping/:argument", useLogger: true, useAuth: false},
-		"Pong":            {method: "POST", pattern: "/pong", useLogger: true, useAuth: true},
-		"GetLogs":         {method: "GET", pattern: "/logs/:from/:to", useLogger: false, useAuth: true},
+		"Entry":            {method: "GET", pattern: "/", useLogger: false, useAuth: false},
+		"SubmitPIN":        {method: "POST", pattern: "/pin", useLogger: false, useAuth: false},
+		"CaregiverView":    {method: "GET", pattern: "/note", useLogger: false, useAuth: false, role: auth.RoleCaregiver},
+		"AcknowledgeNote":  {method: "POST", pattern: "/note/ack", useLogger: false, useAuth: false, role: auth.RoleCaregiver},
+		"ClientDashboard":  {method: "GET", pattern: "/admin", useLogger: false, useAuth: false, role: auth.RoleClient},
+		"SaveNote":         {method: "POST", pattern: "/admin/note", useLogger: false, useAuth: false, role: auth.RoleClient},
+		"ClearNote":        {method: "POST", pattern: "/admin/note/clear", useLogger: false, useAuth: false, role: auth.RoleClient},
+		"SaveAdvanceNote":  {method: "POST", pattern: "/admin/advance", useLogger: false, useAuth: false, role: auth.RoleClient},
+		"ClearAdvanceNote": {method: "POST", pattern: "/admin/advance/clear", useLogger: false, useAuth: false, role: auth.RoleClient},
+		"HealthCheck":      {method: "GET", pattern: "/health", useLogger: false, useAuth: false},
+		"Ping":             {method: "GET", pattern: "/ping/:argument", useLogger: true, useAuth: false},
+		"Pong":             {method: "POST", pattern: "/pong", useLogger: true, useAuth: true},
+		"GetLogs":          {method: "GET", pattern: "/logs/:from/:to", useLogger: false, useAuth: true},
 	}
 
 	if len(routes) != len(expectedRoutes) {

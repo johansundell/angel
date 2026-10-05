@@ -211,6 +211,18 @@ body {
 
 /* Client dashboard */
 
+/* Tomorrow's Advance Note, set apart below today's editor. */
+.editor-advance {
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--key-border);
+}
+
+.editor-hint {
+    margin: 0 0 1rem;
+    color: var(--muted);
+}
+
 .editor-form {
     display: flex;
     flex-direction: column;

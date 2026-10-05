@@ -1,21 +1,34 @@
 {{define "content"}}
 <main class="app">
-	<h1>Dagens anteckning</h1>
-	<p class="note-date">{{.date}}</p>
-	<form method="post" action="/admin/note" class="editor-form">
-		<label for="note-text" class="editor-label">Instruktioner till vårdpersonalen</label>
-		<textarea name="text" id="note-text" class="editor-text" rows="10" maxlength="{{.maxDailyNoteLen}}">{{with .note}}{{.Text}}{{end}}</textarea>
-		<label class="editor-important">
-			<input type="checkbox" role="switch" name="important" class="editor-toggle"{{with .note}}{{if .Important}} checked{{end}}{{end}} />
-			<span>Viktigt</span>
-		</label>
-		<button type="submit" class="editor-save">Spara</button>
-	</form>
-	{{with .note}}
-	<p class="editor-saved" role="status">Sparad kl {{$.savedAt}}</p>
-	<form method="post" action="/admin/note/clear" class="editor-clear-form" onsubmit="return confirm('Rensa dagens anteckning? Vårdpersonalen ser då att allt är som vanligt.')">
-		<button type="submit" class="editor-clear">Rensa dagens anteckning</button>
-	</form>
-	{{end}}
+	<section class="editor-section" aria-labelledby="today-heading">
+		<h1 id="today-heading">Dagens anteckning</h1>
+		{{template "editor" .today}}
+	</section>
+	<section class="editor-section editor-advance" aria-labelledby="advance-heading">
+		<h2 id="advance-heading">Morgondagens anteckning</h2>
+		<p class="editor-hint">Visas för vårdpersonalen från midnatt.</p>
+		{{template "editor" .advance}}
+	</section>
 </main>
+{{end}}
+
+{{define "editor"}}
+<p class="note-date">{{.Day}}</p>
+<form method="post" action="{{.Action}}" class="editor-form">
+	<input type="hidden" name="date" value="{{.Date}}" />
+	<label for="{{.ID}}" class="editor-label">{{.TextLabel}}</label>
+	<textarea name="text" id="{{.ID}}" class="editor-text" rows="{{.Rows}}" maxlength="{{.MaxLen}}">{{with .Note}}{{.Text}}{{end}}</textarea>
+	<label class="editor-important">
+		<input type="checkbox" role="switch" name="important" class="editor-toggle"{{with .Note}}{{if .Important}} checked{{end}}{{end}} />
+		<span>Viktigt</span>
+	</label>
+	<button type="submit" class="editor-save">Spara</button>
+</form>
+{{if .Note}}
+<p class="editor-saved" role="status">Sparad kl {{.SavedAt}}</p>
+<form method="post" action="{{.Action}}/clear" class="editor-clear-form" onsubmit="return confirm('{{.ClearConfirm}}')">
+	<input type="hidden" name="date" value="{{.Date}}" />
+	<button type="submit" class="editor-clear">{{.ClearLabel}}</button>
+</form>
+{{end}}
 {{end}}

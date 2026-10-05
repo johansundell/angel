@@ -57,6 +57,20 @@ func GetRoutes(handler *handlers.Handler) Routes {
 			Role:        auth.RoleClient,
 		},
 		Route{
+			Name:        "SaveAdvanceNote",
+			Method:      "POST",
+			Pattern:     "/admin/advance",
+			HandlerFunc: handler.SaveAdvanceNote,
+			Role:        auth.RoleClient,
+		},
+		Route{
+			Name:        "ClearAdvanceNote",
+			Method:      "POST",
+			Pattern:     "/admin/advance/clear",
+			HandlerFunc: handler.ClearAdvanceNote,
+			Role:        auth.RoleClient,
+		},
+		Route{
 			Name:        "HealthCheck",
 			Method:      "GET",
 			Pattern:     "/health",
