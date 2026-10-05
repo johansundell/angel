@@ -204,7 +204,7 @@ func TestEntry_CaregiverPINOpensCaregiverView(t *testing.T) {
 	assertRedirect(t, app.get("/", c), "/note")
 
 	// A caregiver session does not open the client dashboard.
-	assertRedirect(t, app.get("/client", c), "/")
+	assertRedirect(t, app.get("/admin", c), "/")
 }
 
 func TestEntry_MasterPINOpensClientDashboard(t *testing.T) {
@@ -212,17 +212,17 @@ func TestEntry_MasterPINOpensClientDashboard(t *testing.T) {
 
 	w := app.submitPIN(testMasterPIN, "10.0.0.1:1111")
 
-	assertRedirect(t, w, "/client")
+	assertRedirect(t, w, "/admin")
 	c := sessionCookie(t, w)
 	if c == nil {
 		t.Fatal("expected a session cookie")
 	}
 
-	view := app.get("/client", c)
+	view := app.get("/admin", c)
 	if view.Code != http.StatusOK {
-		t.Fatalf("GET /client status = %d, want 200", view.Code)
+		t.Fatalf("GET /admin status = %d, want 200", view.Code)
 	}
-	assertRedirect(t, app.get("/", c), "/client")
+	assertRedirect(t, app.get("/", c), "/admin")
 	assertRedirect(t, app.get("/note", c), "/")
 }
 
@@ -230,7 +230,7 @@ func TestEntry_ProtectedViewsRequireSession(t *testing.T) {
 	app := newPinApp(t)
 
 	assertRedirect(t, app.get("/note"), "/")
-	assertRedirect(t, app.get("/client"), "/")
+	assertRedirect(t, app.get("/admin"), "/")
 }
 
 func TestEntry_CaregiverSessionExpires(t *testing.T) {
@@ -284,7 +284,7 @@ func TestEntry_TamperedCookieIsRejected(t *testing.T) {
 		"",
 	} {
 		forged := &http.Cookie{Name: auth.CookieName, Value: value}
-		assertRedirect(t, app.get("/client", forged), "/")
+		assertRedirect(t, app.get("/admin", forged), "/")
 		assertRedirect(t, app.get("/note", &http.Cookie{Name: auth.CookieName, Value: value + "garbage"}), "/")
 	}
 }

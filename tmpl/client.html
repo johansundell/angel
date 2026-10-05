@@ -1,6 +1,21 @@
 {{define "content"}}
 <main class="app">
-	<h1>Översikt</h1>
-	<p>Här skriver du dagens anteckning och ser vilka som har kvitterat.</p>
+	<h1>Dagens anteckning</h1>
+	<p class="note-date">{{.date}}</p>
+	<form method="post" action="/admin/note" class="editor-form">
+		<label for="note-text" class="editor-label">Instruktioner till vårdpersonalen</label>
+		<textarea name="text" id="note-text" class="editor-text" rows="10" maxlength="{{.maxNoteLen}}">{{with .note}}{{.Text}}{{end}}</textarea>
+		<label class="editor-important">
+			<input type="checkbox" name="important" class="editor-toggle"{{with .note}}{{if .Important}} checked{{end}}{{end}} />
+			<span>Viktigt</span>
+		</label>
+		<button type="submit" class="editor-save">Spara</button>
+	</form>
+	{{with .note}}
+	<p class="editor-saved" role="status">Sparad kl {{$.savedAt}}</p>
+	<form method="post" action="/admin/note/clear" class="editor-clear-form" onsubmit="return confirm('Rensa dagens anteckning? Vårdpersonalen ser då att allt är som vanligt.')">
+		<button type="submit" class="editor-clear">Rensa dagens anteckning</button>
+	</form>
+	{{end}}
 </main>
 {{end}}

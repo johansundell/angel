@@ -9,22 +9,27 @@ Every response carries an `X-Version` header with the build version. Errors are 
 ### Public Endpoints
 
 - **GET /**
-  - Entry screen: a numeric keypad (Swedish, "Ange PIN-kod") for the Caregiver PIN or Master PIN. With a valid session it redirects (**303**) to `/note` or `/client` instead.
+  - Entry screen: a numeric keypad (Swedish, "Ange PIN-kod") for the Caregiver PIN or Master PIN. With a valid session it redirects (**303**) to `/note` or `/admin` instead.
 
 - **POST /pin**
-  - Form field `pin`. The Caregiver PIN starts a caregiver session and redirects (**303**) to `/note`; the Master PIN starts a client session and redirects to `/client`. A wrong PIN shows the keypad again with an error (**401**).
+  - Form field `pin`. The Caregiver PIN starts a caregiver session and redirects (**303**) to `/note`; the Master PIN starts a client session and redirects to `/admin`. A wrong PIN shows the keypad again with an error (**401**).
   - Rate limited: after **5** wrong PINs from one client address within **15 minutes**, that address gets **429** (without the PIN being checked) until the 15 minutes have passed. See `TRUSTED_PROXIES` for running behind a proxy.
   - Never request-logged, so PINs are not stored.
 
-- **GET /note**, **GET /client**
+- **GET /note**, **GET /admin**
   - The caregiver view and the client dashboard. They need a session for that role; anyone else is redirected (**303**) to `/`.
   - `/note` shows today's Daily Note (the calendar date in Europe/Stockholm), in a high-contrast red box when it has the Important Flag, or "Inga särskilda instruktioner idag. Allt är som vanligt!" when there is none.
+  - `/admin` is the client's editor for today's Daily Note: a multiline text box, the Important Flag ("Viktigt") checkbox, the time it was last saved and a button to clear it.
   - Sessions are a signed, HTTP-only `angel_session` cookie (`SameSite=Lax`, `Secure` unless `COOKIE_SECURE=false`) that carries the role and expiry and lasts `SESSION_TIMEOUT`. The server checks the expiry too, so an old cookie is useless once it has expired.
 
 - **POST /note/ack**
   - The "Kvittera" button on `/note`. Records an Acknowledgement of today's Daily Note with the time and the optional form field `name` (the caregiver's first name, trimmed and capped at 40 characters; blank means anonymous). Every submission is a new Acknowledgement, so each visit during the day records its own.
   - Redirects (**303**) to `/note`, which shows "Kvitterat av Maria kl 08:35" (or "Kvitterat kl 08:35" without a name). The confirmation travels in a one-time `angel_ack` cookie (HTTP-only, `Path=/note`, one minute) that `/note` clears once shown, so the next caregiver on a shared phone is not told the note is already acknowledged. It only appears for an Acknowledgement made today.
   - Needs a caregiver session; anyone else, including the client, is redirected (**303**) to `/`.
+
+- **POST /admin/note**, **POST /admin/note/clear**
+  - The editor on `/admin`. `/admin/note` saves today's Daily Note from the form fields `text` (line endings normalized, trimmed, at most 5000 characters, else **400**) and `important` (any value sets the Important Flag). Saving blank text clears the note. `/admin/note/clear` removes today's note, so caregivers see the empty state again.
+  - Both redirect (**303**) to `/admin`. They need a client session; anyone else, including caregivers, is redirected (**303**) to `/` and nothing changes.
 
 - **GET /health**
   - Health check. Pings the storage backend and returns an HTML page, or JSON `{"title", "name", "version", "dbStatus"}` when the request's `Accept` header prefers JSON (for example `application/json` or `application/json, text/plain`). Browsers and requests without an `Accept` header get HTML.
