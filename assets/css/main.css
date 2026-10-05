@@ -157,6 +157,58 @@ body {
     color: var(--calm-fg);
 }
 
+/* Acknowledgement */
+
+.ack-confirmation {
+    margin: 1.5rem 0 0;
+    padding: 1rem 1.25rem;
+    border-radius: 1rem;
+    background: var(--calm-bg);
+    color: var(--calm-fg);
+    font-size: 1.2rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.ack-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+}
+
+.ack-label {
+    color: var(--muted);
+}
+
+.ack-name {
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--key-border);
+    border-radius: 0.75rem;
+    background: var(--key-bg);
+    color: var(--fg);
+    font: inherit;
+    font-size: 1.2rem;
+}
+
+.ack-submit {
+    min-height: 4rem;
+    margin-top: 0.5rem;
+    border: 2px solid var(--accent);
+    border-radius: 1rem;
+    background: var(--accent);
+    color: var(--accent-fg);
+    font: inherit;
+    font-size: 1.4rem;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.ack-submit:active {
+    opacity: 0.85;
+}
+
 /* Health check page */
 
 .health-container {

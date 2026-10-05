@@ -9,7 +9,8 @@ import (
 	"github.com/johansundell/angel/types"
 )
 
-// NoteStore keeps Daily Notes, one per calendar date.
+// NoteStore keeps Daily Notes, one per calendar date, and the Caregivers'
+// Acknowledgements of them.
 type NoteStore interface {
 	// GetDailyNote returns the note for date (YYYY-MM-DD); ok is false when
 	// there is none.
@@ -17,6 +18,12 @@ type NoteStore interface {
 	// SaveDailyNote creates or replaces the note for n.Date. CreatedAt and
 	// UpdatedAt are set by the store.
 	SaveDailyNote(ctx context.Context, n types.DailyNote) error
+	// AddAcknowledgement records a and returns its ID. The caller sets Date
+	// and CreatedAt.
+	AddAcknowledgement(ctx context.Context, a types.Acknowledgement) (id int64, err error)
+	// ListAcknowledgements returns the acknowledgements for date
+	// (YYYY-MM-DD), oldest first.
+	ListAcknowledgements(ctx context.Context, date string) ([]types.Acknowledgement, error)
 }
 
 func (s *SQLiteStore) GetDailyNote(ctx context.Context, date string) (types.DailyNote, bool, error) {

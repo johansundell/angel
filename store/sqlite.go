@@ -12,7 +12,8 @@ import (
 // length and does not.
 const sqliteTimeLayout = "2006-01-02T15:04:05.000000Z07:00"
 
-// SQLiteStore keeps request logs and the Daily Notes in one SQLite file.
+// SQLiteStore keeps request logs, Daily Notes and Acknowledgements in one
+// SQLite file.
 type SQLiteStore struct {
 	*SQLStore
 }
@@ -69,6 +70,23 @@ func openSQLite(file string) (*sql.DB, error) {
 		created_at TEXT NOT NULL,
 		updated_at TEXT NOT NULL
 	)`)
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS acknowledgements (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		date TEXT NOT NULL,
+		name TEXT NOT NULL DEFAULT '',
+		created_at TEXT NOT NULL
+	)`)
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
+	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS acknowledgements_date ON acknowledgements (date, created_at)`)
 	if err != nil {
 		db.Close()
 		return nil, err

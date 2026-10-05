@@ -175,6 +175,7 @@ func TestGetRoutes(t *testing.T) {
 		"Entry":           {method: "GET", pattern: "/", useLogger: false, useAuth: false},
 		"SubmitPIN":       {method: "POST", pattern: "/pin", useLogger: false, useAuth: false},
 		"CaregiverView":   {method: "GET", pattern: "/note", useLogger: false, useAuth: false, role: auth.RoleCaregiver},
+		"AcknowledgeNote": {method: "POST", pattern: "/note/ack", useLogger: false, useAuth: false, role: auth.RoleCaregiver},
 		"ClientDashboard": {method: "GET", pattern: "/client", useLogger: false, useAuth: false, role: auth.RoleClient},
 		"HealthCheck":     {method: "GET", pattern: "/health", useLogger: false, useAuth: false},
 		"Ping":            {method: "GET", pattern: "/ping/:argument", useLogger: true, useAuth: false},
