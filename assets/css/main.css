@@ -9,6 +9,11 @@
     --accent-fg: #ffffff;
     --error-bg: #fdecea;
     --error-fg: #8a1c12;
+    --card-bg: #ffffff;
+    --important-bg: #b00020;
+    --important-fg: #ffffff;
+    --calm-bg: #e7f2ea;
+    --calm-fg: #1e4d2b;
 }
 
 * {
@@ -105,6 +110,51 @@ body {
     border-color: var(--accent);
     color: var(--accent-fg);
     font-weight: 700;
+}
+
+/* Daily Note */
+
+.note-date {
+    margin: -0.5rem 0 1rem;
+    color: var(--muted);
+}
+
+.note {
+    padding: 1.25rem;
+    border: 2px solid var(--key-border);
+    border-radius: 1rem;
+    background: var(--card-bg);
+}
+
+.note-text {
+    margin: 0;
+    font-size: 1.25rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.note-important {
+    border: 4px solid var(--important-bg);
+    background: var(--important-bg);
+    color: var(--important-fg);
+}
+
+.note-flag {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.note-important .note-text {
+    font-weight: 600;
+}
+
+.note-empty {
+    border-color: var(--calm-bg);
+    background: var(--calm-bg);
+    color: var(--calm-fg);
 }
 
 /* Health check page */

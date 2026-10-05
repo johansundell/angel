@@ -24,7 +24,7 @@ func GetRoutes(handler *handlers.Handler) Routes {
 		Route{
 			Name:        "CaregiverView",
 			Method:      "GET",
-			Pattern:     "/caregiver",
+			Pattern:     "/note",
 			HandlerFunc: handler.CaregiverView,
 			Role:        auth.RoleCaregiver,
 		},

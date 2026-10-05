@@ -11,7 +11,7 @@ import (
 
 // homeFor is where each role lands after entering its PIN.
 var homeFor = map[auth.Role]string{
-	auth.RoleCaregiver: "/caregiver",
+	auth.RoleCaregiver: "/note",
 	auth.RoleClient:    "/client",
 }
 
@@ -79,11 +79,6 @@ func (h *Handler) RequireRole(role auth.Role) func(func(*gin.Context) error) fun
 // AuthConfigured reports whether WithAuth was given.
 func (h *Handler) AuthConfigured() bool {
 	return h.auth != nil
-}
-
-// CaregiverView shows today's Daily Note to a caregiver.
-func (h *Handler) CaregiverView(c *gin.Context) error {
-	return h.render(c, http.StatusOK, "caregiver.html", gin.H{"title": "Dagens anteckning"})
 }
 
 // ClientDashboard is the client's authoring and overview page.

@@ -10,7 +10,7 @@ import (
 	"github.com/johansundell/angel/types"
 )
 
-func newTestSQLite(t *testing.T) *SQLStore {
+func newTestSQLite(t *testing.T) *SQLiteStore {
 	t.Helper()
 	s, err := NewSQLite(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {

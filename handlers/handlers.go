@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io/fs"
 	"os"
+	"time"
 
 	"github.com/johansundell/angel/auth"
 	"github.com/johansundell/angel/store"
@@ -17,6 +18,8 @@ type Handler struct {
 	nameOfService    string
 	versionOfService string
 	auth             *auth.Authenticator // nil: PIN entry and role-protected views fail closed
+	notes            store.NoteStore     // nil: the note views fail closed
+	now              func() time.Time
 }
 
 // Option configures optional Handler dependencies.
@@ -25,6 +28,16 @@ type Option func(*Handler)
 // WithAuth enables PIN entry and the caregiver and client views.
 func WithAuth(a *auth.Authenticator) Option {
 	return func(h *Handler) { h.auth = a }
+}
+
+// WithNotes sets where Daily Notes are stored.
+func WithNotes(n store.NoteStore) Option {
+	return func(h *Handler) { h.notes = n }
+}
+
+// WithClock replaces time.Now, so tests can choose the current date.
+func WithClock(now func() time.Time) Option {
+	return func(h *Handler) { h.now = now }
 }
 
 // NewHandler creates the handlers. With useFileSystem, templates are read
@@ -43,6 +56,7 @@ func NewHandler(s store.Store, useFileSystem bool, embedded fs.FS, name, version
 		templates:        templates,
 		nameOfService:    name,
 		versionOfService: version,
+		now:              time.Now,
 	}
 	for _, opt := range opts {
 		opt(h)

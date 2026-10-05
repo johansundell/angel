@@ -12,18 +12,25 @@ import (
 // length and does not.
 const sqliteTimeLayout = "2006-01-02T15:04:05.000000Z07:00"
 
+// SQLiteStore keeps request logs and the Daily Notes in one SQLite file.
+type SQLiteStore struct {
+	*SQLStore
+}
+
+var _ NoteStore = (*SQLiteStore)(nil)
+
 // NewSQLite opens (or creates) the SQLite database at file and returns a store
 // that owns the connection.
-func NewSQLite(file string) (*SQLStore, error) {
+func NewSQLite(file string) (*SQLiteStore, error) {
 	db, err := openSQLite(file)
 	if err != nil {
 		return nil, err
 	}
-	return &SQLStore{
+	return &SQLiteStore{&SQLStore{
 		db:      db,
 		timeArg: func(t time.Time) any { return t.UTC().Format(sqliteTimeLayout) },
 		noLimit: -1, // SQLite: a negative LIMIT means no limit
-	}, nil
+	}}, nil
 }
 
 func openSQLite(file string) (*sql.DB, error) {
@@ -49,6 +56,18 @@ func openSQLite(file string) (*sql.DB, error) {
 		created_at DATETIME,
 		response TEXT,
 		request TEXT
+	)`)
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS daily_notes (
+		date TEXT PRIMARY KEY,
+		text TEXT NOT NULL,
+		important INTEGER NOT NULL DEFAULT 0,
+		created_at TEXT NOT NULL,
+		updated_at TEXT NOT NULL
 	)`)
 	if err != nil {
 		db.Close()
