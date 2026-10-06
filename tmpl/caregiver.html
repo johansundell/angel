@@ -16,10 +16,10 @@
 	{{with .confirmation}}<p class="ack-confirmation" role="status">✓ {{.}}</p>{{end}}
 	<section class="ack-feed-section ack-feed-caregiver" aria-labelledby="caregiver-acks-heading">
 		<h2 id="caregiver-acks-heading">Kvitteringar idag</h2>
-		{{- if .ackTimes}}
+		{{- if .acks}}
 		<ul class="ack-feed">
-			{{- range .ackTimes}}
-			<li class="ack-feed-item">Kvitterat kl {{.}}</li>
+			{{- range .acks}}
+			<li class="ack-feed-item">{{.Who}} kl {{.At}}</li>
 			{{- end}}
 		</ul>
 		{{- else}}

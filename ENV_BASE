@@ -23,6 +23,10 @@ CLIENT_SESSION_TIMEOUT="8h"
 SESSION_SECRET=""
 # false only when testing over plain HTTP on another host than localhost
 COOKIE_SECURE=true
+# true shows Caregivers each other's first names with the times of today's
+# Acknowledgements; anyone with the shared Caregiver PIN then sees who visits
+# and when (docs/adr/0006-caregiver-names-opt-in.md)
+SHARE_CAREGIVER_NAMES=false
 # comma-separated proxy IPs/CIDRs whose X-Forwarded-For is trusted, e.g.
 # 127.0.0.1 behind cloudflared or a local reverse proxy; empty trusts none
 TRUSTED_PROXIES=""

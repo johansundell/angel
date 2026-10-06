@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/johansundell/angel/handlers"
 )
 
 const emptyCaregiverAcks = "Ingen har kvitterat idag än."
@@ -94,4 +96,51 @@ func TestCaregiverAcks_DashboardSaysCaregiversSeeTimes(t *testing.T) {
 	body := app.get("/admin", app.clientSession()).Body.String()
 
 	assertInOrder(t, body, "Kvitteringar idag", "Vårdpersonalen ser tiderna.")
+}
+
+func TestCaregiverAcks_SharedNamesShowNameAndTime(t *testing.T) {
+	app := newPinApp(t, handlers.WithShareCaregiverNames(true))
+	app.acknowledgeAt("Maria", time.Date(2026, 10, 5, 6, 35, 0, 0, time.UTC))
+	app.acknowledgeAt("", time.Date(2026, 10, 5, 10, 5, 0, 0, time.UTC))
+	app.acknowledgeAt("Ahmed", time.Date(2026, 10, 5, 15, 0, 0, 0, time.UTC))
+
+	body := app.get("/note", app.caregiverSession()).Body.String()
+
+	// Anonymous entries keep the times-only wording.
+	assertInOrder(t, body, "Kvitteringar idag",
+		"Ahmed kl 17:00", "Kvitterat kl 12:05", "Maria kl 08:35",
+		`action="/note/ack"`)
+}
+
+func TestCaregiverAcks_SharedNamesAreEscaped(t *testing.T) {
+	app := newPinApp(t, handlers.WithShareCaregiverNames(true))
+	app.acknowledgeAt("<b>Eva</b>", time.Date(2026, 10, 5, 8, 0, 0, 0, time.UTC))
+
+	body := app.get("/note", app.caregiverSession()).Body.String()
+
+	if !strings.Contains(body, "&lt;b&gt;Eva&lt;/b&gt; kl 10:00") || strings.Contains(body, "<b>Eva") {
+		t.Errorf("name not escaped: %q", body)
+	}
+}
+
+func TestCaregiverAcks_NamesOffByDefault(t *testing.T) {
+	app := newPinApp(t)
+	app.acknowledgeAt("Maria", time.Date(2026, 10, 5, 6, 35, 0, 0, time.UTC))
+
+	body := app.get("/note", app.caregiverSession()).Body.String()
+
+	if strings.Contains(body, "Maria") || !strings.Contains(body, "Kvitterat kl 08:35") {
+		t.Errorf("names off: want only the time, got %q", body)
+	}
+}
+
+func TestCaregiverAcks_DashboardSaysCaregiversSeeNames(t *testing.T) {
+	app := newPinApp(t, handlers.WithShareCaregiverNames(true))
+
+	body := app.get("/admin", app.clientSession()).Body.String()
+
+	assertInOrder(t, body, "Kvitteringar idag", "Vårdpersonalen ser namn och tider.")
+	if strings.Contains(body, "Vårdpersonalen ser tiderna.") {
+		t.Error("dashboard says caregivers see only the times")
+	}
 }
