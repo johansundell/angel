@@ -21,11 +21,7 @@ func TestMakeDockerPushTargetsGHCR(t *testing.T) {
 	}
 	image := "ghcr.io/" + strings.TrimSpace(string(repo))
 
-	out, err := exec.Command("make", "-n", "docker-push", "VERSION=v9.9.9").CombinedOutput()
-	if err != nil {
-		t.Fatalf("make -n docker-push: %v\n%s", err, out)
-	}
-	cmds := string(out)
+	cmds := makeDryRun(t, "docker-push", "VERSION=v9.9.9")
 
 	for _, want := range []string{
 		"--build-arg VERSION=v9.9.9",
@@ -38,4 +34,15 @@ func TestMakeDockerPushTargetsGHCR(t *testing.T) {
 			t.Errorf("make docker-push doesn't run %q; it runs:\n%s", want, cmds)
 		}
 	}
+}
+
+// makeDryRun returns the commands make would run for target, without running
+// them.
+func makeDryRun(t *testing.T, target string, args ...string) string {
+	t.Helper()
+	out, err := exec.Command("make", append([]string{"-n", target}, args...)...).CombinedOutput()
+	if err != nil {
+		t.Fatalf("make -n %s: %v\n%s", target, err, out)
+	}
+	return string(out)
 }

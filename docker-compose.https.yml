@@ -4,8 +4,8 @@
 # it with `make docker-run-https`, or on a server without a checkout with
 # `docker compose -f docker-compose.https.yml up -d`. See "Running with HTTPS
 # (Let's Encrypt)" in the README. docker-compose.https.build.yml builds Angel
-# from a checkout instead. Angel is not published, so the only way in is
-# through Caddy.
+# from a checkout instead. Angel has no port on the host, so the only way in
+# is through Caddy.
 services:
   angel:
     # VERSION in .env picks a published tag, e.g. v0.0.2; latest when unset.

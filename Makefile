@@ -64,9 +64,9 @@ docker-run-local:
 
 # Angel behind Caddy with a Let's Encrypt certificate (docker-compose.https.yml).
 # Compose stops with a message when DOMAIN is missing from .env. It pulls the
-# published image; VERSION in .env picks the tag (latest when unset). env -u
-# keeps a VERSION that make would export, from the shell or the command line,
-# from overriding .env.
+# published image; VERSION in .env picks the tag (latest when unset). make
+# exports VERSION when it comes from the shell or the command line. env -u
+# drops it, so .env decides.
 docker-run-https:
 	@test -f .env || { echo ".env not found: copy ENV_BASE to .env, fill it in and set DOMAIN (see README)" >&2; exit 1; }
 	env -u VERSION docker compose -f docker-compose.https.yml up -d --pull always

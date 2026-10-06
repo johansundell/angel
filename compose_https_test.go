@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -46,7 +47,8 @@ func composeHTTPSConfig(t *testing.T, env string) map[string]any {
 	out, err := cmd.Output()
 	if err != nil {
 		var stderr string
-		if ee, ok := err.(*exec.ExitError); ok {
+		var ee *exec.ExitError
+		if errors.As(err, &ee) {
 			stderr = string(ee.Stderr)
 		}
 		t.Fatalf("docker compose config: %v\n%s", err, stderr)
@@ -95,11 +97,7 @@ func TestMakeDockerRunHTTPSPulls(t *testing.T) {
 	if _, err := exec.LookPath("make"); err != nil {
 		t.Skip("make not installed")
 	}
-	out, err := exec.Command("make", "-n", "docker-run-https").CombinedOutput()
-	if err != nil {
-		t.Fatalf("make -n docker-run-https: %v\n%s", err, out)
-	}
-	cmds := string(out)
+	cmds := makeDryRun(t, "docker-run-https")
 	if strings.Contains(cmds, "--build") {
 		t.Errorf("make docker-run-https builds; it runs:\n%s", cmds)
 	}
@@ -117,11 +115,7 @@ func TestMakeDockerBuildHTTPSBuilds(t *testing.T) {
 	if _, err := exec.LookPath("make"); err != nil {
 		t.Skip("make not installed")
 	}
-	out, err := exec.Command("make", "-n", "docker-build-https", "VERSION=v9.9.9").CombinedOutput()
-	if err != nil {
-		t.Fatalf("make -n docker-build-https: %v\n%s", err, out)
-	}
-	cmds := string(out)
+	cmds := makeDryRun(t, "docker-build-https", "VERSION=v9.9.9")
 	for _, want := range []string{
 		"VERSION=v9.9.9",
 		"-f docker-compose.https.yml -f docker-compose.https.build.yml",
