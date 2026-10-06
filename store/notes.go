@@ -22,9 +22,9 @@ type NoteStore interface {
 	// AddAcknowledgement records a and returns its ID. The caller sets Date
 	// and CreatedAt.
 	AddAcknowledgement(ctx context.Context, a types.Acknowledgement) (id int64, err error)
-	// ListAcknowledgements returns the acknowledgements for date
-	// (YYYY-MM-DD), oldest first.
-	ListAcknowledgements(ctx context.Context, date string) ([]types.Acknowledgement, error)
+	// ListAcknowledgements returns the acknowledgements made on day, oldest
+	// first.
+	ListAcknowledgements(ctx context.Context, day types.Day) ([]types.Acknowledgement, error)
 }
 
 func (s *SQLiteStore) GetDailyNote(ctx context.Context, day types.Day) (types.DailyNote, bool, error) {

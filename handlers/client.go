@@ -66,9 +66,9 @@ type ackFeedEntry struct {
 }
 
 // loadAckFeed returns today's Acknowledgements, newest first. Being keyed by
-// today's date, the feed starts empty at each Rollover.
+// the Day, the feed starts empty at each Rollover.
 func (h *Handler) loadAckFeed(c *gin.Context) ([]ackFeedEntry, error) {
-	acks, err := h.notes.ListAcknowledgements(c.Request.Context(), h.today().String())
+	acks, err := h.notes.ListAcknowledgements(c.Request.Context(), h.today())
 	if err != nil {
 		return nil, err
 	}
