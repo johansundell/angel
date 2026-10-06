@@ -25,7 +25,7 @@
 		X-Frame-Options "DENY"
 	}
 
-	# Notes are short; Angel itself rejects logged bodies over 1 MiB.
+	# Notes are short; Angel itself rejects request bodies over 1 MiB.
 	request_body {
 		max_size 1MiB
 	}

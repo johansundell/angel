@@ -212,7 +212,7 @@ Inside the container the service always listens on **8080** (the image sets `POR
 
 `docker-compose.https.yml` runs Angel on a server of its own (for example a fresh VPS) behind [Caddy](https://caddyserver.com/), which gets a certificate from Let's Encrypt and renews it by itself. Angel isn't published: the only way in is through Caddy on ports 80 and 443, and Angel trusts `X-Forwarded-For` only from Caddy's fixed address. Caddy sends the same security headers and one-year HSTS as the [nginx and Apache examples](examples/reverse-proxy/), and keeps no access log of its own.
 
-**1. DNS and ports.** Point an `A` (and `AAAA`, if the server has IPv6) record for your host name, say `angel.example.com`, at the server, and open ports 80 and 443 (TCP, and UDP 443 for HTTP/3). Let's Encrypt must reach port 80 from the internet, and nothing else on the server may use 80 or 443.
+**1. DNS and ports.** Point an `A` record for your host name, say `angel.example.com`, at the server, and open ports 80 and 443 (TCP, and UDP 443 for HTTP/3). Let's Encrypt must reach port 80 from the internet, and nothing else on the server may use 80 or 443. Leave out the `AAAA` record: the stack's Docker network is IPv4 only, so Docker would pass IPv6 visitors on from its own address, and they would all share one PIN rate limit.
 
 **2. `.env`.** Copy `ENV_BASE` to `.env` next to the compose file and fill in:
 
@@ -225,7 +225,7 @@ ACME_EMAIL="you@example.com"  # optional: Let's Encrypt warns here before a cert
 ACME_CA="https://acme-staging-v02.api.letsencrypt.org/directory"  # first run only, see step 3
 ```
 
-Angel gets only the variables it needs, by name: the PINs, `SESSION_SECRET`, the session timeouts, `AUTH_TOKEN`, `DEBUG`, `STORAGE` and the MySQL and FileMaker settings. `PORT`, `TRUSTED_PROXIES`, `SQLITE_PATH` and `COOKIE_SECURE` are fixed in the compose file, so values for them in `.env` are ignored. The network is `172.31.0.0/24` with Caddy on `172.31.0.10`; if that subnet is in use on the host, set `PROXY_SUBNET_PREFIX` (for example `10.99.0`).
+Angel gets only the variables it needs, by name: the PINs, `SESSION_SECRET`, the session timeouts, `AUTH_TOKEN`, `DEBUG`, `STORAGE` and the MySQL and FileMaker settings except `FMS_CA_FILE`, which needs the file mounted into the container (see the comment in the compose file). `PORT`, `TRUSTED_PROXIES`, `SQLITE_PATH` and `COOKIE_SECURE` are fixed in the compose file, so values for them in `.env` are ignored. The network is `172.31.0.0/24` with Caddy on `172.31.0.10`; if that subnet is in use on the host, set `PROXY_SUBNET_PREFIX` (for example `10.99.0`).
 
 **3. First run against staging.** Start the stack:
 

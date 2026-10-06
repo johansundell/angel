@@ -17,6 +17,7 @@ services:
       # Fixed: Caddy reaches Angel on 8080, and only Caddy may set
       # X-Forwarded-For.
       PORT: ":8080"
+      # Caddy's ipv4_address below; keep the two the same.
       TRUSTED_PROXIES: ${PROXY_SUBNET_PREFIX:-172.31.0}.10
       USE_FILE_SYSTEM: "false"
       SQLITE_PATH: /app/data/angel.db
@@ -43,6 +44,8 @@ services:
       FMS_TIMEOUT:
       FMS_LOG_TABLE:
       FMS_INSECURE_SKIP_VERIFY:
+      # Not FMS_CA_FILE: a host path means nothing in the container. Mount
+      # the file and set FMS_CA_FILE to its path here if you need it.
     networks:
       proxy:
     restart: unless-stopped
