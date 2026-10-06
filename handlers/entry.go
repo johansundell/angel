@@ -72,31 +72,6 @@ func (h *Handler) Logout(c *gin.Context) error {
 	return nil
 }
 
-// RequireRole lets the request through only with a valid session for role;
-// anyone else is sent back to the entry screen.
-func (h *Handler) RequireRole(role auth.Role) func(func(*gin.Context) error) func(*gin.Context) error {
-	return func(inner func(*gin.Context) error) func(*gin.Context) error {
-		return func(c *gin.Context) error {
-			if h.auth == nil {
-				return httperror.ReturnWithHTTPStatus(errAuthNotConfigured, http.StatusInternalServerError)
-			}
-			if got, ok := h.auth.Session(c.Request); !ok || got != role {
-				c.Redirect(http.StatusSeeOther, "/")
-				return nil
-			}
-			// Private household notes must not linger in shared caches or
-			// the back/forward cache after the session ends.
-			c.Header("Cache-Control", "no-store")
-			return inner(c)
-		}
-	}
-}
-
-// AuthConfigured reports whether WithAuth was given.
-func (h *Handler) AuthConfigured() bool {
-	return h.auth != nil
-}
-
 func (h *Handler) renderEntry(c *gin.Context, status int, errMsg string) error {
 	c.Header("Cache-Control", "no-store")
 	return h.render(c, status, "entry.html", gin.H{"title": "Ange PIN-kod", "error": errMsg})

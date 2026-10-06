@@ -113,6 +113,7 @@ func TestStartupAuthValidation(t *testing.T) {
 
 	_, err := router.NewRouter(router.Config{
 		Handler:  h,
+		Auth:     mustNewAuth(t),
 		LogSink:  &recordingSink{},
 		Settings: settings,
 	})
@@ -260,6 +261,7 @@ func TestNewRouter_EmbeddedModeNilAssetsReturnsError(t *testing.T) {
 
 	_, err := router.NewRouter(router.Config{
 		Handler:  h,
+		Auth:     mustNewAuth(t),
 		LogSink:  &recordingSink{},
 		Assets:   nil,
 		Settings: types.AppSettings{AuthToken: "secret-token", UseFileSystem: false},
@@ -282,6 +284,7 @@ func TestNewRouter_FileSystemModeNilAssetsSucceeds(t *testing.T) {
 
 	r, err := router.NewRouter(router.Config{
 		Handler:  h,
+		Auth:     mustNewAuth(t),
 		LogSink:  &recordingSink{},
 		Assets:   nil,
 		Settings: types.AppSettings{AuthToken: "secret-token", UseFileSystem: true},
@@ -590,7 +593,10 @@ func TestLoggerMiddleware_CapturesWriteString(t *testing.T) {
 	}
 }
 
-func mustNewHandler(t *testing.T, s store.Store, useFileSystem bool, embedded fs.FS, name, version string) *handlers.Handler {
+// mustNewAuth returns an Authenticator with the test PINs. Sessions are
+// signed with a fixed secret, so separate instances accept each other's
+// cookies.
+func mustNewAuth(t *testing.T) *auth.Authenticator {
 	t.Helper()
 	authn, err := auth.New(auth.Config{
 		CaregiverPIN:        testCaregiverPIN,
@@ -602,7 +608,12 @@ func mustNewHandler(t *testing.T, s store.Store, useFileSystem bool, embedded fs
 	if err != nil {
 		t.Fatalf("auth.New failed: %v", err)
 	}
-	h, err := handlers.NewHandler(s, useFileSystem, embedded, name, version, handlers.WithAuth(authn))
+	return authn
+}
+
+func mustNewHandler(t *testing.T, s store.Store, useFileSystem bool, embedded fs.FS, name, version string) *handlers.Handler {
+	t.Helper()
+	h, err := handlers.NewHandler(s, useFileSystem, embedded, name, version, handlers.WithAuth(mustNewAuth(t)))
 	if err != nil {
 		t.Fatalf("NewHandler failed: %v", err)
 	}

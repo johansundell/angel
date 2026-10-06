@@ -74,6 +74,7 @@ func newPinApp(t *testing.T) *pinApp {
 	}
 	r, err := router.NewRouter(router.Config{
 		Handler:  h,
+		Auth:     authn,
 		LogSink:  &recordingSink{},
 		Settings: types.AppSettings{AuthToken: "secret-token"},
 		Assets:   repoRoot,
@@ -397,6 +398,7 @@ func TestNewRouter_RejectsInvalidTrustedProxies(t *testing.T) {
 
 	_, err := router.NewRouter(router.Config{
 		Handler:  mustNewHandler(t, nopStore{}, false, fstest.MapFS{}, "test", "dev"),
+		Auth:     mustNewAuth(t),
 		LogSink:  &recordingSink{},
 		Settings: types.AppSettings{AuthToken: "secret-token", TrustedProxies: []string{"not-an-ip"}},
 		Assets:   fstest.MapFS{},
@@ -410,6 +412,7 @@ func TestEntry_TrustedProxyForwardsClientAddress(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r, err := router.NewRouter(router.Config{
 		Handler:  mustNewHandler(t, nopStore{}, false, os.DirFS(".."), "test", "dev"),
+		Auth:     mustNewAuth(t),
 		LogSink:  &recordingSink{},
 		Settings: types.AppSettings{AuthToken: "secret-token", TrustedProxies: []string{"127.0.0.1"}},
 		Assets:   os.DirFS(".."),
