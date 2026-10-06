@@ -63,10 +63,18 @@ docker-run-local:
 	VERSION=$(VERSION) LOCAL_UID=$$(id -u) LOCAL_GID=$$(id -g) docker compose -f docker-compose.local.yml up -d --build
 
 # Angel behind Caddy with a Let's Encrypt certificate (docker-compose.https.yml).
-# Compose stops with a message when DOMAIN is missing from .env.
+# Compose stops with a message when DOMAIN is missing from .env. It pulls the
+# published image; VERSION in .env picks the tag (latest when unset). env -u
+# keeps a VERSION that make would export, from the shell or the command line,
+# from overriding .env.
 docker-run-https:
 	@test -f .env || { echo ".env not found: copy ENV_BASE to .env, fill it in and set DOMAIN (see README)" >&2; exit 1; }
-	VERSION=$(VERSION) docker compose -f docker-compose.https.yml up -d --build
+	env -u VERSION docker compose -f docker-compose.https.yml up -d --pull always
+
+# The same stack with Angel built from this checkout (docker-compose.https.build.yml).
+docker-build-https:
+	@test -f .env || { echo ".env not found: copy ENV_BASE to .env, fill it in and set DOMAIN (see README)" >&2; exit 1; }
+	VERSION=$(VERSION) docker compose -f docker-compose.https.yml -f docker-compose.https.build.yml up -d --build
 
 # The tag this creates makes CI publish the Docker image (.github/workflows/docker.yml).
 release: dist
@@ -77,4 +85,4 @@ release: dist
 	github-release $(GHACCOUNT)/$(NAME) $(VERSION) "$$(git rev-parse --abbrev-ref HEAD)" "**Changelog**<br/>$$changelog" 'dist/*'; \
 	git pull
 
-.PHONY: build compile licenses install deps dist release docker docker-push docker-run docker-run-local docker-run-https
+.PHONY: build compile licenses install deps dist release docker docker-push docker-run docker-run-local docker-run-https docker-build-https

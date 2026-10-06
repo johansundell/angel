@@ -1,0 +1,11 @@
+# Builds Angel from this checkout instead of pulling the published image, on
+# top of docker-compose.https.yml. Start it with `make docker-build-https`,
+# which passes the Makefile VERSION. The local image gets its own name, so it
+# never stands in for a published tag.
+services:
+  angel:
+    image: angel-local:${VERSION:-dev}
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-dev}
