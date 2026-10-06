@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Angel Logo Concepts Preview</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a;
+        --card: #1e293b;
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --border: #334155;
+      }
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 2rem 1rem;
+      line-height: 1.5;
+    }
+    .header {
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto 3rem;
+    }
+    .header h1 {
+      margin: 0 0 0.5rem;
+      font-size: 2.25rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+    }
+    .card-preview {
+      width: 100%;
+      height: 280px;
+      background: #fafafa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .card-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .svg-preview {
+      width: 100%;
+      padding: 1.5rem;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+    }
+    .svg-preview.dark {
+      background: #0f172a;
+    }
+    .svg-preview object, .svg-preview img {
+      max-width: 220px;
+      height: auto;
+    }
+    .card-body {
+      padding: 1.5rem;
+      flex: 1;
+    }
+    .card-title {
+      margin: 0 0 0.5rem;
+      font-size: 1.35rem;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      margin-bottom: 0.75rem;
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+    .desc {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+    .palette {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    .swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Angel Logo Design Proposals</h1>
+    <p>Utforskning av logotyper och grafisk profil för hemtjänst- och omsorgsplattformen Angel.</p>
+  </div>
+
+  <div class="grid">
+
+    <!-- Concept 1 -->
+    <div class="card">
+      <div class="card-preview">
+        <img src="concept-1-wings.jpg" alt="Concept 1: The Embracing Wings" />
+      </div>
+      <div class="svg-preview">
+        <img src="concept-1-wings.svg" alt="Concept 1 SVG Vector" />
+      </div>
+      <div class="card-body">
+        <span class="badge">Koncept 1</span>
+        <h2 class="card-title">De skyddande vingarna</h2>
+        <p class="desc">Symmetriska koboltblå vingar som omfamnar en gyllene sol/portal. Förmedlar trygghet, ankomst och hemtjänstens omhändertagande närvaro.</p>
+        <div class="palette">
+          <div class="swatch" style="background:#2563eb" title="Royal Blue #2563eb"></div>
+          <div class="swatch" style="background:#f59e0b" title="Warm Amber #f59e0b"></div>
+          <div class="swatch" style="background:#0f172a" title="Deep Slate #0f172a"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Concept 2 -->
+    <div class="card">
+      <div class="card-preview">
+        <img src="concept-2-heart.jpg" alt="Concept 2: Heart & Wings" />
+      </div>
+      <div class="svg-preview">
+        <img src="concept-2-heart.svg" alt="Concept 2 SVG Vector" />
+      </div>
+      <div class="card-body">
+        <span class="badge" style="background:#ccfbf1;color:#0f766e;">Koncept 2</span>
+        <h2 class="card-title">Hjärta & Vingar (Line Art)</h2>
+        <p class="desc">Mjuk sammanhängande linjekonst som förenar ett hjärta med änglavingar. Fokuserar på medmänsklighet, empati och omsorg i vardagen.</p>
+        <div class="palette">
+          <div class="swatch" style="background:#0d9488" title="Teal #0d9488"></div>
+          <div class="swatch" style="background:#f43f5e" title="Rose/Coral #f43f5e"></div>
+          <div class="swatch" style="background:#faf9f6" title="Soft Neutral #faf9f6"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Concept 3 -->
+    <div class="card">
+      <div class="card-preview">
+        <img src="concept-3-halo.jpg" alt="Concept 3: Halo & Note" />
+      </div>
+      <div class="svg-preview">
+        <img src="concept-3-halo-note.svg" alt="Concept 3 SVG Vector" />
+      </div>
+      <div class="card-body">
+        <span class="badge" style="background:#fef3c7;color:#92400e;">Koncept 3</span>
+        <h2 class="card-title">Gloria & Anteckning</h2>
+        <p class="desc">Ett stilrent meddelandekort / talbubbla krönt av en lysande gyllene gloria. Tydligt förankrat i appens funktion: dagens anteckningar och kontakt.</p>
+        <div class="palette">
+          <div class="swatch" style="background:#1e293b" title="Midnight #1e293b"></div>
+          <div class="swatch" style="background:#f59e0b" title="Halo Gold #f59e0b"></div>
+          <div class="swatch" style="background:#38bdf8" title="Sky Blue #38bdf8"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
