@@ -41,3 +41,10 @@ FMS_LOG_TABLE="Logs"
 # optional PEM file with a private CA; FMS_INSECURE_SKIP_VERIFY disables checks
 FMS_CA_FILE=""
 FMS_INSECURE_SKIP_VERIFY=false
+# docker-compose.https.yml only (Caddy in front of Angel, see README): the
+# host name Angel is served on, an optional e-mail for certificate expiry
+# warnings, and an optional ACME directory, e.g. Let's Encrypt staging
+# https://acme-staging-v02.api.letsencrypt.org/directory for the first run
+DOMAIN=""
+ACME_EMAIL=""
+ACME_CA=""
