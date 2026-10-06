@@ -47,6 +47,12 @@ docker-push: docker
 docker-run:
 	VERSION=$(VERSION) docker compose up -d --build
 
+# Uses ./.env and the SQLite database in ./data (see docker-compose.local.yml).
+docker-run-local:
+	@test -f .env || { echo ".env not found: copy ENV_BASE to .env and fill it in" >&2; exit 1; }
+	mkdir -p $${LOCAL_DATA_DIR:-data}
+	VERSION=$(VERSION) LOCAL_UID=$$(id -u) LOCAL_GID=$$(id -g) docker compose -f docker-compose.local.yml up -d --build
+
 release: dist docker-push
 	@latest_tag=$$(git describe --tags `git rev-list --tags --max-count=1`); \
 	comparison="$$latest_tag..HEAD"; \
@@ -55,4 +61,4 @@ release: dist docker-push
 	github-release $(GHACCOUNT)/$(NAME) $(VERSION) "$$(git rev-parse --abbrev-ref HEAD)" "**Changelog**<br/>$$changelog" 'dist/*'; \
 	git pull
 
-.PHONY: build compile install deps dist release docker docker-push docker-run
+.PHONY: build compile install deps dist release docker docker-push docker-run docker-run-local

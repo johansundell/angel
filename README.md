@@ -188,6 +188,22 @@ To copy the database out, for a backup or to inspect it:
 docker compose cp angel:/app/data/angel.db ./angel.db
 ```
 
+#### With your local .env and database
+
+To try the container with the same settings and SQLite database as a local run:
+
+```bash
+make docker-run-local
+```
+
+This uses `docker-compose.local.yml` instead of `docker-compose.yml`. It mounts your `./.env` read-only at `/app/.env` and your `./data` folder at `/app/data`, and uses the database `./data/angel.db`. To use that database for local runs too, set `SQLITE_PATH=./data/angel.db` in `.env`; the container replaces that with its own path to the same file. `make docker-run-local` stops when `.env` is missing and creates the data folder as your user; run with plain `docker compose`, Docker would create both as empty root-owned folders. Set `LOCAL_DATA_DIR` to use another folder. Don't run the container and a local binary on the same database at the same time.
+
+The container runs as your user (`make docker-run-local` passes `id -u` and `id -g`), so it can write the database files that you own. Everything else comes from `.env`, except `PORT`: the container always listens on 8080, so pick the host port with `HOST_PORT`. For a MySQL server on your machine, set `MYSQL_HOST=host.docker.internal`, because `127.0.0.1` in the container is the container itself, and let the server accept connections from the Docker network.
+
+Both compose files run the same `angel` service, so starting one replaces a container started from the other. Stop it with `docker compose -f docker-compose.local.yml down`.
+
+#### Port and health check
+
 Inside the container the service always listens on **8080** (the image sets `PORT=:8080`), which the image's `EXPOSE` and health check rely on. Choose the port on the host instead: `HOST_PORT=9090 docker compose up`, or `docker run -p 9090:8080 ...`. Don't set `PORT` for the container. The health check calls `GET /health`, so the container turns unhealthy when the storage backend is unreachable.
 
 ## Configuration
