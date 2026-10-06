@@ -1,0 +1,39 @@
+# Demo: Angel behind Apache on http://localhost:8080. Run from this folder:
+#   docker compose up --build
+# Angel is not published, so the only way in is through Apache.
+services:
+  angel:
+    build:
+      context: ../../..
+    environment:
+      # Demo only: put real PINs in .env (see ../README.md).
+      CAREGIVER_PIN: "1234"
+      MASTER_PIN: "987654"
+      # Only Apache may set X-Forwarded-For.
+      TRUSTED_PROXIES: 172.30.0.10
+    networks:
+      proxy:
+        ipv4_address: 172.30.0.20
+
+  apache:
+    image: httpd:2.4-alpine
+    # httpd-foreground passes its arguments to httpd; -c adds the demo
+    # configuration after the image's httpd.conf.
+    command: ["httpd-foreground", "-c", "Include conf/extra/demo.conf"]
+    ports:
+      - "${HOST_PORT:-8080}:80"
+    volumes:
+      - ./demo.conf:/usr/local/apache2/conf/extra/demo.conf:ro
+      - ./angel-proxy.conf:/usr/local/apache2/conf/extra/angel-proxy.conf:ro
+    depends_on:
+      angel:
+        condition: service_healthy
+    networks:
+      proxy:
+        ipv4_address: 172.30.0.10
+
+networks:
+  proxy:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
