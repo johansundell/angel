@@ -1,0 +1,48 @@
+# Publishes the Docker image to the GitHub Container Registry when a v* tag
+# is pushed: ghcr.io/<owner>/<repo>:<tag> and :latest, with the tag baked in
+# as the version (the X-Version header). make docker-push pushes the same tags.
+
+name: Docker
+
+on:
+  push:
+    tags: [ "v*" ]
+
+jobs:
+
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.27.1'
+
+    - name: Test
+      run: go test ./...
+
+    # Registry paths must be lowercase; github.repository keeps the case.
+    - name: Image name
+      run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+    - name: Log in to GHCR
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        push: true
+        build-args: VERSION=${{ github.ref_name }}
+        tags: |
+          ${{ env.IMAGE }}:${{ github.ref_name }}
+          ${{ env.IMAGE }}:latest

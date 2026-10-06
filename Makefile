@@ -5,6 +5,8 @@
 GHACCOUNT := johansundell
 NAME := angel
 VERSION := v0.0.8
+# Pushing a v* git tag also publishes the image here (.github/workflows/docker.yml).
+IMAGE := ghcr.io/$(GHACCOUNT)/$(NAME)
 
 build:
 	go build -ldflags "-X 'main.Version=$(VERSION)'"
@@ -44,10 +46,12 @@ dist: compile
 	done
 
 docker:
-	docker build --build-arg VERSION=$(VERSION) -t $(GHACCOUNT)/$(NAME):$(VERSION) .
+	docker build --build-arg VERSION=$(VERSION) -t $(IMAGE):$(VERSION) -t $(IMAGE):latest .
 
+# Needs a login first: docker login ghcr.io (see the README).
 docker-push: docker
-	docker push $(GHACCOUNT)/$(NAME):$(VERSION)
+	docker push $(IMAGE):$(VERSION)
+	docker push $(IMAGE):latest
 
 docker-run:
 	VERSION=$(VERSION) docker compose up -d --build

@@ -136,7 +136,7 @@ Rename the Go module and the service. The service name is used for the binary, t
 ```bash
 NEW_MODULE=github.com/acme/billing-service   # Go module path of the new service
 NEW_NAME=billing-service                     # service, binary and Docker name
-NEW_ACCOUNT=acme                             # GitHub account for `make release`
+NEW_ACCOUNT=acme                             # GitHub account for `make release` and the image
 
 OLD_MODULE=github.com/johansundell/angel
 git grep -lz "$OLD_MODULE" | xargs -0 sed -i "s#$OLD_MODULE#$NEW_MODULE#g"
@@ -203,6 +203,22 @@ This uses `docker-compose.local.yml` instead of `docker-compose.yml`. It mounts 
 The container runs as your user (`make docker-run-local` passes `id -u` and `id -g`), so it can write the database files that you own. Everything else comes from `.env`, except `PORT`: the container always listens on 8080, so pick the host port with `HOST_PORT`. For a MySQL server on your machine, set `MYSQL_HOST=host.docker.internal`, because `127.0.0.1` in the container is the container itself, and let the server accept connections from the Docker network.
 
 Both compose files run the same `angel` service, so starting one replaces a container started from the other. Stop it with `docker compose -f docker-compose.local.yml down`.
+
+#### Published image
+
+Releases are published to the GitHub Container Registry as `ghcr.io/johansundell/angel`. Pushing a `v*` git tag (`make release` creates one) runs the `Docker` workflow ([`.github/workflows/docker.yml`](.github/workflows/docker.yml)): it runs the tests, builds the image with the tag as its version, and pushes `ghcr.io/johansundell/angel:<tag>` and `:latest`. The tag is what the service reports in the `X-Version` header. A server can then run the image without a checkout:
+
+```bash
+docker pull ghcr.io/johansundell/angel:latest
+```
+
+GHCR makes a new package private. After the first publish, make it public once under the package's **Package settings → Change visibility** on GitHub, so `docker pull` works without logging in. While it is private, log in first with a personal access token (classic) that has the `read:packages` scope:
+
+```bash
+echo "$GHCR_TOKEN" | docker login ghcr.io -u <github-user> --password-stdin
+```
+
+`make docker-push` builds the image with the `Makefile` `VERSION` and pushes the same two tags from your machine, which needs a login with a token that has `write:packages`. `make release` runs it too, so the image is there even before the workflow finishes. In a service made from this template, `GHACCOUNT` and the service name in the `Makefile` set the image name, and the workflow publishes to `ghcr.io/<owner>/<repo>`.
 
 #### Port and health check
 
