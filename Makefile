@@ -62,6 +62,12 @@ docker-run-local:
 	mkdir -p $${LOCAL_DATA_DIR:-data}
 	VERSION=$(VERSION) LOCAL_UID=$$(id -u) LOCAL_GID=$$(id -g) docker compose -f docker-compose.local.yml up -d --build
 
+# Angel behind Caddy with a Let's Encrypt certificate (docker-compose.https.yml).
+# Compose stops with a message when DOMAIN is missing from .env.
+docker-run-https:
+	@test -f .env || { echo ".env not found: copy ENV_BASE to .env, fill it in and set DOMAIN (see README)" >&2; exit 1; }
+	VERSION=$(VERSION) docker compose -f docker-compose.https.yml up -d --build
+
 # The tag this creates makes CI publish the Docker image (.github/workflows/docker.yml).
 release: dist
 	@latest_tag=$$(git describe --tags `git rev-list --tags --max-count=1`); \
@@ -71,4 +77,4 @@ release: dist
 	github-release $(GHACCOUNT)/$(NAME) $(VERSION) "$$(git rev-parse --abbrev-ref HEAD)" "**Changelog**<br/>$$changelog" 'dist/*'; \
 	git pull
 
-.PHONY: build compile licenses install deps dist release docker docker-push docker-run docker-run-local
+.PHONY: build compile licenses install deps dist release docker docker-push docker-run docker-run-local docker-run-https

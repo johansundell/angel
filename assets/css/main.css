@@ -1,4 +1,6 @@
 :root {
+    color-scheme: light dark;
+
     /* Color Palette - Modern Scandinavian Warm Minimal */
     --bg: #f8fafc;
     --bg-subtle: #f1f5f9;
@@ -6,8 +8,9 @@
     --card-bg: #ffffff;
     --card-border: #e2e8f0;
     --fg: #0f172a;
-    --muted: #64748b;
+    --muted: #5f6f84;
     --muted-light: #94a3b8;
+    --input-border: #848fa1;
 
     /* Interactive Elements */
     --primary: #2563eb;
@@ -23,7 +26,7 @@
     --input-shadow-inset: inset 0 2px 4px rgba(15, 23, 42, 0.03);
     --editor-advance-bg: #fdfefe;
 
-    --toggle-off-bg: #cbd5e1;
+    --toggle-off-bg: #7c8799;
     --toggle-on-bg: #dc2626;
     --toggle-knob: #ffffff;
     --toggle-knob-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
@@ -76,6 +79,76 @@
     --health-fg: #f8fafc;
     --health-item-bg: rgba(255, 255, 255, 0.05);
     --health-accent: #4ade80;
+}
+
+/* Dark theme: the same slate and blue families, inverted. Only the tokens
+   change, so every rule follows the device's setting. */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #0f172a;
+        --bg-subtle: #273449;
+        --bg-glow: #1e293b;
+        --card-bg: #1e293b;
+        --card-border: #334155;
+        --fg: #e2e8f0;
+        --muted: #94a3b8;
+        --muted-light: #64748b;
+        --input-border: #64748b;
+
+        --primary: #60a5fa;
+        --primary-hover: #93c5fd;
+        --primary-active: #3b82f6;
+        --primary-fg: #0f172a;
+        --primary-subtle: #172554;
+        --primary-glow: 0 4px 12px rgba(96, 165, 250, 0.2);
+        --primary-glow-active: 0 2px 6px rgba(96, 165, 250, 0.15);
+        --focus-ring: 0 0 0 3px rgba(96, 165, 250, 0.35);
+
+        --input-focus-bg: #0f172a;
+        --input-shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+        --editor-advance-bg: #1b2638;
+
+        --toggle-off-bg: #64748b;
+        --toggle-on-bg: #ef4444;
+        --toggle-knob: #f8fafc;
+        --toggle-knob-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+        --toggle-focus-ring: 0 0 0 3px rgba(248, 113, 113, 0.4);
+
+        --key-bg: #1e293b;
+        --key-border: #64748b;
+        --key-active: #334155;
+        --key-shadow: 0 2px 0 #020617, 0 1px 3px rgba(0, 0, 0, 0.3);
+        --key-shadow-active: 0 0 0 transparent, 0 1px 1px rgba(0, 0, 0, 0.3);
+
+        --calm-bg: #022c22;
+        --calm-border: #065f46;
+        --calm-fg: #6ee7b7;
+
+        /* A deeper red than in light mode, so the banner stays the loudest
+           thing on the screen without glaring. */
+        --important-bg: #991b1b;
+        --important-border: #b91c1c;
+        --important-fg: #fef2f2;
+        --important-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.5);
+        --important-flag-bg: #fef2f2;
+        --important-flag-fg: #991b1b;
+        --important-flag-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        --important-quote-border: #fca5a5;
+        --important-quote-bg: rgba(0, 0, 0, 0.2);
+
+        --important-soft-bg: #2b1418;
+        --important-soft-border: #7f1d1d;
+        --important-soft-fg: #fca5a5;
+
+        --error-bg: #2b1418;
+        --error-border: #7f1d1d;
+        --error-fg: #fca5a5;
+
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.35), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+        --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+        --shadow-overlay: 0 4px 12px rgba(0, 0, 0, 0.5);
+    }
 }
 
 *, *::before, *::after {
@@ -208,7 +281,7 @@ body {
     font-size: 2.25rem;
     letter-spacing: 0.4em;
     text-align: center;
-    border: 2px solid var(--card-border);
+    border: 2px solid var(--input-border);
     border-radius: var(--radius-lg);
     background: var(--card-bg);
     color: var(--fg);
@@ -465,7 +538,7 @@ body {
 .ack-name {
     width: 100%;
     padding: 0.85rem 1rem;
-    border: 1.5px solid var(--card-border);
+    border: 1.5px solid var(--input-border);
     border-radius: var(--radius-md);
     background: var(--bg);
     color: var(--fg);
@@ -548,7 +621,7 @@ body {
     width: 100%;
     min-height: 12rem;
     padding: 1rem;
-    border: 1.5px solid var(--card-border);
+    border: 1.5px solid var(--input-border);
     border-radius: var(--radius-md);
     background: var(--bg);
     color: var(--fg);

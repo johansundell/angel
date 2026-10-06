@@ -26,3 +26,7 @@ jobs:
 
     - name: Test
       run: go test -v ./...
+
+    # DOMAIN is required; any value will do for checking the file.
+    - name: Validate HTTPS compose file
+      run: DOMAIN=angel.example.com docker compose -f docker-compose.https.yml config -q

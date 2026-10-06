@@ -108,6 +108,7 @@ The application can be installed as a system service.
 - **Service Management**: Can be installed and managed as a system service (Windows Service, Systemd, etc.) using [kardianos/service](https://github.com/kardianos/service).
 - **Database Support**: Request logs in SQLite, MySQL or FileMaker (see [FileMaker storage](#filemaker-storage)).
 - **Authentication**: Simple token-based authentication for protected routes.
+- **Light and dark mode**: The pages follow the device's light or dark setting (`prefers-color-scheme`), including form controls, scrollbars and the phone's address bar. There is no toggle and nothing is stored, so a shared phone never keeps one visitor's choice. Every colour is a token in the `:root` blocks of `assets/css/main.css`, and a test fails if a colour is used anywhere else.
 - **Docker Ready**: Includes `Dockerfile` and `docker-compose.yml` for easy containerization.
 - **Asset Management**: Supports embedding assets or serving from the file system.
 - **Logging**: Request logging to database. Entries are written in the background in batches, so a slow database never slows down requests; `GET /logs` can be up to about a second behind, and pending entries are written when the service stops.
@@ -224,9 +225,47 @@ echo "$GHCR_TOKEN" | docker login ghcr.io -u <github-user> --password-stdin
 
 Inside the container the service always listens on **8080** (the image sets `PORT=:8080`), which the image's `EXPOSE` and health check rely on. Choose the port on the host instead: `HOST_PORT=9090 docker compose up`, or `docker run -p 9090:8080 ...`. Don't set `PORT` for the container. The health check calls `GET /health`, so the container turns unhealthy when the storage backend is unreachable.
 
+#### Running with HTTPS (Let's Encrypt)
+
+`docker-compose.https.yml` runs Angel on a server of its own (for example a fresh VPS) behind [Caddy](https://caddyserver.com/), which gets a certificate from Let's Encrypt and renews it by itself. Angel isn't published: the only way in is through Caddy on ports 80 and 443, and Angel trusts `X-Forwarded-For` only from Caddy's fixed address. Caddy sends the same security headers and one-year HSTS as the [nginx and Apache examples](examples/reverse-proxy/), and keeps no access log of its own.
+
+**1. DNS and ports.** Point an `A` record for your host name, say `angel.example.com`, at the server, and open ports 80 and 443 (TCP, and UDP 443 for HTTP/3). Let's Encrypt must reach port 80 from the internet, and nothing else on the server may use 80 or 443. Leave out the `AAAA` record: the stack's Docker network is IPv4 only, so Docker would pass IPv6 visitors on from its own address, and they would all share one PIN rate limit.
+
+**2. `.env`.** Copy `ENV_BASE` to `.env` next to the compose file and fill in:
+
+```bash
+DOMAIN="angel.example.com"    # required
+CAREGIVER_PIN="..."           # exactly 4 digits
+MASTER_PIN="..."              # 4-12 digits, not the Caregiver PIN
+SESSION_SECRET="..."          # at least 32 characters, e.g. from: openssl rand -base64 33
+ACME_EMAIL="you@example.com"  # optional: Let's Encrypt warns here before a certificate expires
+ACME_CA="https://acme-staging-v02.api.letsencrypt.org/directory"  # first run only, see step 3
+```
+
+Angel gets only the variables it needs, by name: the PINs, `SESSION_SECRET`, the session timeouts, `AUTH_TOKEN`, `DEBUG`, `STORAGE` and the MySQL and FileMaker settings except `FMS_CA_FILE`, which needs the file mounted into the container (see the comment in the compose file). `PORT`, `TRUSTED_PROXIES`, `SQLITE_PATH` and `COOKIE_SECURE` are fixed in the compose file, so values for them in `.env` are ignored. The network is `172.31.0.0/24` with Caddy on `172.31.0.10`; if that subnet is in use on the host, set `PROXY_SUBNET_PREFIX` (for example `10.99.0`).
+
+**3. First run against staging.** Start the stack:
+
+```bash
+make docker-run-https
+```
+
+It stops when `.env` or `DOMAIN` is missing, and otherwise builds Angel and starts both containers in the background. Caddy waits until Angel is healthy. With `ACME_CA` pointing at staging, Let's Encrypt issues an untrusted test certificate, but mistakes in DNS or ports don't count against its [rate limits](https://letsencrypt.org/docs/rate-limits/). Follow it with `docker compose -f docker-compose.https.yml logs -f caddy` until you see `certificate obtained successfully`. Then remove `ACME_CA` from `.env` (the default is Let's Encrypt itself) and run `make docker-run-https` again. Compose recreates Caddy with the new setting, and Caddy, which keeps certificates apart per CA, gets a real one.
+
+**4. Check it.** Open `https://angel.example.com` on a phone using mobile data, then run [`check.sh`](examples/reverse-proxy/#checking-a-setup): `CAREGIVER_PIN=<your PIN> ./examples/reverse-proxy/check.sh https://angel.example.com`.
+
+**Trying it on your own machine.** With `DOMAIN=localhost`, Caddy makes a certificate with its own local CA instead of asking Let's Encrypt. If ports 80 and 443 are taken, set `HTTP_PORT` and `HTTPS_PORT` (for example `8081` and `8443`); on a server, leave them alone. Give `check.sh` Caddy's root certificate, since curl doesn't know it:
+
+```bash
+docker compose -f docker-compose.https.yml cp caddy:/data/caddy/pki/authorities/local/root.crt ./caddy-root.crt
+CURL_CA_BUNDLE=./caddy-root.crt ./examples/reverse-proxy/check.sh https://localhost   # or https://localhost:8443
+```
+
+The certificates live in the named volumes `caddy_data` and `caddy_config`, and the SQLite database in `data`. They survive `docker compose -f docker-compose.https.yml down`, restarts and rebuilds. **`down -v` deletes them**: the Daily Notes are gone, and Caddy asks Let's Encrypt for new certificates, which it [limits per week](https://letsencrypt.org/docs/rate-limits/).
+
 ### Running behind a reverse proxy
 
-[`examples/reverse-proxy/`](examples/reverse-proxy/) has nginx and Apache configurations with HTTPS from Let's Encrypt, step-by-step setup instructions, a local demo for each proxy, and `check.sh`, which tests that the PIN rate limit works through the proxy. Behind a proxy, set `PORT` to a local address (for example `127.0.0.1:8080`) and `TRUSTED_PROXIES` to the proxy's address.
+On a server of its own, [Running with HTTPS (Let's Encrypt)](#running-with-https-lets-encrypt) is the shortest way. To use a proxy you already run, [`examples/reverse-proxy/`](examples/reverse-proxy/) has nginx and Apache configurations with HTTPS from Let's Encrypt, step-by-step setup instructions, a local demo for each proxy, and `check.sh`, which tests that the PIN rate limit works through the proxy. Behind a proxy, set `PORT` to a local address (for example `127.0.0.1:8080`) and `TRUSTED_PROXIES` to the proxy's address.
 
 For a Cloudflare Tunnel with cloudflared on the same host, `TRUSTED_PROXIES=127.0.0.1` is enough; no Cloudflare-specific setting is needed. cloudflared adds the visitor's address as the last `X-Forwarded-For` entry, and Angel reads that header from the right, skipping trusted addresses.
 
