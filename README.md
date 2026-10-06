@@ -210,6 +210,10 @@ Inside the container the service always listens on **8080** (the image sets `POR
 
 [`examples/reverse-proxy/`](examples/reverse-proxy/) has nginx and Apache configurations with HTTPS from Let's Encrypt, step-by-step setup instructions, a local demo for each proxy, and `check.sh`, which tests that the PIN rate limit works through the proxy. Behind a proxy, set `PORT` to a local address (for example `127.0.0.1:8080`) and `TRUSTED_PROXIES` to the proxy's address.
 
+### Third-party licences
+
+`THIRD_PARTY_LICENSES.txt` holds the licence texts of the Go standard library and of every module compiled into the binary. `make compile` copies it next to each binary, so it is in the release archives, and the Docker image has it at `/app/THIRD_PARTY_LICENSES.txt`. Run `make licenses` after changing dependencies and commit the result.
+
 ## Configuration
 
 The application is configured via environment variables. You can set these in a `.env` file in the root directory. Environment variables explicitly set in the system or terminal take precedence over values in the `.env` file.
