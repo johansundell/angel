@@ -202,8 +202,11 @@ func untrustedProxyWarning(trusted []string, l Logger) (gin.HandlerFunc, error) 
 			return
 		}
 		peer := net.ParseIP(c.RemoteIP())
+		if peer == nil {
+			return // not a TCP peer, e.g. a Unix socket, which gin always trusts
+		}
 		for _, n := range nets {
-			if peer != nil && n.Contains(peer) {
+			if n.Contains(peer) {
 				return
 			}
 		}
