@@ -210,6 +210,10 @@ Inside the container the service always listens on **8080** (the image sets `POR
 
 [`examples/reverse-proxy/`](examples/reverse-proxy/) has nginx and Apache configurations with HTTPS from Let's Encrypt, step-by-step setup instructions, a local demo for each proxy, and `check.sh`, which tests that the PIN rate limit works through the proxy. Behind a proxy, set `PORT` to a local address (for example `127.0.0.1:8080`) and `TRUSTED_PROXIES` to the proxy's address.
 
+For a Cloudflare Tunnel with cloudflared on the same host, `TRUSTED_PROXIES=127.0.0.1` is enough; no Cloudflare-specific setting is needed. cloudflared adds the visitor's address as the last `X-Forwarded-For` entry, and Angel reads that header from the right, skipping trusted addresses.
+
+If a request carries `X-Forwarded-For` or `CF-Connecting-IP` from an address that isn't in `TRUSTED_PROXIES`, Angel logs a warning once with that address. It usually means the proxy's address is missing from `TRUSTED_PROXIES`.
+
 ### Third-party licences
 
 `THIRD_PARTY_LICENSES.txt` holds the licence texts of the Go standard library and of every module compiled into the binary. `make compile` copies it next to each binary, so it is in the release archives, and the Docker image has it at `/app/THIRD_PARTY_LICENSES.txt`. Run `make licenses` after changing dependencies and commit the result.

@@ -153,6 +153,7 @@ func (p *program) run(startup chan<- error) error {
 
 	routerEngine, err := router.NewRouter(router.Config{
 		Handler:  handler,
+		Auth:     authn,
 		LogSink:  logQueue,
 		Settings: settings,
 		Assets:   embeddedAssets,

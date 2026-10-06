@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -53,7 +55,8 @@ type LogSink interface {
 // Config contains the dependencies and settings required to construct a router
 type Config struct {
 	Handler  *handlers.Handler
-	LogSink  LogSink // Required when any route has UseLogger
+	Auth     *auth.Authenticator // Required when any route has a Role
+	LogSink  LogSink             // Required when any route has UseLogger
 	Settings types.AppSettings
 	Assets   fs.FS
 	Version  string
@@ -78,6 +81,12 @@ func NewRouter(cfg Config) (*gin.Engine, error) {
 	if err := router.SetTrustedProxies(cfg.Settings.TrustedProxies); err != nil {
 		return nil, fmt.Errorf("invalid TRUSTED_PROXIES: %w", err)
 	}
+	l := logging.OrStd(cfg.Logger)
+	warnUntrusted, err := untrustedProxyWarning(cfg.Settings.TrustedProxies, l)
+	if err != nil {
+		return nil, fmt.Errorf("invalid TRUSTED_PROXIES: %w", err)
+	}
+	router.Use(warnUntrusted)
 
 	if cfg.Version != "" {
 		router.Use(func(c *gin.Context) {
@@ -99,7 +108,6 @@ func NewRouter(cfg Config) (*gin.Engine, error) {
 		routes = GetRoutes(cfg.Handler)
 	}
 
-	l := logging.OrStd(cfg.Logger)
 	debug := cfg.Settings.Debug
 	if debug {
 		router.Use(AccessLog(l))
@@ -109,7 +117,7 @@ func NewRouter(cfg Config) (*gin.Engine, error) {
 		if route.UseAuth && cfg.Settings.AuthToken == "" {
 			return nil, fmt.Errorf("AUTH_TOKEN must be configured for route %q", route.Name)
 		}
-		if route.Role != "" && !cfg.Handler.AuthConfigured() {
+		if route.Role != "" && cfg.Auth == nil {
 			return nil, fmt.Errorf("PIN authentication must be configured for route %q", route.Name)
 		}
 		if route.UseLogger && cfg.LogSink == nil {
@@ -131,7 +139,7 @@ func NewRouter(cfg Config) (*gin.Engine, error) {
 		}
 
 		if route.Role != "" {
-			fn = cfg.Handler.RequireRole(route.Role)(fn)
+			fn = RequireRole(cfg.Auth, route.Role)(fn)
 		}
 
 		router.Handle(route.Method, route.Pattern, WrapHandler(fn))
@@ -159,6 +167,69 @@ func AccessLog(l Logger) gin.HandlerFunc {
 		start := time.Now()
 		c.Next()
 		l.Infof("%s %s %d %v %s", c.Request.Method, c.Request.URL.Path, c.Writer.Status(), time.Since(start).Round(time.Microsecond), c.ClientIP())
+	}
+}
+
+// untrustedProxyWarning logs a warning, once, the first time a request
+// carries a forwarding header from a peer outside trusted. That usually means
+// the service runs behind a proxy without TRUSTED_PROXIES, so every visitor
+// shares the proxy's address and one PIN rate limit. An empty trusted list is
+// not warned about on its own: it is correct when clients connect directly.
+func untrustedProxyWarning(trusted []string, l Logger) (gin.HandlerFunc, error) {
+	l = logging.OrStd(l)
+	nets := make([]*net.IPNet, 0, len(trusted))
+	for _, p := range trusted {
+		if !strings.Contains(p, "/") {
+			// A bare address trusts only itself, as in gin.
+			if ip := net.ParseIP(p); ip != nil && ip.To4() != nil {
+				p += "/32"
+			} else {
+				p += "/128"
+			}
+		}
+		_, n, err := net.ParseCIDR(p)
+		if err != nil {
+			return nil, err
+		}
+		nets = append(nets, n)
+	}
+	var warned atomic.Bool
+	return func(c *gin.Context) {
+		if warned.Load() {
+			return
+		}
+		if c.GetHeader("X-Forwarded-For") == "" && c.GetHeader("CF-Connecting-IP") == "" {
+			return
+		}
+		peer := net.ParseIP(c.RemoteIP())
+		for _, n := range nets {
+			if peer != nil && n.Contains(peer) {
+				return
+			}
+		}
+		if warned.CompareAndSwap(false, true) {
+			l.Warningf("forwarding header from %s, which is not in TRUSTED_PROXIES: every visitor gets that address and shares one PIN rate limit; add the proxy's address to TRUSTED_PROXIES (see examples/reverse-proxy/)", c.RemoteIP())
+		}
+	}, nil
+}
+
+// RequireRole lets the request through only with a valid session for role;
+// anyone else is sent back to the entry screen.
+func RequireRole(a *auth.Authenticator, role auth.Role) func(HandlerFuncWithError) HandlerFuncWithError {
+	return func(inner HandlerFuncWithError) HandlerFuncWithError {
+		return func(c *gin.Context) error {
+			if a == nil {
+				return httperror.ReturnWithHTTPStatus(errors.New("PIN authentication is not configured"), http.StatusInternalServerError)
+			}
+			if got, ok := a.Session(c.Request); !ok || got != role {
+				c.Redirect(http.StatusSeeOther, "/")
+				return nil
+			}
+			// Private household notes must not linger in shared caches or
+			// the back/forward cache after the session ends.
+			c.Header("Cache-Control", "no-store")
+			return inner(c)
+		}
 	}
 }
 
