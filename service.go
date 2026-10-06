@@ -150,7 +150,7 @@ func (p *program) run(startup chan<- error) error {
 
 	handler, err := handlers.NewHandler(st, settings.UseFileSystem, embeddedTemplates, nameOfService, Version,
 		handlers.WithAuth(authn), handlers.WithNotes(notes),
-		handlers.WithSharedCaregiverNames(settings.PIN.ShareCaregiverNames))
+		handlers.WithShareCaregiverNames(settings.PIN.ShareCaregiverNames))
 	if err != nil {
 		logError("failed to create handlers: %v", err)
 		startup <- err

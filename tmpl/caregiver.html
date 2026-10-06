@@ -19,7 +19,7 @@
 		{{- if .acks}}
 		<ul class="ack-feed">
 			{{- range .acks}}
-			<li class="ack-feed-item">{{.}}</li>
+			<li class="ack-feed-item">{{.Who}} kl {{.At}}</li>
 			{{- end}}
 		</ul>
 		{{- else}}

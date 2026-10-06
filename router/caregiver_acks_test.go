@@ -99,7 +99,7 @@ func TestCaregiverAcks_DashboardSaysCaregiversSeeTimes(t *testing.T) {
 }
 
 func TestCaregiverAcks_SharedNamesShowNameAndTime(t *testing.T) {
-	app := newPinApp(t, handlers.WithSharedCaregiverNames(true))
+	app := newPinApp(t, handlers.WithShareCaregiverNames(true))
 	app.acknowledgeAt("Maria", time.Date(2026, 10, 5, 6, 35, 0, 0, time.UTC))
 	app.acknowledgeAt("", time.Date(2026, 10, 5, 10, 5, 0, 0, time.UTC))
 	app.acknowledgeAt("Ahmed", time.Date(2026, 10, 5, 15, 0, 0, 0, time.UTC))
@@ -113,7 +113,7 @@ func TestCaregiverAcks_SharedNamesShowNameAndTime(t *testing.T) {
 }
 
 func TestCaregiverAcks_SharedNamesAreEscaped(t *testing.T) {
-	app := newPinApp(t, handlers.WithSharedCaregiverNames(true))
+	app := newPinApp(t, handlers.WithShareCaregiverNames(true))
 	app.acknowledgeAt("<b>Eva</b>", time.Date(2026, 10, 5, 8, 0, 0, 0, time.UTC))
 
 	body := app.get("/note", app.caregiverSession()).Body.String()
@@ -124,7 +124,7 @@ func TestCaregiverAcks_SharedNamesAreEscaped(t *testing.T) {
 }
 
 func TestCaregiverAcks_NamesOffByDefault(t *testing.T) {
-	app := newPinApp(t, handlers.WithSharedCaregiverNames(false))
+	app := newPinApp(t)
 	app.acknowledgeAt("Maria", time.Date(2026, 10, 5, 6, 35, 0, 0, time.UTC))
 
 	body := app.get("/note", app.caregiverSession()).Body.String()
@@ -135,7 +135,7 @@ func TestCaregiverAcks_NamesOffByDefault(t *testing.T) {
 }
 
 func TestCaregiverAcks_DashboardSaysCaregiversSeeNames(t *testing.T) {
-	app := newPinApp(t, handlers.WithSharedCaregiverNames(true))
+	app := newPinApp(t, handlers.WithShareCaregiverNames(true))
 
 	body := app.get("/admin", app.clientSession()).Body.String()
 

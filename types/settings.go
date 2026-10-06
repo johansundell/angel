@@ -108,7 +108,7 @@ func (p PINSettings) Validate() error {
 		return fmt.Errorf("SESSION_SECRET must be at least 32 characters")
 	}
 	if p.InvalidShareCaregiverNames != "" {
-		return fmt.Errorf("SHARE_CAREGIVER_NAMES must be true or false, got %q", p.InvalidShareCaregiverNames)
+		return fmt.Errorf("SHARE_CAREGIVER_NAMES must be a boolean such as true or false, got %q", p.InvalidShareCaregiverNames)
 	}
 	return nil
 }

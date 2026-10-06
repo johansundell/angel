@@ -85,7 +85,7 @@ func (h *Handler) CaregiverView(c *gin.Context) error {
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
-	data["acks"] = h.caregiverAckLines(acks)
+	data["acks"] = h.caregiverAckFeed(acks)
 	if confirmation := h.takeAckConfirmation(c, acks); confirmation != "" {
 		data["confirmation"] = confirmation
 	}
@@ -149,28 +149,27 @@ func (h *Handler) takeAckConfirmation(c *gin.Context, todaysAcks []types.Acknowl
 	return ""
 }
 
-// caregiverAckLines returns the lines of the Caregivers' list of acks,
-// newest first: "Kvitterat kl 08:35", or "Maria kl 08:35" when names are
-// shared. Names are off by default: the Caregiver PIN is shared, so they
-// would tell anyone who knows it who visits the Client and when (ADR-0006).
-func (h *Handler) caregiverAckLines(acks []types.Acknowledgement) []string {
-	lines := make([]string, 0, len(acks))
-	for _, a := range newestFirst(acks) {
-		who := "Kvitterat"
-		if h.shareNames && a.Name != "" {
-			who = a.Name
+// caregiverAckFeed returns the Caregivers' list of acks, newest first:
+// "Kvitterat kl 08:35", or "Maria kl 08:35" when names are shared. Names are
+// off by default: the Caregiver PIN is shared, so they would tell anyone who
+// knows it who visits the Client and when (ADR-0006).
+func (h *Handler) caregiverAckFeed(acks []types.Acknowledgement) []ackFeedEntry {
+	return ackFeed(acks, func(a types.Acknowledgement) string {
+		if h.shareCaregiverNames && a.Name != "" {
+			return a.Name
 		}
-		lines = append(lines, who+" kl "+clockTime(a.CreatedAt))
-	}
-	return lines
+		return "Kvitterat"
+	})
 }
 
-// newestFirst returns a reversed copy of acks, which the store lists oldest
-// first.
-func newestFirst(acks []types.Acknowledgement) []types.Acknowledgement {
-	out := slices.Clone(acks)
-	slices.Reverse(out)
-	return out
+// ackFeed returns acks, which the store lists oldest first, as feed entries
+// newest first, with who naming each one.
+func ackFeed(acks []types.Acknowledgement, who func(types.Acknowledgement) string) []ackFeedEntry {
+	feed := make([]ackFeedEntry, 0, len(acks))
+	for _, a := range slices.Backward(acks) {
+		feed = append(feed, ackFeedEntry{Who: who(a), At: clockTime(a.CreatedAt)})
+	}
+	return feed
 }
 
 // caregiverName trims the optional first name and caps its length.

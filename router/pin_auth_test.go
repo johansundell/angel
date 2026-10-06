@@ -43,7 +43,7 @@ type pinApp struct {
 }
 
 // newPinApp builds the app; opts are added to the handler's, for settings
-// such as handlers.WithSharedCaregiverNames.
+// such as handlers.WithShareCaregiverNames.
 func newPinApp(t *testing.T, opts ...handlers.Option) *pinApp {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
@@ -69,8 +69,8 @@ func newPinApp(t *testing.T, opts ...handlers.Option) *pinApp {
 	}
 
 	repoRoot := os.DirFS("..")
-	h, err := handlers.NewHandler(s, false, repoRoot, "angel", "dev",
-		append([]handlers.Option{handlers.WithAuth(authn), handlers.WithNotes(s), handlers.WithClock(clock.Now)}, opts...)...)
+	base := []handlers.Option{handlers.WithAuth(authn), handlers.WithNotes(s), handlers.WithClock(clock.Now)}
+	h, err := handlers.NewHandler(s, false, repoRoot, "angel", "dev", append(base, opts...)...)
 	if err != nil {
 		t.Fatalf("NewHandler: %v", err)
 	}

@@ -324,31 +324,51 @@ func TestLoadSettings_PIN(t *testing.T) {
 }
 
 func TestLoadSettings_ShareCaregiverNames(t *testing.T) {
+	defer unsetEnv("SHARE_CAREGIVER_NAMES")()
+	defer loadSettings()
+
+	// load reads content as .env, with SHARE_CAREGIVER_NAMES also set in the
+	// environment when env is not nil, and restores the environment before
+	// returning.
+	load := func(t *testing.T, content string, env *string) types.AppSettings {
+		t.Helper()
+		defer unsetEnv("SHARE_CAREGIVER_NAMES")()
+		if env != nil {
+			os.Setenv("SHARE_CAREGIVER_NAMES", *env)
+		}
+		path := filepath.Join(t.TempDir(), ".env")
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		loadSettings(path)
+		s := settings
+		s.PIN.CaregiverPIN, s.PIN.MasterPIN = "1234", "98765"
+		return s
+	}
+	str := func(s string) *string { return &s }
+
 	for _, tc := range []struct {
-		name, value string
-		set         bool
-		want        bool
-		wantErr     bool
+		name    string
+		envFile string
+		env     *string
+		want    bool
+		wantErr bool
 	}{
 		{name: "unset", want: false},
-		{name: "empty", value: "", set: true, want: false},
-		{name: "true", value: "true", set: true, want: true},
-		{name: "false", value: "false", set: true, want: false},
-		{name: "invalid", value: "yes", set: true, wantErr: true},
+		{name: "empty", envFile: "SHARE_CAREGIVER_NAMES=\n", want: false},
+		{name: "true in .env", envFile: "SHARE_CAREGIVER_NAMES=true\n", want: true},
+		{name: "false in .env", envFile: "SHARE_CAREGIVER_NAMES=false\n", want: false},
+		{name: "true in environment", env: str("true"), want: true},
+		{name: "environment wins over .env", envFile: "SHARE_CAREGIVER_NAMES=true\n", env: str("false"), want: false},
+		{name: "invalid", envFile: "SHARE_CAREGIVER_NAMES=yes\n", wantErr: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			defer unsetEnv("SHARE_CAREGIVER_NAMES")()
-			if tc.set {
-				t.Setenv("SHARE_CAREGIVER_NAMES", tc.value)
-			}
-			loadSettings(filepath.Join(t.TempDir(), "missing.env"))
-			defer loadSettings()
+			s := load(t, tc.envFile, tc.env)
 
-			if settings.PIN.ShareCaregiverNames != tc.want {
-				t.Errorf("ShareCaregiverNames = %v, want %v", settings.PIN.ShareCaregiverNames, tc.want)
+			if s.PIN.ShareCaregiverNames != tc.want {
+				t.Errorf("ShareCaregiverNames = %v, want %v", s.PIN.ShareCaregiverNames, tc.want)
 			}
-			settings.PIN.CaregiverPIN, settings.PIN.MasterPIN = "1234", "98765"
-			err := settings.Validate()
+			err := s.Validate()
 			if tc.wantErr {
 				if err == nil || !strings.Contains(err.Error(), "SHARE_CAREGIVER_NAMES") {
 					t.Errorf("Validate() = %v, want an error naming SHARE_CAREGIVER_NAMES", err)
@@ -357,20 +377,5 @@ func TestLoadSettings_ShareCaregiverNames(t *testing.T) {
 				t.Errorf("Validate() = %v, want nil", err)
 			}
 		})
-	}
-}
-
-func TestLoadSettings_ShareCaregiverNamesFromEnvFile(t *testing.T) {
-	defer unsetEnv("SHARE_CAREGIVER_NAMES")()
-	env := filepath.Join(t.TempDir(), ".env")
-	if err := os.WriteFile(env, []byte("SHARE_CAREGIVER_NAMES=true\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-
-	loadSettings(env)
-	defer loadSettings()
-
-	if !settings.PIN.ShareCaregiverNames {
-		t.Error("SHARE_CAREGIVER_NAMES=true in .env not applied")
 	}
 }
