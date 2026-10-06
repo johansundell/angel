@@ -20,6 +20,9 @@ type Handler struct {
 	auth             *auth.Authenticator // nil: PIN entry and role-protected views fail closed
 	notes            store.NoteStore     // nil: the note views fail closed
 	now              func() time.Time
+	// shareNames shows Caregivers each other's first names with the times
+	// of today's Acknowledgements; off, they see only the times.
+	shareNames bool
 }
 
 // Option configures optional Handler dependencies.
@@ -38,6 +41,12 @@ func WithNotes(n store.NoteStore) Option {
 // WithClock replaces time.Now, so tests can choose the current date.
 func WithClock(now func() time.Time) Option {
 	return func(h *Handler) { h.now = now }
+}
+
+// WithSharedCaregiverNames shows Caregivers each other's first names in the
+// list of today's Acknowledgements (SHARE_CAREGIVER_NAMES).
+func WithSharedCaregiverNames(share bool) Option {
+	return func(h *Handler) { h.shareNames = share }
 }
 
 // NewHandler creates the handlers. With useFileSystem, templates are read

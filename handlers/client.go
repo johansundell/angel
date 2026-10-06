@@ -42,6 +42,8 @@ func (h *Handler) ClientDashboard(c *gin.Context) error {
 		"today":    today,
 		"advance":  advance,
 		"acks":     acks,
+		// What the Caregivers' list shows, so the Client knows.
+		"namesShared": h.shareNames,
 	})
 }
 

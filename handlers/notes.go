@@ -60,8 +60,8 @@ const ackCookieTTL = time.Minute
 const maxCaregiverNameLen = 40
 
 // CaregiverView shows today's Daily Note to a caregiver, or an affirmative
-// empty state when there is none, then the times of today's
-// Acknowledgements and the Kvittera form. After acknowledging, it also
+// empty state when there is none, then today's Acknowledgements and the
+// Kvittera form. After acknowledging, it also
 // confirms who acknowledged and when.
 func (h *Handler) CaregiverView(c *gin.Context) error {
 	if h.notes == nil {
@@ -85,7 +85,7 @@ func (h *Handler) CaregiverView(c *gin.Context) error {
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
-	data["ackTimes"] = ackTimes(acks)
+	data["acks"] = h.caregiverAckLines(acks)
 	if confirmation := h.takeAckConfirmation(c, acks); confirmation != "" {
 		data["confirmation"] = confirmation
 	}
@@ -149,15 +149,20 @@ func (h *Handler) takeAckConfirmation(c *gin.Context, todaysAcks []types.Acknowl
 	return ""
 }
 
-// ackTimes returns the times of acks, newest first. Caregivers see only the
-// times: the Caregiver PIN is shared, so names would tell anyone who knows it
-// who visits the Client and when.
-func ackTimes(acks []types.Acknowledgement) []string {
-	times := make([]string, 0, len(acks))
+// caregiverAckLines returns the lines of the Caregivers' list of acks,
+// newest first: "Kvitterat kl 08:35", or "Maria kl 08:35" when names are
+// shared. Names are off by default: the Caregiver PIN is shared, so they
+// would tell anyone who knows it who visits the Client and when (ADR-0006).
+func (h *Handler) caregiverAckLines(acks []types.Acknowledgement) []string {
+	lines := make([]string, 0, len(acks))
 	for _, a := range newestFirst(acks) {
-		times = append(times, clockTime(a.CreatedAt))
+		who := "Kvitterat"
+		if h.shareNames && a.Name != "" {
+			who = a.Name
+		}
+		lines = append(lines, who+" kl "+clockTime(a.CreatedAt))
 	}
-	return times
+	return lines
 }
 
 // newestFirst returns a reversed copy of acks, which the store lists oldest

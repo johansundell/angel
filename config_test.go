@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -319,5 +320,57 @@ func TestLoadSettings_PIN(t *testing.T) {
 	}
 	if s = load(t, "SESSION_TIMEOUT=25m\nCAREGIVER_SESSION_TIMEOUT=17m\n"); s.PIN.CaregiverSessionTTL != 17*time.Minute || s.PIN.LegacySessionTimeout {
 		t.Errorf("both names set: got %v, legacy %v; CAREGIVER_SESSION_TIMEOUT should win", s.PIN.CaregiverSessionTTL, s.PIN.LegacySessionTimeout)
+	}
+}
+
+func TestLoadSettings_ShareCaregiverNames(t *testing.T) {
+	for _, tc := range []struct {
+		name, value string
+		set         bool
+		want        bool
+		wantErr     bool
+	}{
+		{name: "unset", want: false},
+		{name: "empty", value: "", set: true, want: false},
+		{name: "true", value: "true", set: true, want: true},
+		{name: "false", value: "false", set: true, want: false},
+		{name: "invalid", value: "yes", set: true, wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			defer unsetEnv("SHARE_CAREGIVER_NAMES")()
+			if tc.set {
+				t.Setenv("SHARE_CAREGIVER_NAMES", tc.value)
+			}
+			loadSettings(filepath.Join(t.TempDir(), "missing.env"))
+			defer loadSettings()
+
+			if settings.PIN.ShareCaregiverNames != tc.want {
+				t.Errorf("ShareCaregiverNames = %v, want %v", settings.PIN.ShareCaregiverNames, tc.want)
+			}
+			settings.PIN.CaregiverPIN, settings.PIN.MasterPIN = "1234", "98765"
+			err := settings.Validate()
+			if tc.wantErr {
+				if err == nil || !strings.Contains(err.Error(), "SHARE_CAREGIVER_NAMES") {
+					t.Errorf("Validate() = %v, want an error naming SHARE_CAREGIVER_NAMES", err)
+				}
+			} else if err != nil {
+				t.Errorf("Validate() = %v, want nil", err)
+			}
+		})
+	}
+}
+
+func TestLoadSettings_ShareCaregiverNamesFromEnvFile(t *testing.T) {
+	defer unsetEnv("SHARE_CAREGIVER_NAMES")()
+	env := filepath.Join(t.TempDir(), ".env")
+	if err := os.WriteFile(env, []byte("SHARE_CAREGIVER_NAMES=true\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	loadSettings(env)
+	defer loadSettings()
+
+	if !settings.PIN.ShareCaregiverNames {
+		t.Error("SHARE_CAREGIVER_NAMES=true in .env not applied")
 	}
 }

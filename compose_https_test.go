@@ -126,3 +126,13 @@ func TestMakeDockerBuildHTTPSBuilds(t *testing.T) {
 		}
 	}
 }
+
+// TestComposeHTTPSPassesShareCaregiverNames checks that SHARE_CAREGIVER_NAMES
+// in .env reaches Angel, which otherwise gets only the variables it names.
+func TestComposeHTTPSPassesShareCaregiverNames(t *testing.T) {
+	angel := composeHTTPSConfig(t, "DOMAIN=angel.example.com\nSHARE_CAREGIVER_NAMES=true\n")
+	env, _ := angel["environment"].(map[string]any)
+	if got := env["SHARE_CAREGIVER_NAMES"]; got != "true" {
+		t.Errorf("SHARE_CAREGIVER_NAMES in the angel container = %v, want true", got)
+	}
+}

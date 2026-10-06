@@ -27,6 +27,8 @@ services:
       # Optional; unset uses the defaults (20m and 8h).
       - CAREGIVER_SESSION_TIMEOUT
       - CLIENT_SESSION_TIMEOUT
+      # Optional; true shows Caregivers each other's first names.
+      - SHARE_CAREGIVER_NAMES
     restart: unless-stopped
 
 volumes:

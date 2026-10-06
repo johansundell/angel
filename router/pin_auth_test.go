@@ -42,7 +42,9 @@ type pinApp struct {
 	store *store.SQLiteStore
 }
 
-func newPinApp(t *testing.T) *pinApp {
+// newPinApp builds the app; opts are added to the handler's, for settings
+// such as handlers.WithSharedCaregiverNames.
+func newPinApp(t *testing.T, opts ...handlers.Option) *pinApp {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 
@@ -68,7 +70,7 @@ func newPinApp(t *testing.T) *pinApp {
 
 	repoRoot := os.DirFS("..")
 	h, err := handlers.NewHandler(s, false, repoRoot, "angel", "dev",
-		handlers.WithAuth(authn), handlers.WithNotes(s), handlers.WithClock(clock.Now))
+		append([]handlers.Option{handlers.WithAuth(authn), handlers.WithNotes(s), handlers.WithClock(clock.Now)}, opts...)...)
 	if err != nil {
 		t.Fatalf("NewHandler: %v", err)
 	}
