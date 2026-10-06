@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
@@ -24,11 +23,12 @@ func (h *Handler) ClientDashboard(c *gin.Context) error {
 	if h.notes == nil {
 		return httperror.ReturnWithHTTPStatus(errNotesNotConfigured, http.StatusInternalServerError)
 	}
-	today, err := h.loadEditor(c, h.today(), todayEditor)
+	todayDay := h.today()
+	today, err := h.loadEditor(c, todayDay, todayEditor)
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
-	advance, err := h.loadEditor(c, h.tomorrow(), advanceEditor)
+	advance, err := h.loadEditor(c, todayDay.Next(), advanceEditor)
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
@@ -68,7 +68,7 @@ type ackFeedEntry struct {
 // loadAckFeed returns today's Acknowledgements, newest first. Being keyed by
 // today's date, the feed starts empty at each Rollover.
 func (h *Handler) loadAckFeed(c *gin.Context) ([]ackFeedEntry, error) {
-	acks, err := h.notes.ListAcknowledgements(c.Request.Context(), h.today().Format(dateLayout))
+	acks, err := h.notes.ListAcknowledgements(c.Request.Context(), h.today().String())
 	if err != nil {
 		return nil, err
 	}
@@ -94,8 +94,8 @@ type noteEditor struct {
 	ClearConfirm string
 	MaxLen       int
 
-	Date    string // dateLayout, posted back so stale forms are refused
-	Day     string // swedishDate
+	Date    types.Day // posted back so stale forms are refused
+	Day     string    // swedishDate
 	Note    *types.DailyNote
 	SavedAt string
 }
@@ -120,11 +120,11 @@ var (
 )
 
 // loadEditor fills in editor e for day's note.
-func (h *Handler) loadEditor(c *gin.Context, day time.Time, e noteEditor) (noteEditor, error) {
+func (h *Handler) loadEditor(c *gin.Context, day types.Day, e noteEditor) (noteEditor, error) {
 	e.MaxLen = maxDailyNoteLen
-	e.Date = day.Format(dateLayout)
+	e.Date = day
 	e.Day = swedishDate(day)
-	note, ok, err := h.notes.GetDailyNote(c.Request.Context(), e.Date)
+	note, ok, err := h.notes.GetDailyNote(c.Request.Context(), day)
 	if err != nil {
 		return e, err
 	}
@@ -164,9 +164,11 @@ func (h *Handler) ClearAdvanceNote(c *gin.Context) error {
 // the wrong day's note.
 var errStaleEditor = errors.New("the page is out of date after midnight; reload it")
 
-// checkEditorDate refuses the post unless the form's date field is day.
-func checkEditorDate(c *gin.Context, day time.Time) error {
-	if c.PostForm("date") != day.Format(dateLayout) {
+// checkEditorDate refuses the post unless the form's date field parses as a
+// Day and matches day.
+func checkEditorDate(c *gin.Context, day types.Day) error {
+	posted, err := types.ParseDay(c.PostForm("date"))
+	if err != nil || posted != day {
 		return httperror.ReturnWithHTTPStatus(errStaleEditor, http.StatusConflict)
 	}
 	return nil
@@ -174,7 +176,7 @@ func checkEditorDate(c *gin.Context, day time.Time) error {
 
 // saveNoteFor stores the editor's note for day. Saving blank text clears
 // the note, so caregivers see the empty state rather than an empty card.
-func (h *Handler) saveNoteFor(c *gin.Context, day time.Time) error {
+func (h *Handler) saveNoteFor(c *gin.Context, day types.Day) error {
 	if h.notes == nil {
 		return httperror.ReturnWithHTTPStatus(errNotesNotConfigured, http.StatusInternalServerError)
 	}
@@ -185,13 +187,12 @@ func (h *Handler) saveNoteFor(c *gin.Context, day time.Time) error {
 	if n := utf8.RuneCountInString(text); n > maxDailyNoteLen {
 		return httperror.ReturnWithHTTPStatus(fmt.Errorf("note is %d characters, at most %d allowed", n, maxDailyNoteLen), http.StatusBadRequest)
 	}
-	date := day.Format(dateLayout)
 	var err error
 	if text == "" {
-		err = h.notes.DeleteDailyNote(c.Request.Context(), date)
+		err = h.notes.DeleteDailyNote(c.Request.Context(), day)
 	} else {
 		err = h.notes.SaveDailyNote(c.Request.Context(), types.DailyNote{
-			Date:      date,
+			Date:      day,
 			Text:      text,
 			Important: c.PostForm("important") != "",
 		})
@@ -206,14 +207,14 @@ func (h *Handler) saveNoteFor(c *gin.Context, day time.Time) error {
 
 // clearNoteFor removes the note for day, then redirects back to the
 // dashboard.
-func (h *Handler) clearNoteFor(c *gin.Context, day time.Time) error {
+func (h *Handler) clearNoteFor(c *gin.Context, day types.Day) error {
 	if h.notes == nil {
 		return httperror.ReturnWithHTTPStatus(errNotesNotConfigured, http.StatusInternalServerError)
 	}
 	if err := checkEditorDate(c, day); err != nil {
 		return err
 	}
-	if err := h.notes.DeleteDailyNote(c.Request.Context(), day.Format(dateLayout)); err != nil {
+	if err := h.notes.DeleteDailyNote(c.Request.Context(), day); err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
 	c.Redirect(http.StatusSeeOther, "/admin")

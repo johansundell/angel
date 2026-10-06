@@ -20,6 +20,14 @@ func (a *pinApp) caregiverSession() *http.Cookie {
 	return c
 }
 
+func day(s string) types.Day {
+	d, err := types.ParseDay(s)
+	if err != nil {
+		panic(err)
+	}
+	return d
+}
+
 func (a *pinApp) saveNote(n types.DailyNote) {
 	a.t.Helper()
 	if err := a.store.SaveDailyNote(context.Background(), n); err != nil {
@@ -29,7 +37,7 @@ func (a *pinApp) saveNote(n types.DailyNote) {
 
 func TestDailyNote_CaregiverSeesTodaysNote(t *testing.T) {
 	app := newPinApp(t)
-	app.saveNote(types.DailyNote{Date: "2026-10-05", Text: "Ge medicin klockan 10.\nVattna blommorna."})
+	app.saveNote(types.DailyNote{Date: day("2026-10-05"), Text: "Ge medicin klockan 10.\nVattna blommorna."})
 
 	w := app.get("/note", app.caregiverSession())
 
@@ -52,7 +60,7 @@ func TestDailyNote_CaregiverSeesTodaysNote(t *testing.T) {
 
 func TestDailyNote_ImportantNoteIsHighlighted(t *testing.T) {
 	app := newPinApp(t)
-	app.saveNote(types.DailyNote{Date: "2026-10-05", Text: "Ring sjuksköterskan om febern stiger.", Important: true})
+	app.saveNote(types.DailyNote{Date: day("2026-10-05"), Text: "Ring sjuksköterskan om febern stiger.", Important: true})
 
 	w := app.get("/note", app.caregiverSession())
 
@@ -70,8 +78,8 @@ func TestDailyNote_ImportantNoteIsHighlighted(t *testing.T) {
 func TestDailyNote_EmptyStateWhenNoNoteToday(t *testing.T) {
 	app := newPinApp(t)
 	// Notes for other days must not show up today.
-	app.saveNote(types.DailyNote{Date: "2026-10-04", Text: "Gårdagens anteckning"})
-	app.saveNote(types.DailyNote{Date: "2026-10-06", Text: "Morgondagens anteckning"})
+	app.saveNote(types.DailyNote{Date: day("2026-10-04"), Text: "Gårdagens anteckning"})
+	app.saveNote(types.DailyNote{Date: day("2026-10-06"), Text: "Morgondagens anteckning"})
 
 	w := app.get("/note", app.caregiverSession())
 
@@ -91,8 +99,8 @@ func TestDailyNote_EmptyStateWhenNoNoteToday(t *testing.T) {
 
 func TestDailyNote_UsesStockholmCalendarDate(t *testing.T) {
 	app := newPinApp(t)
-	app.saveNote(types.DailyNote{Date: "2026-10-05", Text: "Måndagens anteckning"})
-	app.saveNote(types.DailyNote{Date: "2026-10-06", Text: "Tisdagens anteckning"})
+	app.saveNote(types.DailyNote{Date: day("2026-10-05"), Text: "Måndagens anteckning"})
+	app.saveNote(types.DailyNote{Date: day("2026-10-06"), Text: "Tisdagens anteckning"})
 
 	// 22:30 UTC is already 00:30 on Tuesday in Stockholm (CEST, UTC+2).
 	app.clock.now = time.Date(2026, 10, 5, 22, 30, 0, 0, time.UTC)
@@ -108,7 +116,7 @@ func TestDailyNote_UsesStockholmCalendarDate(t *testing.T) {
 
 func TestDailyNote_RequiresCaregiverSession(t *testing.T) {
 	app := newPinApp(t)
-	app.saveNote(types.DailyNote{Date: "2026-10-05", Text: "Privat anteckning"})
+	app.saveNote(types.DailyNote{Date: day("2026-10-05"), Text: "Privat anteckning"})
 
 	w := app.get("/note")
 	assertRedirect(t, w, "/")
@@ -127,7 +135,7 @@ func TestDailyNote_RequiresCaregiverSession(t *testing.T) {
 
 func TestDailyNote_TextIsEscaped(t *testing.T) {
 	app := newPinApp(t)
-	app.saveNote(types.DailyNote{Date: "2026-10-05", Text: "<script>alert(1)</script>"})
+	app.saveNote(types.DailyNote{Date: day("2026-10-05"), Text: "<script>alert(1)</script>"})
 
 	body := app.get("/note", app.caregiverSession()).Body.String()
 

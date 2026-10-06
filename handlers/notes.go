@@ -30,15 +30,14 @@ func mustLoadLocation(name string) *time.Location {
 
 var errNotesNotConfigured = errors.New("note storage is not configured")
 
-// today returns the current local date.
-func (h *Handler) today() time.Time {
-	return h.now().In(localZone)
+// today returns the current Day in the Client's home.
+func (h *Handler) today() types.Day {
+	return types.DayOf(h.now())
 }
 
-// tomorrow returns the local date after today. AddDate keeps the calendar
-// day right across DST changes.
-func (h *Handler) tomorrow() time.Time {
-	return h.today().AddDate(0, 0, 1)
+// tomorrow returns the Day after today.
+func (h *Handler) tomorrow() types.Day {
+	return h.today().Next()
 }
 
 var (
@@ -51,9 +50,9 @@ func clockTime(t time.Time) string {
 	return t.In(localZone).Format("15:04")
 }
 
-// swedishDate formats t like "måndag 5 oktober 2026".
-func swedishDate(t time.Time) string {
-	return fmt.Sprintf("%s %d %s %d", swedishWeekdays[t.Weekday()], t.Day(), swedishMonths[t.Month()-1], t.Year())
+// swedishDate formats d like "måndag 5 oktober 2026".
+func swedishDate(d types.Day) string {
+	return fmt.Sprintf("%s %d %s %d", swedishWeekdays[d.Weekday()], d.DayOfMonth(), swedishMonths[d.Month()-1], d.Year())
 }
 
 // ackCookieName is a one-time cookie carrying the ID of the caregiver's own
@@ -76,8 +75,7 @@ func (h *Handler) CaregiverView(c *gin.Context) error {
 		return httperror.ReturnWithHTTPStatus(errNotesNotConfigured, http.StatusInternalServerError)
 	}
 	today := h.today()
-	date := today.Format(dateLayout)
-	note, ok, err := h.notes.GetDailyNote(c.Request.Context(), date)
+	note, ok, err := h.notes.GetDailyNote(c.Request.Context(), today)
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
@@ -90,7 +88,7 @@ func (h *Handler) CaregiverView(c *gin.Context) error {
 		data["note"] = note
 		data["noteHTML"] = noteHTML
 	}
-	confirmation, err := h.takeAckConfirmation(c, date)
+	confirmation, err := h.takeAckConfirmation(c, today.String())
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
@@ -106,11 +104,12 @@ func (h *Handler) AcknowledgeNote(c *gin.Context) error {
 	if h.notes == nil {
 		return httperror.ReturnWithHTTPStatus(errNotesNotConfigured, http.StatusInternalServerError)
 	}
-	today := h.today()
+	now := h.now().In(localZone)
+	today := types.DayOf(now)
 	ack := types.Acknowledgement{
-		Date:      today.Format(dateLayout),
+		Date:      today.String(),
 		Name:      caregiverName(c.PostForm("name")),
-		CreatedAt: today,
+		CreatedAt: now,
 	}
 	id, err := h.notes.AddAcknowledgement(c.Request.Context(), ack)
 	if err != nil {
