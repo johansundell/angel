@@ -779,6 +779,12 @@ body {
     margin-bottom: 2rem;
 }
 
+/* On the Caregiver view the list sits between the note and the Kvittera
+   form, which has its own top margin. */
+.ack-feed-caregiver {
+    margin: 1.75rem 0 0;
+}
+
 .ack-feed {
     margin: 0;
     padding: 0;

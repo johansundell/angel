@@ -12,6 +12,10 @@ import (
 	"github.com/johansundell/angel/types"
 )
 
+// ackConfirmationMark marks the one-time confirmation. The list of today's
+// acknowledgements also says "Kvitterat", so look for the confirmation itself.
+const ackConfirmationMark = `class="ack-confirmation"`
+
 // acknowledge posts the Kvittera form with the given caregiver name.
 func (a *pinApp) acknowledge(name string, cookies ...*http.Cookie) *httptest.ResponseRecorder {
 	a.t.Helper()
@@ -63,7 +67,7 @@ func TestAcknowledgement_NoteViewHasKvitteraForm(t *testing.T) {
 			t.Errorf("note view missing %q", want)
 		}
 	}
-	if strings.Contains(body, "Kvitterat") {
+	if strings.Contains(body, ackConfirmationMark) {
 		t.Error("confirmation shown before acknowledging")
 	}
 }
@@ -101,7 +105,7 @@ func TestAcknowledgement_AnonymousWhenNameBlank(t *testing.T) {
 
 	body := app.follow(app.acknowledge("   ", c), c).Body.String()
 
-	if !strings.Contains(body, "Kvitterat kl 14:05") {
+	if !strings.Contains(body, "✓ Kvitterat kl 14:05") {
 		t.Errorf("missing anonymous confirmation, got %q", body)
 	}
 	acks := app.acknowledgements(day("2026-10-05"))
@@ -186,11 +190,11 @@ func TestAcknowledgement_ConfirmationIsShownOnce(t *testing.T) {
 
 	// A caregiver picking up the same phone later must not be told the note
 	// is already acknowledged.
-	if strings.Contains(app.get("/note", c).Body.String(), "Kvitterat") {
+	if strings.Contains(app.get("/note", c).Body.String(), ackConfirmationMark) {
 		t.Error("confirmation shown again on the next visit")
 	}
 	for _, path := range []string{"/note?kvitterat=1", "/note?ack=1"} {
-		if strings.Contains(app.get(path, c).Body.String(), "Kvitterat") {
+		if strings.Contains(app.get(path, c).Body.String(), ackConfirmationMark) {
 			t.Errorf("GET %s: confirmation shown without the cookie", path)
 		}
 	}
@@ -210,7 +214,7 @@ func TestAcknowledgement_ConfirmationIsOnlyForTodaysAcknowledgement(t *testing.T
 		if w.Code != http.StatusOK {
 			t.Fatalf("angel_ack=%s: status = %d, want 200", value, w.Code)
 		}
-		if strings.Contains(w.Body.String(), "Kvitterat") {
+		if strings.Contains(w.Body.String(), ackConfirmationMark) {
 			t.Errorf("angel_ack=%s: confirmation shown for an acknowledgement that is not today's", value)
 		}
 	}

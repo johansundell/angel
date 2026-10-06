@@ -60,8 +60,9 @@ const ackCookieTTL = time.Minute
 const maxCaregiverNameLen = 40
 
 // CaregiverView shows today's Daily Note to a caregiver, or an affirmative
-// empty state when there is none, followed by the Kvittera form. After
-// acknowledging, it also confirms who acknowledged and when.
+// empty state when there is none, then the times of today's
+// acknowledgements and the Kvittera form. After acknowledging, it also
+// confirms who acknowledged and when.
 func (h *Handler) CaregiverView(c *gin.Context) error {
 	if h.notes == nil {
 		return httperror.ReturnWithHTTPStatus(errNotesNotConfigured, http.StatusInternalServerError)
@@ -80,11 +81,12 @@ func (h *Handler) CaregiverView(c *gin.Context) error {
 		data["note"] = note
 		data["noteHTML"] = noteHTML
 	}
-	confirmation, err := h.takeAckConfirmation(c, today)
+	acks, err := h.notes.ListAcknowledgements(c.Request.Context(), today)
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
-	if confirmation != "" {
+	data["ackTimes"] = ackTimes(acks)
+	if confirmation := h.takeAckConfirmation(c, acks); confirmation != "" {
 		data["confirmation"] = confirmation
 	}
 	return h.render(c, http.StatusOK, "caregiver.html", data)
@@ -129,26 +131,33 @@ func (h *Handler) setAckCookie(c *gin.Context, value string, maxAge int) {
 
 // takeAckConfirmation consumes the one-time cookie set by AcknowledgeNote
 // and returns its confirmation text, or "" when there is nothing to confirm.
-// Only today's acknowledgements are confirmed, so a leftover cookie does not
+// Only today's acknowledgements are passed in, so a leftover cookie does not
 // claim a new day's note has been read.
-func (h *Handler) takeAckConfirmation(c *gin.Context, today types.Day) (string, error) {
+func (h *Handler) takeAckConfirmation(c *gin.Context, today []types.Acknowledgement) string {
 	v, err := c.Cookie(ackCookieName)
 	if err != nil {
-		return "", nil
+		return ""
 	}
 	h.setAckCookie(c, "", -1)
 	id, err := strconv.ParseInt(v, 10, 64)
 	if err != nil {
-		return "", nil
+		return ""
 	}
-	acks, err := h.notes.ListAcknowledgements(c.Request.Context(), today)
-	if err != nil {
-		return "", err
+	if i := slices.IndexFunc(today, func(a types.Acknowledgement) bool { return a.ID == id }); i >= 0 {
+		return ackConfirmation(today[i])
 	}
-	if i := slices.IndexFunc(acks, func(a types.Acknowledgement) bool { return a.ID == id }); i >= 0 {
-		return ackConfirmation(acks[i]), nil
+	return ""
+}
+
+// ackTimes returns the times of acks, which are oldest first, newest first.
+// Caregivers see only the times: the Caregiver PIN is shared, so names would
+// tell anyone who knows it who visits the Client and when.
+func ackTimes(acks []types.Acknowledgement) []string {
+	times := make([]string, len(acks))
+	for i, a := range acks {
+		times[len(acks)-1-i] = clockTime(a.CreatedAt)
 	}
-	return "", nil
+	return times
 }
 
 // caregiverName trims the optional first name and caps its length.
