@@ -48,3 +48,6 @@ FMS_INSECURE_SKIP_VERIFY=false
 DOMAIN=""
 ACME_EMAIL=""
 ACME_CA=""
+# docker-compose.https.yml only: the published image tag to run, e.g. v0.0.2;
+# empty runs latest
+VERSION=""

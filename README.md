@@ -227,7 +227,15 @@ Inside the container the service always listens on **8080** (the image sets `POR
 
 #### Running with HTTPS (Let's Encrypt)
 
-`docker-compose.https.yml` runs Angel on a server of its own (for example a fresh VPS) behind [Caddy](https://caddyserver.com/), which gets a certificate from Let's Encrypt and renews it by itself. Angel isn't published: the only way in is through Caddy on ports 80 and 443, and Angel trusts `X-Forwarded-For` only from Caddy's fixed address. Caddy sends the same security headers and one-year HSTS as the [nginx and Apache examples](examples/reverse-proxy/), and keeps no access log of its own.
+`docker-compose.https.yml` runs Angel on a server of its own (for example a fresh VPS) behind [Caddy](https://caddyserver.com/), which gets a certificate from Let's Encrypt and renews it by itself. Angel has no port on the host: the only way in is through Caddy on ports 80 and 443, and Angel trusts `X-Forwarded-For` only from Caddy's fixed address. Caddy sends the same security headers and one-year HSTS as the [nginx and Apache examples](examples/reverse-proxy/), and keeps no access log of its own.
+
+The stack runs the [published image](#published-image), so the server needs no checkout and builds nothing. Put these three files in one folder on the server:
+
+- [`docker-compose.https.yml`](docker-compose.https.yml)
+- [`Caddyfile`](Caddyfile)
+- `.env`, made from [`ENV_BASE`](ENV_BASE) (step 2)
+
+Commands below are run in that folder. While the image is private, log in to GHCR on the server first (see [Published image](#published-image)).
 
 **1. DNS and ports.** Point an `A` record for your host name, say `angel.example.com`, at the server, and open ports 80 and 443 (TCP, and UDP 443 for HTTP/3). Let's Encrypt must reach port 80 from the internet, and nothing else on the server may use 80 or 443. Leave out the `AAAA` record: the stack's Docker network is IPv4 only, so Docker would pass IPv6 visitors on from its own address, and they would all share one PIN rate limit.
 
@@ -240,6 +248,7 @@ MASTER_PIN="..."              # 4-12 digits, not the Caregiver PIN
 SESSION_SECRET="..."          # at least 32 characters, e.g. from: openssl rand -base64 33
 ACME_EMAIL="you@example.com"  # optional: Let's Encrypt warns here before a certificate expires
 ACME_CA="https://acme-staging-v02.api.letsencrypt.org/directory"  # first run only, see step 3
+VERSION="v0.0.2"              # optional: the image tag to run; latest when unset
 ```
 
 Angel gets only the variables it needs, by name: the PINs, `SESSION_SECRET`, the session timeouts, `AUTH_TOKEN`, `DEBUG`, `STORAGE` and the MySQL and FileMaker settings except `FMS_CA_FILE`, which needs the file mounted into the container (see the comment in the compose file). `PORT`, `TRUSTED_PROXIES`, `SQLITE_PATH` and `COOKIE_SECURE` are fixed in the compose file, so values for them in `.env` are ignored. The network is `172.31.0.0/24` with Caddy on `172.31.0.10`; if that subnet is in use on the host, set `PROXY_SUBNET_PREFIX` (for example `10.99.0`).
@@ -247,12 +256,29 @@ Angel gets only the variables it needs, by name: the PINs, `SESSION_SECRET`, the
 **3. First run against staging.** Start the stack:
 
 ```bash
-make docker-run-https
+docker compose -f docker-compose.https.yml up -d
 ```
 
-It stops when `.env` or `DOMAIN` is missing, and otherwise builds Angel and starts both containers in the background. Caddy waits until Angel is healthy. With `ACME_CA` pointing at staging, Let's Encrypt issues an untrusted test certificate, but mistakes in DNS or ports don't count against its [rate limits](https://letsencrypt.org/docs/rate-limits/). Follow it with `docker compose -f docker-compose.https.yml logs -f caddy` until you see `certificate obtained successfully`. Then remove `ACME_CA` from `.env` (the default is Let's Encrypt itself) and run `make docker-run-https` again. Compose recreates Caddy with the new setting, and Caddy, which keeps certificates apart per CA, gets a real one.
+In a checkout, `make docker-run-https` does the same, and first stops with a message when `.env` is missing. Compose stops when `DOMAIN` is missing, and otherwise pulls `ghcr.io/johansundell/angel` with the tag in `VERSION` (`latest` when unset) if it isn't on the server yet, and starts both containers in the background. `make docker-run-https` pulls every time, and takes the tag only from `.env`: it ignores a `VERSION` on the command line or in the shell, because the `Makefile` `VERSION` is the next release, which isn't published yet. Plain `docker compose` lets a `VERSION` exported in the shell win over `.env`. Caddy waits until Angel is healthy. With `ACME_CA` pointing at staging, Let's Encrypt issues an untrusted test certificate, but mistakes in DNS or ports don't count against its [rate limits](https://letsencrypt.org/docs/rate-limits/). Follow it with `docker compose -f docker-compose.https.yml logs -f caddy` until you see `certificate obtained successfully`. Then remove `ACME_CA` from `.env` (the default is Let's Encrypt itself) and run the same command again. Compose recreates Caddy with the new setting, and Caddy, which keeps certificates apart per CA, gets a real one.
 
-**4. Check it.** Open `https://angel.example.com` on a phone using mobile data, then run [`check.sh`](examples/reverse-proxy/#checking-a-setup): `CAREGIVER_PIN=<your PIN> ./examples/reverse-proxy/check.sh https://angel.example.com`.
+**4. Check it.** Open `https://angel.example.com` on a phone using mobile data, then run [`check.sh`](examples/reverse-proxy/#checking-a-setup) from a checkout or a copy of the script: `CAREGIVER_PIN=<your PIN> ./examples/reverse-proxy/check.sh https://angel.example.com`.
+
+**Upgrading.** Set `VERSION` in `.env` to the new tag, then pull and recreate:
+
+```bash
+docker compose -f docker-compose.https.yml pull
+docker compose -f docker-compose.https.yml up -d
+```
+
+With `VERSION` unset, the same two commands move to the newest `latest`; `make docker-run-https` pulls every time. Pinning a tag keeps the server on a known version until you change it, and going back is the same steps with the old tag. The database stays in the `data` volume. Upgrades between releases may change the compose file or the `Caddyfile` too, so compare them with the release you move to.
+
+**Building from a checkout.** To run your own changes behind Caddy, build Angel instead of pulling it:
+
+```bash
+make docker-build-https
+```
+
+This adds [`docker-compose.https.build.yml`](docker-compose.https.build.yml), which builds the image from the checkout with the `Makefile` `VERSION` and names it `angel-local`, so it never stands in for a published tag. Run `make docker-run-https` to go back to the published image.
 
 **Trying it on your own machine.** With `DOMAIN=localhost`, Caddy makes a certificate with its own local CA instead of asking Let's Encrypt. If ports 80 and 443 are taken, set `HTTP_PORT` and `HTTPS_PORT` (for example `8081` and `8443`); on a server, leave them alone. Give `check.sh` Caddy's root certificate, since curl doesn't know it:
 
@@ -261,7 +287,7 @@ docker compose -f docker-compose.https.yml cp caddy:/data/caddy/pki/authorities/
 CURL_CA_BUNDLE=./caddy-root.crt ./examples/reverse-proxy/check.sh https://localhost   # or https://localhost:8443
 ```
 
-The certificates live in the named volumes `caddy_data` and `caddy_config`, and the SQLite database in `data`. They survive `docker compose -f docker-compose.https.yml down`, restarts and rebuilds. **`down -v` deletes them**: the Daily Notes are gone, and Caddy asks Let's Encrypt for new certificates, which it [limits per week](https://letsencrypt.org/docs/rate-limits/).
+The certificates live in the named volumes `caddy_data` and `caddy_config`, and the SQLite database in `data`. They survive `docker compose -f docker-compose.https.yml down`, restarts, upgrades and rebuilds. **`down -v` deletes them**: the Daily Notes are gone, and Caddy asks Let's Encrypt for new certificates, which it [limits per week](https://letsencrypt.org/docs/rate-limits/).
 
 ### Running behind a reverse proxy
 

@@ -1,16 +1,15 @@
 # Angel over HTTPS on a server of its own: Caddy gets a certificate for DOMAIN
-# from Let's Encrypt and renews it (ADR-0004). Start it with
-# `make docker-run-https`, which stops when .env is missing. Compose reads .env
-# next to this file; see "Running with HTTPS (Let's Encrypt)" in the README.
-# Angel is not published, so the only way in is through Caddy.
+# from Let's Encrypt and renews it (ADR-0004). A server needs only this file,
+# the Caddyfile and .env next to them; Compose pulls the published image. Start
+# it with `make docker-run-https`, or on a server without a checkout with
+# `docker compose -f docker-compose.https.yml up -d`. See "Running with HTTPS
+# (Let's Encrypt)" in the README. docker-compose.https.build.yml builds Angel
+# from a checkout instead. Angel has no port on the host, so the only way in
+# is through Caddy.
 services:
   angel:
-    image: ghcr.io/johansundell/angel:${VERSION:-dev}
-    # Builds from this repository until the image is published.
-    build:
-      context: .
-      args:
-        VERSION: ${VERSION:-dev}
+    # VERSION in .env picks a published tag, e.g. v0.0.2; latest when unset.
+    image: ghcr.io/johansundell/angel:${VERSION:-latest}
     volumes:
       - data:/app/data
     environment:
