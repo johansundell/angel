@@ -1,6 +1,7 @@
 {{define "content"}}
 <main class="app">
 	{{template "logout"}}
+	<div id="pin-alert" role="alert">{{template "pin-alert" .pinAlert}}</div>
 	<p id="session-expired" class="session-expired" role="alert" hidden>Sessionen har gått ut – kopiera din text innan du loggar in igen.</p>
 	<section class="editor-section" aria-labelledby="today-heading">
 		<h1 id="today-heading">Dagens anteckning</h1>
@@ -17,10 +18,11 @@
 	</section>
 </main>
 <script>
-// Keep the acknowledgement feed live without reloading the page, which would
-// lose unsaved edits. Redirects are not followed: one means the session has
-// ended, so instead of pasting the keypad into the feed, say the feed has
-// stopped and stop polling. Saving then would also redirect to the keypad and
+// Keep the PIN Alert and the acknowledgement feed live without reloading the
+// page, which would lose unsaved edits. Each part is replaced only when it
+// changed, so the alert is not announced again on every poll. Redirects are
+// not followed: one means the session has ended, so instead of pasting the
+// keypad into the feed, say the feed has stopped and stop polling. Saving then would also redirect to the keypad and
 // lose the text being written, so show the banner and disable the buttons;
 // the text stays editable so it can be copied.
 (function () {
@@ -36,13 +38,21 @@
 		p.textContent = "Sessionen har gått ut. Logga in igen för att se nya kvitteringar.";
 		feed.replaceChildren(p);
 	}
+	function update(html) {
+		var t = document.createElement("template");
+		t.innerHTML = html;
+		t.content.querySelectorAll("[data-target]").forEach(function (part) {
+			var el = document.getElementById(part.dataset.target);
+			if (el && el.innerHTML !== part.innerHTML) el.innerHTML = part.innerHTML;
+		});
+	}
 	function refresh() {
 		fetch("/admin/acks", { redirect: "manual", cache: "no-store" })
 			.then(function (r) {
 				if (r.type === "opaqueredirect") { expired(); return null; }
 				return r.ok ? r.text() : null;
 			})
-			.then(function (html) { if (html !== null) feed.innerHTML = html; })
+			.then(function (html) { if (html !== null) update(html); })
 			.catch(function () {});
 	}
 	function onVisible() { if (!document.hidden) refresh(); }
@@ -50,6 +60,22 @@
 	document.addEventListener("visibilitychange", onVisible);
 })();
 </script>
+{{end}}
+
+{{/* live is what the dashboard polls: each data-target part replaces the
+contents of the element with that ID. */}}
+{{define "live"}}
+<div data-target="pin-alert">{{template "pin-alert" .pinAlert}}</div>
+<div data-target="ack-feed">{{template "ack-feed" .acks}}</div>
+{{end}}
+
+{{define "pin-alert"}}
+{{- with .}}
+<div class="pin-alert">
+	<p class="pin-alert-title">Många felaktiga PIN-försök – byt Caregiver PIN</p>
+	<p>{{.Count}} felaktiga PIN-koder har angetts, den första {{.First}} och den senaste {{.Last}}. Någon kan försöka gissa Caregiver PIN. Byt den så snart som möjligt.</p>
+</div>
+{{- end}}
 {{end}}
 
 {{define "ack-feed"}}

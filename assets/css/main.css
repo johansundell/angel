@@ -724,6 +724,27 @@ body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
+/* The PIN Alert sits at the top of the dashboard until the service restarts
+   with a new Caregiver PIN. */
+.pin-alert {
+    margin: 0 0 1.25rem;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-lg);
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    color: var(--error-fg);
+    box-shadow: var(--shadow-sm);
+}
+
+.pin-alert p {
+    margin: 0;
+}
+
+.pin-alert .pin-alert-title {
+    margin-bottom: 0.35rem;
+    font-weight: 700;
+}
+
 .ack-feed-expired {
     margin: 0;
     padding: 1rem 1.25rem;

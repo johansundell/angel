@@ -37,16 +37,17 @@ func (h *Handler) ClientDashboard(c *gin.Context) error {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
 	return h.render(c, http.StatusOK, "client.html", gin.H{
-		"title":   "Dagens anteckning",
-		"today":   today,
-		"advance": advance,
-		"acks":    acks,
+		"title":    "Dagens anteckning",
+		"pinAlert": h.loadPINAlert(),
+		"today":    today,
+		"advance":  advance,
+		"acks":     acks,
 	})
 }
 
-// AckFeed renders only the dashboard's acknowledgement feed, which the
-// dashboard polls so the Client sees new Acknowledgements without reloading the page
-// and losing unsaved edits.
+// AckFeed renders only the parts of the dashboard that change on their own,
+// the PIN Alert and the acknowledgement feed, which the dashboard polls so
+// the Client sees them without reloading the page and losing unsaved edits.
 func (h *Handler) AckFeed(c *gin.Context) error {
 	if h.notes == nil {
 		return httperror.ReturnWithHTTPStatus(errNotesNotConfigured, http.StatusInternalServerError)
@@ -55,7 +56,28 @@ func (h *Handler) AckFeed(c *gin.Context) error {
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
-	return h.renderFragment(c, http.StatusOK, "client.html", "ack-feed", acks)
+	return h.renderFragment(c, http.StatusOK, "client.html", "live", gin.H{
+		"pinAlert": h.loadPINAlert(),
+		"acks":     acks,
+	})
+}
+
+// pinAlertView is the PIN Alert as the dashboard shows it.
+type pinAlertView struct {
+	Count       int
+	First, Last string // swedishDateTime
+}
+
+// loadPINAlert returns the PIN Alert, or nil when it has not triggered.
+func (h *Handler) loadPINAlert() *pinAlertView {
+	if h.auth == nil {
+		return nil
+	}
+	a, ok := h.auth.PINAlert()
+	if !ok {
+		return nil
+	}
+	return &pinAlertView{Count: a.Count, First: swedishDateTime(a.First), Last: swedishDateTime(a.Last)}
 }
 
 // ackFeedEntry is one line of the acknowledgement feed, such as
