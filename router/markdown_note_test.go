@@ -10,7 +10,7 @@ import (
 
 func TestMarkdownNote_RenderedForCaregivers(t *testing.T) {
 	app := newPinApp(t)
-	app.saveNote(types.DailyNote{Date: "2026-10-05", Text: "## Medicin\n\n**Viktigt:** ge *två* tabletter.\n\n- Morgon\n- Kväll\n\n[Apoteket](https://example.com/apotek)"})
+	app.saveNote(types.DailyNote{Date: day("2026-10-05"), Text: "## Medicin\n\n**Viktigt:** ge *två* tabletter.\n\n- Morgon\n- Kväll\n\n[Apoteket](https://example.com/apotek)"})
 
 	body := app.get("/note", app.caregiverSession()).Body.String()
 
@@ -32,7 +32,7 @@ func TestMarkdownNote_RenderedForCaregivers(t *testing.T) {
 
 func TestMarkdownNote_SingleLineBreaksAreKept(t *testing.T) {
 	app := newPinApp(t)
-	app.saveNote(types.DailyNote{Date: "2026-10-05", Text: "Ge medicin klockan 10.\nVattna blommorna."})
+	app.saveNote(types.DailyNote{Date: day("2026-10-05"), Text: "Ge medicin klockan 10.\nVattna blommorna."})
 
 	body := app.get("/note", app.caregiverSession()).Body.String()
 
@@ -43,7 +43,7 @@ func TestMarkdownNote_SingleLineBreaksAreKept(t *testing.T) {
 
 func TestMarkdownNote_RawHTMLAndScriptLinksAreNotRendered(t *testing.T) {
 	app := newPinApp(t)
-	app.saveNote(types.DailyNote{Date: "2026-10-05", Text: "<b onclick=\"alert(1)\">Hej</b>\n\n<script>alert(2)</script>\n\n[Klicka](javascript:alert(3))"})
+	app.saveNote(types.DailyNote{Date: day("2026-10-05"), Text: "<b onclick=\"alert(1)\">Hej</b>\n\n<script>alert(2)</script>\n\n[Klicka](javascript:alert(3))"})
 
 	body := app.get("/note", app.caregiverSession()).Body.String()
 
@@ -56,7 +56,7 @@ func TestMarkdownNote_RawHTMLAndScriptLinksAreNotRendered(t *testing.T) {
 
 func TestMarkdownNote_ImportantFlagWrapsRenderedNote(t *testing.T) {
 	app := newPinApp(t)
-	app.saveNote(types.DailyNote{Date: "2026-10-05", Text: "Ring **sjuksköterskan**.", Important: true})
+	app.saveNote(types.DailyNote{Date: day("2026-10-05"), Text: "Ring **sjuksköterskan**.", Important: true})
 
 	body := app.get("/note", app.caregiverSession()).Body.String()
 
@@ -65,8 +65,8 @@ func TestMarkdownNote_ImportantFlagWrapsRenderedNote(t *testing.T) {
 
 func TestMarkdownNote_EditorShowsSource(t *testing.T) {
 	app := newPinApp(t)
-	app.saveNote(types.DailyNote{Date: "2026-10-05", Text: "## Medicin\n**Två** tabletter."})
-	app.saveNote(types.DailyNote{Date: "2026-10-06", Text: "- Handla *mjölk*"})
+	app.saveNote(types.DailyNote{Date: day("2026-10-05"), Text: "## Medicin\n**Två** tabletter."})
+	app.saveNote(types.DailyNote{Date: day("2026-10-06"), Text: "- Handla *mjölk*"})
 
 	body := app.get("/admin", app.clientSession()).Body.String()
 
@@ -90,7 +90,7 @@ func TestMarkdownNote_SavedFromEditorAndRendered(t *testing.T) {
 
 	assertRedirect(t, app.postForm("/admin/note", url.Values{"date": {"2026-10-05"}, "text": {src}}, client), "/admin")
 
-	n, _ := app.note("2026-10-05")
+	n, _ := app.note(day("2026-10-05"))
 	if want := "## Medicin\n**Två** tabletter.\n- Morgon\n- Kväll"; n.Text != want {
 		t.Errorf("saved %q, want the Markdown source %q", n.Text, want)
 	}

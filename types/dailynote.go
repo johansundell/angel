@@ -2,9 +2,9 @@ package types
 
 import "time"
 
-// DailyNote is the Client's note for one calendar date.
+// DailyNote is the Client's note for one Day.
 type DailyNote struct {
-	Date      string // YYYY-MM-DD in local (Europe/Stockholm) time
+	Date      Day // the Day this note is written for
 	Text      string
 	Important bool // the Important Flag (Viktigt)
 	CreatedAt time.Time

@@ -9,17 +9,16 @@ import (
 	"github.com/johansundell/angel/types"
 )
 
-// NoteStore keeps Daily Notes, one per calendar date, and the Caregivers'
+// NoteStore keeps Daily Notes, one per Day, and the Caregivers'
 // Acknowledgements of them.
 type NoteStore interface {
-	// GetDailyNote returns the note for date (YYYY-MM-DD); ok is false when
-	// there is none.
-	GetDailyNote(ctx context.Context, date string) (note types.DailyNote, ok bool, err error)
+	// GetDailyNote returns the note for day; ok is false when there is none.
+	GetDailyNote(ctx context.Context, day types.Day) (note types.DailyNote, ok bool, err error)
 	// SaveDailyNote creates or replaces the note for n.Date. CreatedAt and
 	// UpdatedAt are set by the store.
 	SaveDailyNote(ctx context.Context, n types.DailyNote) error
-	// DeleteDailyNote removes the note for date (YYYY-MM-DD), if any.
-	DeleteDailyNote(ctx context.Context, date string) error
+	// DeleteDailyNote removes the note for day, if any.
+	DeleteDailyNote(ctx context.Context, day types.Day) error
 	// AddAcknowledgement records a and returns its ID. The caller sets Date
 	// and CreatedAt.
 	AddAcknowledgement(ctx context.Context, a types.Acknowledgement) (id int64, err error)
@@ -28,10 +27,10 @@ type NoteStore interface {
 	ListAcknowledgements(ctx context.Context, date string) ([]types.Acknowledgement, error)
 }
 
-func (s *SQLiteStore) GetDailyNote(ctx context.Context, date string) (types.DailyNote, bool, error) {
-	n := types.DailyNote{Date: date}
+func (s *SQLiteStore) GetDailyNote(ctx context.Context, day types.Day) (types.DailyNote, bool, error) {
+	n := types.DailyNote{Date: day}
 	var created, updated string
-	err := s.db.QueryRowContext(ctx, `SELECT text, important, created_at, updated_at FROM daily_notes WHERE date = ?`, date).
+	err := s.db.QueryRowContext(ctx, `SELECT text, important, created_at, updated_at FROM daily_notes WHERE date = ?`, day.String()).
 		Scan(&n.Text, &n.Important, &created, &updated)
 	if errors.Is(err, sql.ErrNoRows) {
 		return types.DailyNote{}, false, nil
@@ -52,11 +51,11 @@ func (s *SQLiteStore) SaveDailyNote(ctx context.Context, n types.DailyNote) erro
 	now := s.timeArg(time.Now())
 	_, err := s.db.ExecContext(ctx, `INSERT INTO daily_notes (date, text, important, created_at, updated_at) VALUES (?, ?, ?, ?, ?)
 		ON CONFLICT(date) DO UPDATE SET text = excluded.text, important = excluded.important, updated_at = excluded.updated_at`,
-		n.Date, n.Text, n.Important, now, now)
+		n.Date.String(), n.Text, n.Important, now, now)
 	return err
 }
 
-func (s *SQLiteStore) DeleteDailyNote(ctx context.Context, date string) error {
-	_, err := s.db.ExecContext(ctx, `DELETE FROM daily_notes WHERE date = ?`, date)
+func (s *SQLiteStore) DeleteDailyNote(ctx context.Context, day types.Day) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM daily_notes WHERE date = ?`, day.String())
 	return err
 }
