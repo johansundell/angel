@@ -18,7 +18,7 @@ Every response carries an `X-Version` header with the build version. Errors are 
 
 - **POST /logout**
   - The "Logga ut" button at the top of `/note` and `/admin`. Deletes the session cookie and redirects (**303**) to `/`, so the entry screen shows again and either PIN can be entered on the same phone. Needs no session; without one it just redirects. `GET /logout` gets **405**, so a link prefetch cannot log anyone out.
-  - Sessions are stateless, so this ends the session on the device that logs out. A copy of the cookie kept elsewhere stays valid until it expires (`SESSION_TIMEOUT`).
+  - Sessions are stateless, so this ends the session on the device that logs out. A copy of the cookie kept elsewhere stays valid until it expires (`CAREGIVER_SESSION_TIMEOUT` or `CLIENT_SESSION_TIMEOUT`).
   - There is no CSRF token, so another site could log a visitor out with a hidden form. That is only a nuisance (enter the PIN again) and is accepted.
 
 - **GET /note**, **GET /admin**
@@ -26,7 +26,8 @@ Every response carries an `X-Version` header with the build version. Errors are 
   - `/note` shows today's Daily Note (the calendar date in Europe/Stockholm), rendered from Markdown to HTML, in a high-contrast red box when it has the Important Flag, or "Inga särskilda instruktioner idag. Allt är som vanligt!" when there is none.
   - Notes are written in Markdown (CommonMark, rendered with [goldmark](https://github.com/yuin/goldmark)). A single line break stays a line break, so plain-text notes look as typed. Raw HTML in a note is left out and `javascript:` links are removed, so a note cannot run scripts on caregivers' phones.
   - `/admin` is the client's editor for today's Daily Note: a multiline text box for the Markdown source, the Important Flag ("Viktigt") checkbox, the time it was last saved and a button to clear it. Between them is "Kvitteringar idag", today's Acknowledgements newest first ("Maria kl 08:35", or "Okänd ängel kl 12:05" without a name), or "Inga kvitteringar registrerade idag än." when there are none. Below it is the same editor for tomorrow's Advance Note ("Morgondagens anteckning").
-  - Sessions are a signed, HTTP-only `angel_session` cookie (`SameSite=Lax`, `Secure` unless `COOKIE_SECURE=false`) that carries the role and expiry and lasts `SESSION_TIMEOUT`. The server checks the expiry too, so an old cookie is useless once it has expired.
+  - The feed refreshes every 30 seconds. When a refresh finds that the client session has expired, a banner at the top says "Sessionen har gått ut – kopiera din text innan du loggar in igen" and the save and clear buttons are disabled, so unsaved text is not lost to the entry screen. The text boxes stay editable for copying. Drafts are not kept in browser storage, because the device may be shared.
+  - Sessions are a signed, HTTP-only `angel_session` cookie (`SameSite=Lax`, `Secure` unless `COOKIE_SECURE=false`) that carries the role and expiry. A caregiver session lasts `CAREGIVER_SESSION_TIMEOUT` and a client session `CLIENT_SESSION_TIMEOUT`. The expiry is fixed at login and never extended, so the feed refresh on `/admin` cannot keep a session alive. The server checks the expiry too, so an old cookie is useless once it has expired.
 
 - **POST /note/ack**
   - The "Kvittera" button on `/note`. Records an Acknowledgement of today's Daily Note with the time and the optional form field `name` (the caregiver's first name, trimmed and capped at 40 characters; blank means anonymous). Every submission is a new Acknowledgement, so each visit during the day records its own.
@@ -229,7 +230,9 @@ The application is configured via environment variables. You can set these in a 
 | `AUTH_TOKEN` | string | random per start | Token required for protected endpoints. When unset, a temporary token is generated and logged (see [Authentication token](#authentication-token)). |
 | `CAREGIVER_PIN` | string | - | **Required.** Shared 4-digit PIN that caregivers enter on the entry screen. |
 | `MASTER_PIN` | string | - | **Required.** The client's 4–12 digit PIN for the dashboard; must differ from `CAREGIVER_PIN`. |
-| `SESSION_TIMEOUT` | duration | `20m` | How long a PIN session lasts before the entry screen is shown again. Must be between `15m` and `30m`. |
+| `CAREGIVER_SESSION_TIMEOUT` | duration | `20m` | How long a caregiver session lasts before the entry screen is shown again. Must be between `15m` and `30m`. |
+| `CLIENT_SESSION_TIMEOUT` | duration | `8h` | How long a client session (Master PIN) lasts before the Master PIN must be entered again. Must be between `15m` and `24h`. |
+| `SESSION_TIMEOUT` | duration | - | **Deprecated**: the old name of `CAREGIVER_SESSION_TIMEOUT`. Used only when `CAREGIVER_SESSION_TIMEOUT` is unset, and the service logs a deprecation warning at startup. Rename it. |
 | `SESSION_SECRET` | string | random per start | Key that signs session cookies, at least 32 characters. When unset, a random key is generated at start, so everyone enters the PIN again after a restart. It is never logged. |
 | `COOKIE_SECURE` | bool | `true` | Mark the session cookie `Secure` (sent over HTTPS only). Browsers also accept it on `http://localhost`; set `false` only to test over plain HTTP from another device. |
 | `TRUSTED_PROXIES` | string | - | Comma-separated IPs or CIDRs of reverse proxies (for example `127.0.0.1` for cloudflared on the same host). Only these may set the client address through `X-Forwarded-For`, which the PIN rate limit is keyed on. Leave empty when clients connect directly; behind a proxy, set it, or every caregiver shares one rate limit. See [`examples/reverse-proxy/`](examples/reverse-proxy/). |

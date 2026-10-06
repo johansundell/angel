@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-var validPIN = PINSettings{CaregiverPIN: "1234", MasterPIN: "987654", SessionTTL: 20 * time.Minute}
+var validPIN = PINSettings{CaregiverPIN: "1234", MasterPIN: "987654", CaregiverSessionTTL: 20 * time.Minute, ClientSessionTTL: 8 * time.Hour}
 
 func TestAppSettingsValidate(t *testing.T) {
 	tests := []struct {
@@ -95,9 +95,15 @@ func TestPINSettingsValidate(t *testing.T) {
 		{"master too long", func(p *PINSettings) { p.MasterPIN = "1234567890123" }, "MASTER_PIN"},
 		{"master not digits", func(p *PINSettings) { p.MasterPIN = "98765x" }, "MASTER_PIN"},
 		{"same PINs", func(p *PINSettings) { p.MasterPIN = p.CaregiverPIN }, "must differ"},
-		{"ttl too short", func(p *PINSettings) { p.SessionTTL = 14 * time.Minute }, "SESSION_TIMEOUT"},
-		{"ttl too long", func(p *PINSettings) { p.SessionTTL = 31 * time.Minute }, "SESSION_TIMEOUT"},
-		{"ttl bounds", func(p *PINSettings) { p.SessionTTL = MaxSessionTTL }, ""},
+		{"caregiver ttl too short", func(p *PINSettings) { p.CaregiverSessionTTL = 14 * time.Minute }, "CAREGIVER_SESSION_TIMEOUT"},
+		{"caregiver ttl too long", func(p *PINSettings) { p.CaregiverSessionTTL = 31 * time.Minute }, "CAREGIVER_SESSION_TIMEOUT"},
+		{"caregiver ttl min", func(p *PINSettings) { p.CaregiverSessionTTL = MinCaregiverSessionTTL }, ""},
+		{"caregiver ttl max", func(p *PINSettings) { p.CaregiverSessionTTL = MaxCaregiverSessionTTL }, ""},
+		{"client ttl too short", func(p *PINSettings) { p.ClientSessionTTL = 14 * time.Minute }, "CLIENT_SESSION_TIMEOUT"},
+		{"client ttl too long", func(p *PINSettings) { p.ClientSessionTTL = 24*time.Hour + time.Second }, "CLIENT_SESSION_TIMEOUT"},
+		{"client ttl unset", func(p *PINSettings) { p.ClientSessionTTL = 0 }, "CLIENT_SESSION_TIMEOUT"},
+		{"client ttl min", func(p *PINSettings) { p.ClientSessionTTL = MinClientSessionTTL }, ""},
+		{"client ttl max", func(p *PINSettings) { p.ClientSessionTTL = MaxClientSessionTTL }, ""},
 		{"short secret", func(p *PINSettings) { p.SessionSecret = "short" }, "SESSION_SECRET"},
 		{"long secret", func(p *PINSettings) { p.SessionSecret = strings.Repeat("s", 32) }, ""},
 	}
@@ -116,6 +122,13 @@ func TestPINSettingsValidate(t *testing.T) {
 				t.Fatalf("expected error containing %q, got %v", tc.wantErr, err)
 			}
 		})
+	}
+
+	// An out-of-range value from the deprecated name is reported by that name.
+	legacy := validPIN
+	legacy.CaregiverSessionTTL, legacy.LegacySessionTimeout = time.Hour, true
+	if err := legacy.Validate(); err == nil || !strings.HasPrefix(err.Error(), "SESSION_TIMEOUT ") {
+		t.Fatalf("expected an error naming SESSION_TIMEOUT, got %v", err)
 	}
 
 	s := AppSettings{Port: ":8080", Timeout: 10 * time.Second, Storage: StorageSQLite}

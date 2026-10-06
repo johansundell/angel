@@ -24,6 +24,9 @@ services:
       - CAREGIVER_PIN
       - MASTER_PIN
       - SESSION_SECRET
+      # Optional; unset uses the defaults (20m and 8h).
+      - CAREGIVER_SESSION_TIMEOUT
+      - CLIENT_SESSION_TIMEOUT
     restart: unless-stopped
 
 volumes:

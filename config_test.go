@@ -279,7 +279,7 @@ func TestLoadSettings_Timeout(t *testing.T) {
 }
 
 func TestLoadSettings_PIN(t *testing.T) {
-	keys := []string{"CAREGIVER_PIN", "MASTER_PIN", "SESSION_TIMEOUT", "SESSION_SECRET", "COOKIE_SECURE", "TRUSTED_PROXIES"}
+	keys := []string{"CAREGIVER_PIN", "MASTER_PIN", "CAREGIVER_SESSION_TIMEOUT", "CLIENT_SESSION_TIMEOUT", "SESSION_TIMEOUT", "SESSION_SECRET", "COOKIE_SECURE", "TRUSTED_PROXIES"}
 	defer unsetEnv(keys...)()
 	defer loadSettings()
 
@@ -295,12 +295,12 @@ func TestLoadSettings_PIN(t *testing.T) {
 	}
 
 	s := load(t, "PORT=:9999\n")
-	if s.PIN.SessionTTL != 20*time.Minute || !s.PIN.SecureCookie || s.TrustedProxies != nil {
+	if s.PIN.CaregiverSessionTTL != 20*time.Minute || s.PIN.ClientSessionTTL != 8*time.Hour || s.PIN.LegacySessionTimeout || !s.PIN.SecureCookie || s.TrustedProxies != nil {
 		t.Errorf("unexpected defaults: %+v, proxies %v", s.PIN, s.TrustedProxies)
 	}
 
-	s = load(t, "CAREGIVER_PIN=1234\nMASTER_PIN= 987654 \nSESSION_TIMEOUT=25m\nSESSION_SECRET=abc\nCOOKIE_SECURE=false\nTRUSTED_PROXIES=127.0.0.1, 10.0.0.0/8,\n")
-	want := types.PINSettings{CaregiverPIN: "1234", MasterPIN: "987654", SessionTTL: 25 * time.Minute, SessionSecret: "abc", SecureCookie: false}
+	s = load(t, "CAREGIVER_PIN=1234\nMASTER_PIN= 987654 \nCAREGIVER_SESSION_TIMEOUT=25m\nCLIENT_SESSION_TIMEOUT=12h\nSESSION_SECRET=abc\nCOOKIE_SECURE=false\nTRUSTED_PROXIES=127.0.0.1, 10.0.0.0/8,\n")
+	want := types.PINSettings{CaregiverPIN: "1234", MasterPIN: "987654", CaregiverSessionTTL: 25 * time.Minute, ClientSessionTTL: 12 * time.Hour, SessionSecret: "abc", SecureCookie: false}
 	if s.PIN != want {
 		t.Errorf("expected %+v, got %+v", want, s.PIN)
 	}
@@ -308,7 +308,16 @@ func TestLoadSettings_PIN(t *testing.T) {
 		t.Errorf("unexpected trusted proxies %q", s.TrustedProxies)
 	}
 
-	if s = load(t, "SESSION_TIMEOUT=soon\n"); s.PIN.SessionTTL != 0 {
-		t.Errorf("invalid SESSION_TIMEOUT should become 0 for Validate to reject, got %v", s.PIN.SessionTTL)
+	if s = load(t, "CAREGIVER_SESSION_TIMEOUT=soon\nCLIENT_SESSION_TIMEOUT=later\n"); s.PIN.CaregiverSessionTTL != 0 || s.PIN.ClientSessionTTL != 0 {
+		t.Errorf("invalid session timeouts should become 0 for Validate to reject, got %v and %v", s.PIN.CaregiverSessionTTL, s.PIN.ClientSessionTTL)
+	}
+
+	// The deprecated name still sets the Caregiver lifetime when the new one
+	// is unset, and is flagged so startup can warn.
+	if s = load(t, "SESSION_TIMEOUT=25m\n"); s.PIN.CaregiverSessionTTL != 25*time.Minute || !s.PIN.LegacySessionTimeout {
+		t.Errorf("SESSION_TIMEOUT alone: got %v, legacy %v", s.PIN.CaregiverSessionTTL, s.PIN.LegacySessionTimeout)
+	}
+	if s = load(t, "SESSION_TIMEOUT=25m\nCAREGIVER_SESSION_TIMEOUT=17m\n"); s.PIN.CaregiverSessionTTL != 17*time.Minute || s.PIN.LegacySessionTimeout {
+		t.Errorf("both names set: got %v, legacy %v; CAREGIVER_SESSION_TIMEOUT should win", s.PIN.CaregiverSessionTTL, s.PIN.LegacySessionTimeout)
 	}
 }

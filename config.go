@@ -89,10 +89,18 @@ func loadSettings(filenames ...string) {
 
 	settings.PIN.CaregiverPIN = strings.TrimSpace(os.Getenv("CAREGIVER_PIN"))
 	settings.PIN.MasterPIN = strings.TrimSpace(os.Getenv("MASTER_PIN"))
-	settings.PIN.SessionTTL = 20 * time.Minute
-	if v := os.Getenv("SESSION_TIMEOUT"); v != "" {
-		// An invalid value becomes 0, which Validate rejects.
-		settings.PIN.SessionTTL, _ = time.ParseDuration(v)
+	// Invalid durations become 0, which Validate rejects.
+	settings.PIN.CaregiverSessionTTL = 20 * time.Minute
+	if v := os.Getenv("CAREGIVER_SESSION_TIMEOUT"); v != "" {
+		settings.PIN.CaregiverSessionTTL, _ = time.ParseDuration(v)
+	} else if v := os.Getenv("SESSION_TIMEOUT"); v != "" {
+		// Deprecated name for CAREGIVER_SESSION_TIMEOUT.
+		settings.PIN.CaregiverSessionTTL, _ = time.ParseDuration(v)
+		settings.PIN.LegacySessionTimeout = true
+	}
+	settings.PIN.ClientSessionTTL = 8 * time.Hour
+	if v := os.Getenv("CLIENT_SESSION_TIMEOUT"); v != "" {
+		settings.PIN.ClientSessionTTL, _ = time.ParseDuration(v)
 	}
 	settings.PIN.SessionSecret = os.Getenv("SESSION_SECRET")
 	// Secure by default: the service is meant to be reached over HTTPS.

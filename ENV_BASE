@@ -13,8 +13,11 @@ AUTH_TOKEN=""
 # keypad PINs (required): caregivers enter exactly 4 digits, the client 4-12 digits
 CAREGIVER_PIN=""
 MASTER_PIN=""
-# how long a PIN session lasts, between 15m and 30m
-SESSION_TIMEOUT="20m"
+# how long a caregiver session lasts, between 15m and 30m (replaces the
+# deprecated SESSION_TIMEOUT, which is still read when this is unset)
+CAREGIVER_SESSION_TIMEOUT="20m"
+# how long a client (Master PIN) session lasts, between 15m and 24h
+CLIENT_SESSION_TIMEOUT="8h"
 # signs session cookies, at least 32 characters; leave empty to generate one per
 # start (everyone then enters the PIN again after a restart)
 SESSION_SECRET=""

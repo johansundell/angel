@@ -1,6 +1,7 @@
 {{define "content"}}
 <main class="app">
 	{{template "logout"}}
+	<p id="session-expired" class="session-expired" role="alert" hidden>Sessionen har gått ut – kopiera din text innan du loggar in igen.</p>
 	<section class="editor-section" aria-labelledby="today-heading">
 		<h1 id="today-heading">Dagens anteckning</h1>
 		{{template "editor" .today}}
@@ -19,13 +20,17 @@
 // Keep the acknowledgement feed live without reloading the page, which would
 // lose unsaved edits. Redirects are not followed: one means the session has
 // ended, so instead of pasting the keypad into the feed, say the feed has
-// stopped and stop polling.
+// stopped and stop polling. Saving then would also redirect to the keypad and
+// lose the text being written, so show the banner and disable the buttons;
+// the text stays editable so it can be copied.
 (function () {
 	var feed = document.getElementById("ack-feed");
 	var timer;
 	function expired() {
 		clearInterval(timer);
 		document.removeEventListener("visibilitychange", onVisible);
+		document.getElementById("session-expired").hidden = false;
+		document.querySelectorAll(".editor-save, .editor-clear").forEach(function (b) { b.disabled = true; });
 		var p = document.createElement("p");
 		p.className = "ack-feed-expired";
 		p.textContent = "Sessionen har gått ut. Logga in igen för att se nya kvitteringar.";

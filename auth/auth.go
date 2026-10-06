@@ -51,8 +51,11 @@ type Config struct {
 	CaregiverPIN string
 	MasterPIN    string
 	// Secret signs session cookies; at least 32 bytes.
-	Secret     []byte
-	SessionTTL time.Duration
+	Secret []byte
+	// CaregiverSessionTTL and ClientSessionTTL are how long a session of
+	// each role lasts. Sessions have a fixed expiry and are never renewed.
+	CaregiverSessionTTL time.Duration
+	ClientSessionTTL    time.Duration
 	// SecureCookie marks the cookie Secure (HTTPS only).
 	SecureCookie bool
 	// MaxFailures and FailureWindow default to DefaultMaxFailures and
@@ -69,7 +72,7 @@ type Authenticator struct {
 	caregiverPIN []byte
 	masterPIN    []byte
 	secret       []byte
-	ttl          time.Duration
+	ttl          map[Role]time.Duration
 	secure       bool
 	now          func() time.Time
 	limiter      *limiter
@@ -86,8 +89,8 @@ func New(cfg Config) (*Authenticator, error) {
 	if len(cfg.Secret) < 32 {
 		return nil, errors.New("session secret must be at least 32 bytes")
 	}
-	if cfg.SessionTTL <= 0 {
-		return nil, errors.New("session TTL must be positive")
+	if cfg.CaregiverSessionTTL <= 0 || cfg.ClientSessionTTL <= 0 {
+		return nil, errors.New("session TTLs must be positive")
 	}
 	if cfg.MaxFailures <= 0 {
 		cfg.MaxFailures = DefaultMaxFailures
@@ -102,7 +105,7 @@ func New(cfg Config) (*Authenticator, error) {
 		caregiverPIN: []byte(cfg.CaregiverPIN),
 		masterPIN:    []byte(cfg.MasterPIN),
 		secret:       append([]byte(nil), cfg.Secret...),
-		ttl:          cfg.SessionTTL,
+		ttl:          map[Role]time.Duration{RoleCaregiver: cfg.CaregiverSessionTTL, RoleClient: cfg.ClientSessionTTL},
 		secure:       cfg.SecureCookie,
 		now:          cfg.Now,
 		limiter:      newLimiter(cfg.MaxFailures, cfg.FailureWindow),
@@ -131,10 +134,12 @@ func (a *Authenticator) Login(clientAddr, pin string) (Role, error) {
 	return "", ErrInvalidPIN
 }
 
-// StartSession sets a session cookie for role on w.
+// StartSession sets a session cookie for role on w, lasting that role's
+// session lifetime.
 func (a *Authenticator) StartSession(w http.ResponseWriter, role Role) {
-	expires := a.now().Add(a.ttl)
-	c := a.cookie(a.sign(role, expires), int(a.ttl/time.Second))
+	ttl := a.ttl[role]
+	expires := a.now().Add(ttl)
+	c := a.cookie(a.sign(role, expires), int(ttl/time.Second))
 	c.Expires = expires
 	http.SetCookie(w, c)
 }

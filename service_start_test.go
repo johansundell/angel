@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,6 +35,29 @@ func TestStart_DatabaseInitializationErrorReturnsError(t *testing.T) {
 	p := &program{}
 	if err := p.run(make(chan error, 1)); err == nil {
 		t.Fatal("expected run to return the database initialization error")
+	}
+}
+
+func TestRun_WarnsAboutDeprecatedSessionTimeout(t *testing.T) {
+	originalConstructor := newSQLiteStore
+	newSQLiteStore = func(string) (store.Store, error) {
+		return nil, errors.New("database unavailable")
+	}
+	defer func() { newSQLiteStore = originalConstructor }()
+	originalSettings := settings
+	defer func() { settings = originalSettings }()
+	var out bytes.Buffer
+	log.SetOutput(&out)
+	defer log.SetOutput(os.Stderr)
+
+	for _, legacy := range []bool{false, true} {
+		out.Reset()
+		settings = types.AppSettings{Port: ":8080", Timeout: 15 * time.Second, Storage: types.StorageSQLite}
+		settings.PIN.LegacySessionTimeout = legacy
+		(&program{}).run(make(chan error, 1))
+		if got := strings.Contains(out.String(), "SESSION_TIMEOUT is deprecated"); got != legacy {
+			t.Errorf("legacy=%v: deprecation notice logged = %v; log:\n%s", legacy, got, out.String())
+		}
 	}
 }
 
