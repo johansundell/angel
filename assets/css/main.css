@@ -2,6 +2,7 @@
     /* Color Palette - Modern Scandinavian Warm Minimal */
     --bg: #f8fafc;
     --bg-subtle: #f1f5f9;
+    --bg-glow: #ffffff;
     --card-bg: #ffffff;
     --card-border: #e2e8f0;
     --fg: #0f172a;
@@ -14,6 +15,19 @@
     --primary-active: #1e40af;
     --primary-fg: #ffffff;
     --primary-subtle: #eff6ff;
+    --primary-glow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    --primary-glow-active: 0 2px 6px rgba(37, 99, 235, 0.2);
+    --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.15);
+
+    --input-focus-bg: #ffffff;
+    --input-shadow-inset: inset 0 2px 4px rgba(15, 23, 42, 0.03);
+    --editor-advance-bg: #fdfefe;
+
+    --toggle-off-bg: #cbd5e1;
+    --toggle-on-bg: #dc2626;
+    --toggle-knob: #ffffff;
+    --toggle-knob-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    --toggle-focus-ring: 0 0 0 3px rgba(225, 29, 72, 0.3);
 
     --key-bg: #ffffff;
     --key-border: #cbd5e1;
@@ -29,6 +43,17 @@
     --important-bg: #b91c1c;
     --important-border: #991b1b;
     --important-fg: #ffffff;
+    --important-shadow: 0 10px 25px -4px rgba(185, 28, 28, 0.35);
+    --important-flag-bg: #ffffff;
+    --important-flag-fg: #b91c1c;
+    --important-flag-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    --important-quote-border: #fecaca;
+    --important-quote-bg: rgba(0, 0, 0, 0.2);
+
+    /* Soft red for the Important toggle and the clear button's hover */
+    --important-soft-bg: #fef2f2;
+    --important-soft-border: #fca5a5;
+    --important-soft-fg: #991b1b;
 
     --error-bg: #fef2f2;
     --error-border: #fecaca;
@@ -44,6 +69,13 @@
     --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
     --shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+    --shadow-overlay: 0 4px 12px rgba(0, 0, 0, 0.12);
+
+    /* Health Check Page */
+    --health-bg: #0f172a;
+    --health-fg: #f8fafc;
+    --health-item-bg: rgba(255, 255, 255, 0.05);
+    --health-accent: #4ade80;
 }
 
 *, *::before, *::after {
@@ -59,7 +91,7 @@ body {
     min-height: 100vh;
     min-height: 100dvh;
     background-color: var(--bg);
-    background-image: radial-gradient(at 50% 0%, #ffffff 0%, var(--bg) 80%);
+    background-image: radial-gradient(at 50% 0%, var(--bg-glow) 0%, var(--bg) 80%);
     color: var(--fg);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-size: 18px;
@@ -180,14 +212,14 @@ body {
     border-radius: var(--radius-lg);
     background: var(--card-bg);
     color: var(--fg);
-    box-shadow: var(--shadow-sm), inset 0 2px 4px rgba(15, 23, 42, 0.03);
+    box-shadow: var(--shadow-sm), var(--input-shadow-inset);
     transition: border-color 0.15s, box-shadow 0.15s;
     outline: none;
 }
 
 .pin-display:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    box-shadow: var(--focus-ring);
 }
 
 .pin-error {
@@ -217,7 +249,7 @@ body {
     font-size: 1.25rem;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    box-shadow: var(--primary-glow);
     transition: background-color 0.15s, transform 0.05s, box-shadow 0.15s;
     touch-action: manipulation;
 }
@@ -229,7 +261,7 @@ body {
 .pin-submit:active {
     transform: translateY(1px);
     background: var(--primary-active);
-    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+    box-shadow: var(--primary-glow-active);
 }
 
 
@@ -325,10 +357,10 @@ body {
 
 /* Important Note Card */
 .note-important {
-    border: 3px solid #991b1b;
-    background: #b91c1c;
-    color: #ffffff;
-    box-shadow: 0 10px 25px -4px rgba(185, 28, 28, 0.35), var(--shadow-sm);
+    border: 3px solid var(--important-border);
+    background: var(--important-bg);
+    color: var(--important-fg);
+    box-shadow: var(--important-shadow), var(--shadow-sm);
 }
 
 .note-flag {
@@ -337,31 +369,31 @@ body {
     gap: 0.4rem;
     margin: 0 0 0.85rem;
     padding: 0.3rem 0.85rem;
-    background: #ffffff;
-    color: #b91c1c;
+    background: var(--important-flag-bg);
+    color: var(--important-flag-fg);
     border-radius: var(--radius-full);
     font-size: 0.85rem;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--important-flag-shadow);
 }
 
 .note-important .note-text {
-    color: #ffffff;
+    color: var(--important-fg);
     font-weight: 600;
 }
 
 .note-important .note-markdown a {
-    color: #ffffff;
+    color: var(--important-fg);
     text-decoration: underline;
     font-weight: 700;
 }
 
 .note-important .note-markdown blockquote {
-    border-left-color: #fecaca;
-    background: rgba(0, 0, 0, 0.2);
-    color: #ffffff;
+    border-left-color: var(--important-quote-border);
+    background: var(--important-quote-bg);
+    color: var(--important-fg);
 }
 
 /* Empty State Note */
@@ -444,9 +476,9 @@ body {
 }
 
 .ack-name:focus {
-    background: #ffffff;
+    background: var(--input-focus-bg);
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    box-shadow: var(--focus-ring);
 }
 
 .ack-submit {
@@ -460,7 +492,7 @@ body {
     font-size: 1.25rem;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    box-shadow: var(--primary-glow);
     transition: background-color 0.15s, transform 0.05s, box-shadow 0.15s;
     touch-action: manipulation;
 }
@@ -472,7 +504,7 @@ body {
 .ack-submit:active {
     transform: translateY(1px);
     background: var(--primary-active);
-    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+    box-shadow: var(--primary-glow-active);
 }
 
 /* ==========================================================================
@@ -489,7 +521,7 @@ body {
 }
 
 .editor-advance {
-    background: #fdfefe;
+    background: var(--editor-advance-bg);
     border-left: 4px solid var(--primary);
 }
 
@@ -529,9 +561,9 @@ body {
 }
 
 .editor-text:focus {
-    background: #ffffff;
+    background: var(--input-focus-bg);
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    box-shadow: var(--focus-ring);
 }
 
 /* Toggle Switch for Viktigt */
@@ -540,10 +572,10 @@ body {
     align-items: center;
     gap: 0.85rem;
     padding: 0.75rem 1rem;
-    border: 1.5px solid #fca5a5;
+    border: 1.5px solid var(--important-soft-border);
     border-radius: var(--radius-lg);
-    background: #fef2f2;
-    color: #991b1b;
+    background: var(--important-soft-bg);
+    color: var(--important-soft-fg);
     font-weight: 700;
     font-size: 0.95rem;
     cursor: pointer;
@@ -559,7 +591,7 @@ body {
     height: 1.85rem;
     margin: 0;
     border-radius: var(--radius-full);
-    background: #cbd5e1;
+    background: var(--toggle-off-bg);
     cursor: pointer;
     transition: background-color 0.2s ease;
     outline: none;
@@ -573,13 +605,13 @@ body {
     width: 1.45rem;
     height: 1.45rem;
     border-radius: 50%;
-    background: #ffffff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    background: var(--toggle-knob);
+    box-shadow: var(--toggle-knob-shadow);
     transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .editor-toggle:checked {
-    background: #dc2626;
+    background: var(--toggle-on-bg);
 }
 
 .editor-toggle:checked::before {
@@ -587,7 +619,7 @@ body {
 }
 
 .editor-toggle:focus-visible {
-    box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.3);
+    box-shadow: var(--toggle-focus-ring);
 }
 
 .editor-save {
@@ -600,7 +632,7 @@ body {
     font-size: 1.25rem;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    box-shadow: var(--primary-glow);
     transition: background-color 0.15s, transform 0.05s, box-shadow 0.15s;
     touch-action: manipulation;
 }
@@ -656,9 +688,9 @@ body {
 }
 
 .editor-clear:hover {
-    background: #f1f5f9;
+    background: var(--bg-subtle);
     color: var(--error-fg);
-    border-color: #fca5a5;
+    border-color: var(--important-soft-border);
 }
 
 /* ==========================================================================
@@ -721,7 +753,7 @@ body {
     border: 1px solid var(--error-border);
     color: var(--error-fg);
     font-weight: 700;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--shadow-overlay);
 }
 
 /* The PIN Alert sits at the top of the dashboard until the service restarts
@@ -768,8 +800,8 @@ body {
     min-height: 100vh;
     min-height: 100dvh;
     text-align: center;
-    background-color: #0f172a;
-    color: #f8fafc;
+    background-color: var(--health-bg);
+    color: var(--health-fg);
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 1.25rem;
     padding: 2rem;
@@ -783,11 +815,11 @@ body {
 .status-item {
     margin: 0.5rem 0;
     padding: 0.5rem 1rem;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--health-item-bg);
     border-radius: var(--radius-md);
 }
 
 .accent {
-    color: #4ade80;
+    color: var(--health-accent);
     font-weight: 700;
 }
