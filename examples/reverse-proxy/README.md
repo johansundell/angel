@@ -11,6 +11,8 @@ Example configurations for running Angel behind **nginx** or **Apache**, with HT
 
 `check.sh` tests a running setup through the proxy (see [Checking a setup](#checking-a-setup)).
 
+For a server of its own, the repository also has a ready Docker Compose stack with Caddy, which gets and renews the certificate by itself: see [Running with HTTPS (Let's Encrypt)](../../README.md#running-with-https-lets-encrypt).
+
 ## What Angel needs from the proxy
 
 - **A domain or subdomain of its own.** Angel uses absolute paths (`/assets/...`, `/pin`, `/admin`), so `https://angel.example.com/` works and `https://example.com/angel/` doesn't.

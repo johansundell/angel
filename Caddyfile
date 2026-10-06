@@ -1,0 +1,40 @@
+# Caddy in front of Angel for docker-compose.https.yml. Caddy gets the
+# certificate for DOMAIN from Let's Encrypt, renews it, and redirects HTTP to
+# HTTPS. The {$...} values come from docker-compose.https.yml, which reads
+# them from .env. The rules match examples/reverse-proxy/ (nginx and Apache).
+{
+	# "email you@example.com" when ACME_EMAIL is set, for expiry warnings;
+	# empty otherwise.
+	{$ACME_EMAIL_OPTION}
+	# Let's Encrypt, or its staging CA while you try the setup (ACME_CA).
+	acme_ca {$ACME_CA}
+	# With DOMAIN=localhost Caddy makes its own certificate, and can't add its
+	# root to a trust store inside the container.
+	skip_install_trust
+}
+
+# No "log" directive, so no access log: Angel logs requests already, and a
+# second log only adds visitor addresses to look after.
+{$DOMAIN} {
+	header {
+		# Browsers ignore HSTS until they have reached the site over HTTPS
+		# once; after that they refuse plain HTTP for a year.
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+		X-Frame-Options "DENY"
+	}
+
+	# Notes are short; Angel itself rejects logged bodies over 1 MiB.
+	request_body {
+		max_size 1MiB
+	}
+
+	reverse_proxy angel:8080 {
+		# Angel counts failed PINs per client address, taken from
+		# X-Forwarded-For when the request comes from TRUSTED_PROXIES (this
+		# container). Replace whatever the client sent with the address
+		# Caddy saw.
+		header_up X-Forwarded-For {remote_host}
+	}
+}

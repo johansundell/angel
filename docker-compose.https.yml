@@ -1,0 +1,88 @@
+# Angel over HTTPS on a server of its own: Caddy gets a certificate for DOMAIN
+# from Let's Encrypt and renews it (ADR-0004). Start it with
+# `make docker-run-https`, which stops when .env is missing. Compose reads .env
+# next to this file; see "Running with HTTPS (Let's Encrypt)" in the README.
+# Angel is not published, so the only way in is through Caddy.
+services:
+  angel:
+    image: ghcr.io/johansundell/angel:${VERSION:-dev}
+    # Builds from this repository until the image is published.
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-dev}
+    volumes:
+      - data:/app/data
+    environment:
+      # Fixed: Caddy reaches Angel on 8080, and only Caddy may set
+      # X-Forwarded-For.
+      PORT: ":8080"
+      TRUSTED_PROXIES: ${PROXY_SUBNET_PREFIX:-172.31.0}.10
+      USE_FILE_SYSTEM: "false"
+      SQLITE_PATH: /app/data/angel.db
+      COOKIE_SECURE: "true"
+      # Passed through by name from .env; unset ones keep Angel's defaults.
+      # Angel refuses to start without the PINs.
+      CAREGIVER_PIN:
+      MASTER_PIN:
+      SESSION_SECRET:
+      CAREGIVER_SESSION_TIMEOUT:
+      CLIENT_SESSION_TIMEOUT:
+      AUTH_TOKEN:
+      DEBUG:
+      STORAGE:
+      MYSQL_USERNAME:
+      MYSQL_PASSWORD:
+      MYSQL_HOST:
+      MYSQL_PORT:
+      MYSQL_DATABASE:
+      FMS_HOST:
+      FMS_DATABASE:
+      FMS_USERNAME:
+      FMS_PASSWORD:
+      FMS_TIMEOUT:
+      FMS_LOG_TABLE:
+      FMS_INSECURE_SKIP_VERIFY:
+    networks:
+      proxy:
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.11-alpine
+    ports:
+      # Let's Encrypt checks the domain over port 80, so keep 80 and 443 in
+      # production. HTTP_PORT and HTTPS_PORT are for trying DOMAIN=localhost
+      # on a machine where they are taken.
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443/tcp"
+      - "${HTTPS_PORT:-443}:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates and the ACME account. Losing them means new certificates,
+      # and Let's Encrypt limits how many you get per week.
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env to the host name Angel is served on}
+      ACME_EMAIL_OPTION: ${ACME_EMAIL:+email ${ACME_EMAIL}}
+      ACME_CA: ${ACME_CA:-https://acme-v02.api.letsencrypt.org/directory}
+    depends_on:
+      angel:
+        condition: service_healthy
+    networks:
+      proxy:
+        ipv4_address: ${PROXY_SUBNET_PREFIX:-172.31.0}.10
+    restart: unless-stopped
+
+networks:
+  proxy:
+    ipam:
+      config:
+        # Set PROXY_SUBNET_PREFIX (the first three numbers, e.g. 10.99.0) if
+        # this subnet is already in use on the host.
+        - subnet: ${PROXY_SUBNET_PREFIX:-172.31.0}.0/24
+
+volumes:
+  data:
+  caddy_data:
+  caddy_config:
