@@ -9,15 +9,15 @@ import (
 
 func (s *SQLiteStore) AddAcknowledgement(ctx context.Context, a types.Acknowledgement) (int64, error) {
 	res, err := s.db.ExecContext(ctx, `INSERT INTO acknowledgements (date, name, created_at) VALUES (?, ?, ?)`,
-		a.Date, a.Name, s.timeArg(a.CreatedAt))
+		a.Date.String(), a.Name, s.timeArg(a.CreatedAt))
 	if err != nil {
 		return 0, err
 	}
 	return res.LastInsertId()
 }
 
-func (s *SQLiteStore) ListAcknowledgements(ctx context.Context, date string) ([]types.Acknowledgement, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT id, name, created_at FROM acknowledgements WHERE date = ? ORDER BY created_at, id`, date)
+func (s *SQLiteStore) ListAcknowledgements(ctx context.Context, day types.Day) ([]types.Acknowledgement, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT id, name, created_at FROM acknowledgements WHERE date = ? ORDER BY created_at, id`, day.String())
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +25,7 @@ func (s *SQLiteStore) ListAcknowledgements(ctx context.Context, date string) ([]
 
 	var acks []types.Acknowledgement
 	for rows.Next() {
-		a := types.Acknowledgement{Date: date}
+		a := types.Acknowledgement{Date: day}
 		var created string
 		if err := rows.Scan(&a.ID, &a.Name, &created); err != nil {
 			return nil, err

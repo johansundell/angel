@@ -44,9 +44,9 @@ func ackCookie(t *testing.T, w *httptest.ResponseRecorder) *http.Cookie {
 	return nil
 }
 
-func (a *pinApp) acknowledgements(date string) []types.Acknowledgement {
+func (a *pinApp) acknowledgements(d types.Day) []types.Acknowledgement {
 	a.t.Helper()
-	acks, err := a.store.ListAcknowledgements(context.Background(), date)
+	acks, err := a.store.ListAcknowledgements(context.Background(), d)
 	if err != nil {
 		a.t.Fatalf("ListAcknowledgements: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestAcknowledgement_RecordsAndConfirmsWithName(t *testing.T) {
 	if body := w.Body.String(); !strings.Contains(body, "Kvitterat av Maria kl 08:35") {
 		t.Errorf("missing confirmation, got %q", body)
 	}
-	acks := app.acknowledgements("2026-10-05")
+	acks := app.acknowledgements(day("2026-10-05"))
 	if len(acks) != 1 {
 		t.Fatalf("got %d acknowledgements, want 1", len(acks))
 	}
@@ -104,7 +104,7 @@ func TestAcknowledgement_AnonymousWhenNameBlank(t *testing.T) {
 	if !strings.Contains(body, "Kvitterat kl 14:05") {
 		t.Errorf("missing anonymous confirmation, got %q", body)
 	}
-	acks := app.acknowledgements("2026-10-05")
+	acks := app.acknowledgements(day("2026-10-05"))
 	if len(acks) != 1 || acks[0].Name != "" {
 		t.Fatalf("acknowledgements = %+v, want one anonymous", acks)
 	}
@@ -118,10 +118,10 @@ func TestAcknowledgement_UsesStockholmCalendarDate(t *testing.T) {
 
 	app.acknowledge("Nattpersonal", c)
 
-	if acks := app.acknowledgements("2026-10-06"); len(acks) != 1 {
+	if acks := app.acknowledgements(day("2026-10-06")); len(acks) != 1 {
 		t.Errorf("got %d acknowledgements on 2026-10-06, want 1", len(acks))
 	}
-	if acks := app.acknowledgements("2026-10-05"); len(acks) != 0 {
+	if acks := app.acknowledgements(day("2026-10-05")); len(acks) != 0 {
 		t.Errorf("got %d acknowledgements on 2026-10-05, want 0", len(acks))
 	}
 }
@@ -142,7 +142,7 @@ func TestAcknowledgement_MultipleVisitsSameDay(t *testing.T) {
 	if strings.Contains(body, "Kvitterat av Maria") {
 		t.Error("second caregiver shown the first caregiver's confirmation")
 	}
-	acks := app.acknowledgements("2026-10-05")
+	acks := app.acknowledgements(day("2026-10-05"))
 	if len(acks) != 2 || acks[0].Name != "Maria" || acks[1].Name != "Ahmed" {
 		t.Fatalf("acknowledgements = %+v, want Maria then Ahmed", acks)
 	}
@@ -157,7 +157,7 @@ func TestAcknowledgement_NameIsEscapedAndCapped(t *testing.T) {
 	if strings.Contains(body, "<b>") {
 		t.Error("caregiver name rendered unescaped")
 	}
-	acks := app.acknowledgements("2026-10-05")
+	acks := app.acknowledgements(day("2026-10-05"))
 	if len(acks) != 1 {
 		t.Fatalf("got %d acknowledgements, want 1", len(acks))
 	}
@@ -231,7 +231,7 @@ func TestAcknowledgement_RequiresCaregiverSession(t *testing.T) {
 	app.clock.Advance(testSessionTTL + time.Second)
 	assertRedirect(t, app.acknowledge("Utgången", c), "/")
 
-	if acks := app.acknowledgements("2026-10-05"); len(acks) != 0 {
+	if acks := app.acknowledgements(day("2026-10-05")); len(acks) != 0 {
 		t.Errorf("got %d acknowledgements without a caregiver session, want 0", len(acks))
 	}
 }

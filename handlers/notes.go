@@ -8,25 +8,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	_ "time/tzdata" // the runtime image has no zoneinfo
 
 	"github.com/gin-gonic/gin"
 	"github.com/johansundell/angel/httperror"
 	"github.com/johansundell/angel/types"
 )
-
-// Daily Notes are keyed by the calendar date in the Client's home.
-var localZone = mustLoadLocation("Europe/Stockholm")
-
-const dateLayout = "2006-01-02"
-
-func mustLoadLocation(name string) *time.Location {
-	loc, err := time.LoadLocation(name)
-	if err != nil {
-		panic(err)
-	}
-	return loc
-}
 
 var errNotesNotConfigured = errors.New("note storage is not configured")
 
@@ -45,9 +31,9 @@ var (
 	swedishMonths   = [...]string{"januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"}
 )
 
-// clockTime formats t as the local time of day, like "08:35".
+// clockTime formats t as the time of day in the Client's home, like "08:35".
 func clockTime(t time.Time) string {
-	return t.In(localZone).Format("15:04")
+	return types.HomeTime(t).Format("15:04")
 }
 
 // swedishDate formats d like "måndag 5 oktober 2026".
@@ -88,7 +74,7 @@ func (h *Handler) CaregiverView(c *gin.Context) error {
 		data["note"] = note
 		data["noteHTML"] = noteHTML
 	}
-	confirmation, err := h.takeAckConfirmation(c, today.String())
+	confirmation, err := h.takeAckConfirmation(c, today)
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
@@ -104,10 +90,9 @@ func (h *Handler) AcknowledgeNote(c *gin.Context) error {
 	if h.notes == nil {
 		return httperror.ReturnWithHTTPStatus(errNotesNotConfigured, http.StatusInternalServerError)
 	}
-	now := h.now().In(localZone)
-	today := types.DayOf(now)
+	now := h.now()
 	ack := types.Acknowledgement{
-		Date:      today.String(),
+		Date:      types.DayOf(now),
 		Name:      caregiverName(c.PostForm("name")),
 		CreatedAt: now,
 	}
@@ -140,7 +125,7 @@ func (h *Handler) setAckCookie(c *gin.Context, value string, maxAge int) {
 // and returns its confirmation text, or "" when there is nothing to confirm.
 // Only today's acknowledgements are confirmed, so a leftover cookie does not
 // claim a new day's note has been read.
-func (h *Handler) takeAckConfirmation(c *gin.Context, date string) (string, error) {
+func (h *Handler) takeAckConfirmation(c *gin.Context, today types.Day) (string, error) {
 	v, err := c.Cookie(ackCookieName)
 	if err != nil {
 		return "", nil
@@ -150,7 +135,7 @@ func (h *Handler) takeAckConfirmation(c *gin.Context, date string) (string, erro
 	if err != nil {
 		return "", nil
 	}
-	acks, err := h.notes.ListAcknowledgements(c.Request.Context(), date)
+	acks, err := h.notes.ListAcknowledgements(c.Request.Context(), today)
 	if err != nil {
 		return "", err
 	}

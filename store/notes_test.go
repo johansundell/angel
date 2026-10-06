@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/johansundell/angel/types"
 )
@@ -90,5 +91,47 @@ func TestNoteStore_CRUD(t *testing.T) {
 	}
 	if ok {
 		t.Error("note should be deleted")
+	}
+}
+
+func TestNoteStore_AcknowledgementsByDay(t *testing.T) {
+	s := newTestSQLite(t)
+	ctx := context.Background()
+	monday := mustDay(t, "2026-10-05")
+	tuesday := monday.Next()
+	at := time.Date(2026, 10, 5, 6, 35, 0, 0, time.UTC)
+
+	first, err := s.AddAcknowledgement(ctx, types.Acknowledgement{Date: monday, Name: "Maria", CreatedAt: at})
+	if err != nil {
+		t.Fatalf("AddAcknowledgement: %v", err)
+	}
+	second, err := s.AddAcknowledgement(ctx, types.Acknowledgement{Date: monday, CreatedAt: at.Add(time.Hour)})
+	if err != nil {
+		t.Fatalf("AddAcknowledgement: %v", err)
+	}
+	if _, err := s.AddAcknowledgement(ctx, types.Acknowledgement{Date: tuesday, Name: "Ahmed", CreatedAt: at.Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("AddAcknowledgement: %v", err)
+	}
+
+	acks, err := s.ListAcknowledgements(ctx, monday)
+	if err != nil {
+		t.Fatalf("ListAcknowledgements: %v", err)
+	}
+	if len(acks) != 2 {
+		t.Fatalf("got %d acknowledgements for monday, want 2: %+v", len(acks), acks)
+	}
+	if acks[0].ID != first || acks[0].Date != monday || acks[0].Name != "Maria" || !acks[0].CreatedAt.Equal(at) {
+		t.Errorf("first acknowledgement = %+v", acks[0])
+	}
+	if acks[1].ID != second || acks[1].Date != monday || acks[1].Name != "" {
+		t.Errorf("second acknowledgement = %+v", acks[1])
+	}
+
+	acks, err = s.ListAcknowledgements(ctx, tuesday.Next())
+	if err != nil {
+		t.Fatalf("ListAcknowledgements: %v", err)
+	}
+	if len(acks) != 0 {
+		t.Errorf("got %+v for a day without acknowledgements", acks)
 	}
 }
