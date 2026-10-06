@@ -94,13 +94,13 @@ func (h *Handler) loadAckFeed(c *gin.Context) ([]ackFeedEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	feed := make([]ackFeedEntry, len(acks))
-	for i, a := range acks {
+	feed := make([]ackFeedEntry, 0, len(acks))
+	for _, a := range newestFirst(acks) {
 		who := a.Name
 		if who == "" {
 			who = "Okänd ängel"
 		}
-		feed[len(acks)-1-i] = ackFeedEntry{Who: who, At: clockTime(a.CreatedAt)}
+		feed = append(feed, ackFeedEntry{Who: who, At: clockTime(a.CreatedAt)})
 	}
 	return feed, nil
 }
