@@ -108,6 +108,7 @@ The application can be installed as a system service.
 - **Service Management**: Can be installed and managed as a system service (Windows Service, Systemd, etc.) using [kardianos/service](https://github.com/kardianos/service).
 - **Database Support**: Request logs in SQLite, MySQL or FileMaker (see [FileMaker storage](#filemaker-storage)).
 - **Authentication**: Simple token-based authentication for protected routes.
+- **Light and dark mode**: The pages follow the device's light or dark setting (`prefers-color-scheme`), including form controls, scrollbars and the phone's address bar. There is no toggle and nothing is stored, so a shared phone never keeps one visitor's choice. Every colour is a token in the `:root` blocks of `assets/css/main.css`, and a test fails if a colour is used anywhere else.
 - **Docker Ready**: Includes `Dockerfile` and `docker-compose.yml` for easy containerization.
 - **Asset Management**: Supports embedding assets or serving from the file system.
 - **Logging**: Request logging to database. Entries are written in the background in batches, so a slow database never slows down requests; `GET /logs` can be up to about a second behind, and pending entries are written when the service stops.
