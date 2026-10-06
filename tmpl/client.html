@@ -20,9 +20,10 @@
 <script>
 // Keep the PIN Alert and the acknowledgement feed live without reloading the
 // page, which would lose unsaved edits. Each part is replaced only when it
-// changed, so the alert is not announced again on every poll. Redirects are
-// not followed: one means the session has ended, so instead of pasting the
-// keypad into the feed, say the feed has stopped and stop polling. Saving then would also redirect to the keypad and
+// changed, so the alert is announced when it appears or its count changes,
+// not on every poll. Redirects are not followed: one means the session has
+// ended, so instead of pasting the keypad into the feed, say the feed has
+// stopped and stop polling. Saving then would also redirect to the keypad and
 // lose the text being written, so show the banner and disable the buttons;
 // the text stays editable so it can be copied.
 (function () {

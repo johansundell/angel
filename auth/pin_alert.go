@@ -7,11 +7,11 @@ import (
 	"github.com/johansundell/angel/logging"
 )
 
-// PIN Alert defaults: DefaultAlertFailures checked wrong PINs, from any
-// addresses, within DefaultAlertWindow trigger the PIN Alert (ADR-0005).
+// AlertFailures checked wrong PINs, from any addresses, within AlertWindow
+// trigger the PIN Alert (ADR-0005).
 const (
-	DefaultAlertFailures = 20
-	DefaultAlertWindow   = 24 * time.Hour
+	AlertFailures = 20
+	AlertWindow   = 24 * time.Hour
 )
 
 // PINAlert tells the Client that many wrong PINs have been entered and the

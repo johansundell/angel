@@ -32,7 +32,7 @@ func TestPINAlert_ShownToClientOnDashboardAndPolledFeed(t *testing.T) {
 
 	// 07:00 UTC is 09:00 in Stockholm.
 	app.clock.now = time.Date(2026, 10, 5, 7, 0, 0, 0, time.UTC)
-	app.wrongPINs(auth.DefaultAlertFailures - 1)
+	app.wrongPINs(auth.AlertFailures - 1)
 	for _, path := range []string{"/admin", "/admin/acks"} {
 		if body := app.get(path, client).Body.String(); strings.Contains(body, pinAlertText) {
 			t.Errorf("%s shows the PIN Alert after 19 wrong PINs", path)

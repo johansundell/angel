@@ -118,7 +118,7 @@ func New(cfg Config) (*Authenticator, error) {
 		secure:       cfg.SecureCookie,
 		now:          cfg.Now,
 		limiter:      newLimiter(cfg.MaxFailures, cfg.FailureWindow),
-		alerter:      newPINAlerter(DefaultAlertFailures, DefaultAlertWindow, cfg.Logger),
+		alerter:      newPINAlerter(AlertFailures, AlertWindow, cfg.Logger),
 	}, nil
 }
 

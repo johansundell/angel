@@ -21,12 +21,14 @@ type alertApp struct {
 	t   *testing.T
 	a   *Authenticator
 	now time.Time
-	log *warnRecorder
+	// step is how far the clock moves after each wrong PIN.
+	step time.Duration
+	log  *warnRecorder
 }
 
 func newAlertApp(t *testing.T) *alertApp {
 	t.Helper()
-	app := &alertApp{t: t, now: time.Date(2026, 10, 5, 9, 0, 0, 0, time.UTC), log: &warnRecorder{}}
+	app := &alertApp{t: t, now: time.Date(2026, 10, 5, 9, 0, 0, 0, time.UTC), step: time.Minute, log: &warnRecorder{}}
 	a, err := New(Config{
 		CaregiverPIN: "1234", MasterPIN: "987654", Secret: []byte(strings.Repeat("s", 32)),
 		CaregiverSessionTTL: 20 * time.Minute, ClientSessionTTL: 8 * time.Hour,
@@ -41,15 +43,15 @@ func newAlertApp(t *testing.T) *alertApp {
 }
 
 // wrongPINs enters n wrong PINs, each from its own address so the rate
-// limiter never blocks them, one minute apart.
+// limiter never blocks them, step apart.
 func (app *alertApp) wrongPINs(n int) {
 	app.t.Helper()
 	for i := 0; i < n; i++ {
-		addr := fmt.Sprintf("198.51.100.%d:%d", i%250, app.now.Unix())
+		addr := fmt.Sprintf("198.51.100.%d:%d", i%250, app.now.UnixNano())
 		if _, err := app.a.Login(addr, "0000"); !errors.Is(err, ErrInvalidPIN) {
 			app.t.Fatalf("Login = %v, want ErrInvalidPIN", err)
 		}
-		app.now = app.now.Add(time.Minute)
+		app.now = app.now.Add(app.step)
 	}
 }
 
@@ -57,7 +59,7 @@ func TestPINAlert_TriggersOnTwentiethWrongPINWithin24h(t *testing.T) {
 	app := newAlertApp(t)
 	start := app.now
 
-	app.wrongPINs(DefaultAlertFailures - 1)
+	app.wrongPINs(AlertFailures - 1)
 	if _, ok := app.a.PINAlert(); ok {
 		t.Fatal("alert after 19 wrong PINs")
 	}
@@ -66,8 +68,8 @@ func TestPINAlert_TriggersOnTwentiethWrongPINWithin24h(t *testing.T) {
 	if !ok {
 		t.Fatal("no alert after 20 wrong PINs")
 	}
-	if alert.Count != DefaultAlertFailures {
-		t.Errorf("Count = %d, want %d", alert.Count, DefaultAlertFailures)
+	if alert.Count != AlertFailures {
+		t.Errorf("Count = %d, want %d", alert.Count, AlertFailures)
 	}
 	if !alert.First.Equal(start) {
 		t.Errorf("First = %v, want %v", alert.First, start)
@@ -80,15 +82,15 @@ func TestPINAlert_TriggersOnTwentiethWrongPINWithin24h(t *testing.T) {
 func TestPINAlert_IgnoresWrongPINsOlderThan24h(t *testing.T) {
 	app := newAlertApp(t)
 
-	app.wrongPINs(DefaultAlertFailures - 1)
-	app.now = app.now.Add(DefaultAlertWindow)
+	app.wrongPINs(AlertFailures - 1)
+	app.now = app.now.Add(AlertWindow)
 	app.wrongPINs(1)
 	if _, ok := app.a.PINAlert(); ok {
 		t.Fatal("wrong PINs older than 24h counted")
 	}
 	// The 19 old ones have expired, so 18 more (19 in the window) still
 	// do not trigger, and one more does.
-	app.wrongPINs(DefaultAlertFailures - 2)
+	app.wrongPINs(AlertFailures - 2)
 	if _, ok := app.a.PINAlert(); ok {
 		t.Fatal("alert after 19 wrong PINs within 24h")
 	}
@@ -98,9 +100,31 @@ func TestPINAlert_IgnoresWrongPINsOlderThan24h(t *testing.T) {
 	}
 }
 
+func TestPINAlert_CountsOnlyTheRollingWindow(t *testing.T) {
+	app := newAlertApp(t)
+	start := app.now
+
+	app.wrongPINs(10) // minutes 0 to 9
+	// Those from minutes 0 to 5 are now older than 24h; 4 remain.
+	app.now = start.Add(AlertWindow + 5*time.Minute + 30*time.Second)
+	app.step = 0
+	app.wrongPINs(AlertFailures - 5)
+	if _, ok := app.a.PINAlert(); ok {
+		t.Fatal("alert after 19 wrong PINs within 24h")
+	}
+	app.wrongPINs(1)
+	alert, ok := app.a.PINAlert()
+	if !ok {
+		t.Fatal("no alert after 20 wrong PINs within 24h")
+	}
+	if want := start.Add(6 * time.Minute); alert.Count != AlertFailures || !alert.First.Equal(want) {
+		t.Errorf("alert = %+v, want Count %d and First %v", alert, AlertFailures, want)
+	}
+}
+
 func TestPINAlert_StaysAndKeepsCounting(t *testing.T) {
 	app := newAlertApp(t)
-	app.wrongPINs(DefaultAlertFailures)
+	app.wrongPINs(AlertFailures)
 	first, _ := app.a.PINAlert()
 
 	app.now = app.now.Add(48 * time.Hour)
@@ -109,8 +133,8 @@ func TestPINAlert_StaysAndKeepsCounting(t *testing.T) {
 	}
 	app.wrongPINs(1)
 	alert, _ := app.a.PINAlert()
-	if alert.Count != DefaultAlertFailures+1 {
-		t.Errorf("Count = %d, want %d", alert.Count, DefaultAlertFailures+1)
+	if alert.Count != AlertFailures+1 {
+		t.Errorf("Count = %d, want %d", alert.Count, AlertFailures+1)
 	}
 	if !alert.First.Equal(first.First) || !alert.Last.Equal(app.now.Add(-time.Minute)) {
 		t.Errorf("alert = %+v", alert)
@@ -135,7 +159,7 @@ func TestPINAlert_RateLimitedAttemptsDoNotCount(t *testing.T) {
 
 func TestPINAlert_CorrectPINsDoNotCount(t *testing.T) {
 	app := newAlertApp(t)
-	for i := 0; i < 2*DefaultAlertFailures; i++ {
+	for i := 0; i < 2*AlertFailures; i++ {
 		if _, err := app.a.Login(fmt.Sprintf("198.51.100.%d", i), "1234"); err != nil {
 			t.Fatal(err)
 		}
@@ -148,11 +172,11 @@ func TestPINAlert_CorrectPINsDoNotCount(t *testing.T) {
 func TestPINAlert_LogsOnceWhenTriggered(t *testing.T) {
 	app := newAlertApp(t)
 
-	app.wrongPINs(DefaultAlertFailures - 1)
+	app.wrongPINs(AlertFailures - 1)
 	if len(app.log.warnings) != 0 {
 		t.Fatalf("warned before the alert: %q", app.log.warnings)
 	}
-	app.wrongPINs(DefaultAlertFailures)
+	app.wrongPINs(AlertFailures)
 	if len(app.log.warnings) != 1 {
 		t.Fatalf("got %d warnings, want 1: %q", len(app.log.warnings), app.log.warnings)
 	}
