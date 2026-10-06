@@ -108,6 +108,15 @@ func loadSettings(filenames ...string) {
 	if v := os.Getenv("COOKIE_SECURE"); v != "" {
 		settings.PIN.SecureCookie, _ = strconv.ParseBool(v)
 	}
+	if v := os.Getenv("SHARE_CAREGIVER_NAMES"); v != "" {
+		// Unlike the other switches, a typo must not quietly hide or share
+		// names, so Validate refuses a value that isn't a boolean.
+		share, err := strconv.ParseBool(v)
+		if err != nil {
+			settings.PIN.InvalidShareCaregiverNames = v
+		}
+		settings.PIN.ShareCaregiverNames = share
+	}
 	for _, p := range strings.Split(os.Getenv("TRUSTED_PROXIES"), ",") {
 		if p = strings.TrimSpace(p); p != "" {
 			settings.TrustedProxies = append(settings.TrustedProxies, p)

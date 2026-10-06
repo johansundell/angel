@@ -149,7 +149,8 @@ func (p *program) run(startup chan<- error) error {
 	defer closeNotes()
 
 	handler, err := handlers.NewHandler(st, settings.UseFileSystem, embeddedTemplates, nameOfService, Version,
-		handlers.WithAuth(authn), handlers.WithNotes(notes))
+		handlers.WithAuth(authn), handlers.WithNotes(notes),
+		handlers.WithShareCaregiverNames(settings.PIN.ShareCaregiverNames))
 	if err != nil {
 		logError("failed to create handlers: %v", err)
 		startup <- err

@@ -62,6 +62,13 @@ type PINSettings struct {
 	ClientSessionTTL    time.Duration `json:"clientSessionTTL"`    // CLIENT_SESSION_TIMEOUT, 15m-24h
 	SessionSecret       string        `json:"-"`                   // SESSION_SECRET; generated per run when empty
 	SecureCookie        bool          `json:"secureCookie"`        // COOKIE_SECURE
+	// ShareCaregiverNames shows Caregivers each other's first names with the
+	// times of today's Acknowledgements (SHARE_CAREGIVER_NAMES); off by
+	// default, see ADR-0006.
+	ShareCaregiverNames bool `json:"shareCaregiverNames"`
+	// InvalidShareCaregiverNames holds a SHARE_CAREGIVER_NAMES value that
+	// isn't a boolean, so Validate can refuse it instead of guessing.
+	InvalidShareCaregiverNames string `json:"-"`
 	// LegacySessionTimeout reports that the Caregiver session lifetime came
 	// from the deprecated SESSION_TIMEOUT, so startup can warn about it.
 	LegacySessionTimeout bool `json:"-"`
@@ -99,6 +106,9 @@ func (p PINSettings) Validate() error {
 	}
 	if p.SessionSecret != "" && len(p.SessionSecret) < 32 {
 		return fmt.Errorf("SESSION_SECRET must be at least 32 characters")
+	}
+	if p.InvalidShareCaregiverNames != "" {
+		return fmt.Errorf("SHARE_CAREGIVER_NAMES must be a boolean such as true or false, got %q", p.InvalidShareCaregiverNames)
 	}
 	return nil
 }

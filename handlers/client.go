@@ -42,6 +42,8 @@ func (h *Handler) ClientDashboard(c *gin.Context) error {
 		"today":    today,
 		"advance":  advance,
 		"acks":     acks,
+		// What the Caregivers' list shows, so the Client knows.
+		"shareCaregiverNames": h.shareCaregiverNames,
 	})
 }
 
@@ -94,15 +96,12 @@ func (h *Handler) loadAckFeed(c *gin.Context) ([]ackFeedEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	feed := make([]ackFeedEntry, len(acks))
-	for i, a := range acks {
-		who := a.Name
-		if who == "" {
-			who = "Okänd ängel"
+	return ackFeed(acks, func(a types.Acknowledgement) string {
+		if a.Name == "" {
+			return "Okänd ängel"
 		}
-		feed[len(acks)-1-i] = ackFeedEntry{Who: who, At: clockTime(a.CreatedAt)}
-	}
-	return feed, nil
+		return a.Name
+	}), nil
 }
 
 // noteEditor is one note editor on the dashboard: the fixed wording of the
