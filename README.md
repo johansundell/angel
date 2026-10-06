@@ -14,6 +14,7 @@ Every response carries an `X-Version` header with the build version. Errors are 
 - **POST /pin**
   - Form field `pin`. The Caregiver PIN starts a caregiver session and redirects (**303**) to `/note`; the Master PIN starts a client session and redirects to `/admin`. A wrong PIN shows the entry screen again with an error (**401**).
   - Rate limited: after **5** wrong PINs from one client address within **15 minutes**, that address gets **429** (without the PIN being checked) until the 15 minutes have passed. See `TRUSTED_PROXIES` for running behind a proxy.
+  - PIN Alert: the rate limit is per address, so guessing from many addresses is not blocked. Instead, after **20** wrong PINs from any addresses within **24 hours**, the Client dashboard shows a PIN Alert with the number of wrong PINs and when the first and last were entered, asking the Client to change the Caregiver PIN, and the service logs a warning. Attempts refused by the rate limit don't count. The alert is kept in memory and stays until the service restarts, which changing the Caregiver PIN requires. Caregivers never see it. See [ADR-0005](docs/adr/0005-pin-alert-instead-of-global-cap.md).
   - Never request-logged, so PINs are not stored.
 
 - **POST /logout**
@@ -35,7 +36,7 @@ Every response carries an `X-Version` header with the build version. Errors are 
   - Needs a caregiver session; anyone else, including the client, is redirected (**303**) to `/`.
 
 - **GET /admin/acks**
-  - Only the "Kvitteringar idag" list from `/admin`, as an HTML fragment. The dashboard fetches it every 30 seconds, and when the tab becomes visible again, so new Acknowledgements appear without reloading the page and losing unsaved editor text. It shows only today's Acknowledgements (the calendar date in Europe/Stockholm), so the list starts empty at midnight.
+  - Only the PIN Alert (when it has triggered) and the "Kvitteringar idag" list from `/admin`, as an HTML fragment; each part is marked with the `data-target` of the element it replaces. The dashboard fetches it every 30 seconds, and when the tab becomes visible again, so new Acknowledgements appear without reloading the page and losing unsaved editor text. It shows only today's Acknowledgements (the calendar date in Europe/Stockholm), so the list starts empty at midnight.
   - Needs a client session; anyone else is redirected (**303**) to `/`. When the dashboard's fetch gets that redirect, the session has ended: the list is replaced with "Sessionen har gått ut. Logga in igen för att se nya kvitteringar." and polling stops.
 
 - **POST /admin/note**, **POST /admin/note/clear**

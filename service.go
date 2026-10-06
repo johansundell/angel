@@ -132,6 +132,7 @@ func (p *program) run(startup chan<- error) error {
 		SecureCookie:        settings.PIN.SecureCookie,
 		CaregiverSessionTTL: settings.PIN.CaregiverSessionTTL,
 		ClientSessionTTL:    settings.PIN.ClientSessionTTL,
+		Logger:              appLogger(),
 	})
 	if err != nil {
 		logError("failed to set up PIN authentication: %v", err)

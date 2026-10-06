@@ -4,7 +4,8 @@
 // session. Sessions are stateless: the cookie carries the role and expiry,
 // signed with HMAC-SHA256, so nothing is stored server side and a restart
 // with a new secret logs everyone out. Failed PIN attempts are rate limited
-// per client address.
+// per client address, and many wrong PINs from any addresses raise a PIN
+// Alert for the Client.
 package auth
 
 import (
@@ -17,6 +18,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/johansundell/angel/logging"
 )
 
 // Role is what a session is allowed to see.
@@ -64,6 +67,9 @@ type Config struct {
 	FailureWindow time.Duration
 	// Now defaults to time.Now.
 	Now func() time.Time
+	// Logger receives the warning when the PIN Alert triggers; the standard
+	// logger when nil.
+	Logger logging.Logger
 }
 
 // Authenticator checks PINs and issues and verifies session cookies. It is
@@ -77,6 +83,7 @@ type Authenticator struct {
 	secure       bool
 	now          func() time.Time
 	limiter      *limiter
+	alerter      *pinAlerter
 }
 
 // New validates cfg and returns an Authenticator.
@@ -111,12 +118,14 @@ func New(cfg Config) (*Authenticator, error) {
 		secure:       cfg.SecureCookie,
 		now:          cfg.Now,
 		limiter:      newLimiter(cfg.MaxFailures, cfg.FailureWindow),
+		alerter:      newPINAlerter(AlertFailures, AlertWindow, cfg.Logger),
 	}, nil
 }
 
 // Login checks pin for a request from clientAddr. It returns ErrRateLimited
 // without checking the PIN when clientAddr is blocked, and ErrInvalidPIN
-// when the PIN is wrong; that attempt counts towards the block.
+// when the PIN is wrong; that attempt counts towards the block and the PIN
+// Alert.
 func (a *Authenticator) Login(clientAddr, pin string) (Role, error) {
 	if !a.limiter.reserve(clientAddr, a.now()) {
 		return "", ErrRateLimited
@@ -133,7 +142,13 @@ func (a *Authenticator) Login(clientAddr, pin string) (Role, error) {
 		a.limiter.reset(clientAddr)
 		return RoleClient, nil
 	}
+	a.alerter.record(a.now())
 	return "", ErrInvalidPIN
+}
+
+// PINAlert returns the PIN Alert, once it has triggered.
+func (a *Authenticator) PINAlert() (PINAlert, bool) {
+	return a.alerter.current()
 }
 
 // StartSession sets a session cookie for role on w, lasting that role's

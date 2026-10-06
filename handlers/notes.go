@@ -41,6 +41,12 @@ func swedishDate(d types.Day) string {
 	return fmt.Sprintf("%s %d %s %d", swedishWeekdays[d.Weekday()], d.DayOfMonth(), swedishMonths[d.Month()-1], d.Year())
 }
 
+// swedishDateTime formats t like "5 oktober kl 08:35", in the Client's home.
+func swedishDateTime(t time.Time) string {
+	d := types.DayOf(t)
+	return fmt.Sprintf("%d %s kl %s", d.DayOfMonth(), swedishMonths[d.Month()-1], clockTime(t))
+}
+
 // ackCookieName is a one-time cookie carrying the ID of the caregiver's own
 // Acknowledgement from AcknowledgeNote to CaregiverView. Unlike a link, it is
 // cleared once shown, so the next caregiver on a shared phone is not told the
