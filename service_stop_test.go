@@ -29,7 +29,7 @@ func freeAddr(t *testing.T) string {
 }
 
 // testPINSettings is a valid keypad configuration for service tests.
-var testPINSettings = types.PINSettings{CaregiverPIN: "1234", MasterPIN: "987654", SessionTTL: 20 * time.Minute}
+var testPINSettings = types.PINSettings{CaregiverPIN: "1234", MasterPIN: "987654", CaregiverSessionTTL: 20 * time.Minute, ClientSessionTTL: 8 * time.Hour}
 
 func useTestSettings(t *testing.T, port string) {
 	t.Helper()

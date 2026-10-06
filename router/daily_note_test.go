@@ -125,7 +125,7 @@ func TestDailyNote_RequiresCaregiverSession(t *testing.T) {
 	}
 
 	c := app.caregiverSession()
-	app.clock.Advance(testSessionTTL + time.Second)
+	app.clock.Advance(testCaregiverSessionTTL + time.Second)
 	w = app.get("/note", c)
 	assertRedirect(t, w, "/")
 	if strings.Contains(w.Body.String(), "Privat anteckning") {

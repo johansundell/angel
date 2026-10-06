@@ -56,17 +56,24 @@ type AppSettings struct {
 
 // PINSettings configures keypad entry and sessions.
 type PINSettings struct {
-	CaregiverPIN  string        `json:"-"`            // CAREGIVER_PIN, exactly 4 digits
-	MasterPIN     string        `json:"-"`            // MASTER_PIN, 4-12 digits
-	SessionTTL    time.Duration `json:"sessionTTL"`   // SESSION_TIMEOUT, 15m-30m
-	SessionSecret string        `json:"-"`            // SESSION_SECRET; generated per run when empty
-	SecureCookie  bool          `json:"secureCookie"` // COOKIE_SECURE
+	CaregiverPIN        string        `json:"-"`                   // CAREGIVER_PIN, exactly 4 digits
+	MasterPIN           string        `json:"-"`                   // MASTER_PIN, 4-12 digits
+	CaregiverSessionTTL time.Duration `json:"caregiverSessionTTL"` // CAREGIVER_SESSION_TIMEOUT, 15m-30m
+	ClientSessionTTL    time.Duration `json:"clientSessionTTL"`    // CLIENT_SESSION_TIMEOUT, 15m-24h
+	SessionSecret       string        `json:"-"`                   // SESSION_SECRET; generated per run when empty
+	SecureCookie        bool          `json:"secureCookie"`        // COOKIE_SECURE
+	// LegacySessionTimeout reports that the Caregiver session lifetime came
+	// from the deprecated SESSION_TIMEOUT, so startup can warn about it.
+	LegacySessionTimeout bool `json:"-"`
 }
 
-// Session lifetime bounds; a caregiver must re-enter the PIN after a visit.
+// Session lifetime bounds. A Caregiver must re-enter the PIN after a visit;
+// the Client keeps the dashboard open for much of the day.
 const (
-	MinSessionTTL = 15 * time.Minute
-	MaxSessionTTL = 30 * time.Minute
+	MinCaregiverSessionTTL = 15 * time.Minute
+	MaxCaregiverSessionTTL = 30 * time.Minute
+	MinClientSessionTTL    = 15 * time.Minute
+	MaxClientSessionTTL    = 24 * time.Hour
 )
 
 // Validate verifies the PIN and session settings.
@@ -80,8 +87,15 @@ func (p PINSettings) Validate() error {
 	if p.MasterPIN == p.CaregiverPIN {
 		return fmt.Errorf("MASTER_PIN must differ from CAREGIVER_PIN")
 	}
-	if p.SessionTTL < MinSessionTTL || p.SessionTTL > MaxSessionTTL {
-		return fmt.Errorf("SESSION_TIMEOUT must be between %v and %v, got %v", MinSessionTTL, MaxSessionTTL, p.SessionTTL)
+	if p.CaregiverSessionTTL < MinCaregiverSessionTTL || p.CaregiverSessionTTL > MaxCaregiverSessionTTL {
+		name := "CAREGIVER_SESSION_TIMEOUT"
+		if p.LegacySessionTimeout {
+			name = "SESSION_TIMEOUT"
+		}
+		return fmt.Errorf("%s must be between %v and %v, got %v", name, MinCaregiverSessionTTL, MaxCaregiverSessionTTL, p.CaregiverSessionTTL)
+	}
+	if p.ClientSessionTTL < MinClientSessionTTL || p.ClientSessionTTL > MaxClientSessionTTL {
+		return fmt.Errorf("CLIENT_SESSION_TIMEOUT must be between %v and %v, got %v", MinClientSessionTTL, MaxClientSessionTTL, p.ClientSessionTTL)
 	}
 	if p.SessionSecret != "" && len(p.SessionSecret) < 32 {
 		return fmt.Errorf("SESSION_SECRET must be at least 32 characters")

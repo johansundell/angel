@@ -593,10 +593,11 @@ func TestLoggerMiddleware_CapturesWriteString(t *testing.T) {
 func mustNewHandler(t *testing.T, s store.Store, useFileSystem bool, embedded fs.FS, name, version string) *handlers.Handler {
 	t.Helper()
 	authn, err := auth.New(auth.Config{
-		CaregiverPIN: testCaregiverPIN,
-		MasterPIN:    testMasterPIN,
-		Secret:       []byte("test-secret-test-secret-test-secret"),
-		SessionTTL:   testSessionTTL,
+		CaregiverPIN:        testCaregiverPIN,
+		MasterPIN:           testMasterPIN,
+		Secret:              []byte("test-secret-test-secret-test-secret"),
+		CaregiverSessionTTL: testCaregiverSessionTTL,
+		ClientSessionTTL:    testClientSessionTTL,
 	})
 	if err != nil {
 		t.Fatalf("auth.New failed: %v", err)

@@ -228,7 +228,7 @@ func TestAcknowledgement_RequiresCaregiverSession(t *testing.T) {
 	assertRedirect(t, app.acknowledge("Klienten", client), "/")
 
 	c := app.caregiverSession()
-	app.clock.Advance(testSessionTTL + time.Second)
+	app.clock.Advance(testCaregiverSessionTTL + time.Second)
 	assertRedirect(t, app.acknowledge("Utgången", c), "/")
 
 	if acks := app.acknowledgements(day("2026-10-05")); len(acks) != 0 {

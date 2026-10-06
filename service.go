@@ -92,6 +92,9 @@ func (p *program) startWorker() error {
 
 func (p *program) run(startup chan<- error) error {
 	logInfo("I'm running %v, with version %v.", service.Platform(), Version)
+	if settings.PIN.LegacySessionTimeout {
+		logWarning("SESSION_TIMEOUT is deprecated; rename it to CAREGIVER_SESSION_TIMEOUT.")
+	}
 
 	st, pingTimeout, err := openStore()
 	if err != nil {
@@ -123,11 +126,12 @@ func (p *program) run(startup chan<- error) error {
 
 	ensureSessionSecret()
 	authn, err := auth.New(auth.Config{
-		CaregiverPIN: settings.PIN.CaregiverPIN,
-		MasterPIN:    settings.PIN.MasterPIN,
-		Secret:       []byte(settings.PIN.SessionSecret),
-		SessionTTL:   settings.PIN.SessionTTL,
-		SecureCookie: settings.PIN.SecureCookie,
+		CaregiverPIN:        settings.PIN.CaregiverPIN,
+		MasterPIN:           settings.PIN.MasterPIN,
+		Secret:              []byte(settings.PIN.SessionSecret),
+		SecureCookie:        settings.PIN.SecureCookie,
+		CaregiverSessionTTL: settings.PIN.CaregiverSessionTTL,
+		ClientSessionTTL:    settings.PIN.ClientSessionTTL,
 	})
 	if err != nil {
 		logError("failed to set up PIN authentication: %v", err)

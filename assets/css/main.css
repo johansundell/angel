@@ -614,6 +614,14 @@ body {
     background: var(--primary-active);
 }
 
+.editor-save:disabled,
+.editor-clear:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+    pointer-events: none;
+}
+
 .editor-saved {
     display: inline-flex;
     align-items: center;
@@ -698,6 +706,22 @@ body {
     border-radius: var(--radius-lg);
     color: var(--muted);
     font-size: 0.95rem;
+}
+
+/* Shown when the feed poll finds the session has expired; stays in view
+   while the Client copies unsaved text. */
+.session-expired {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin: 0 0 1.25rem;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-lg);
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    color: var(--error-fg);
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .ack-feed-expired {

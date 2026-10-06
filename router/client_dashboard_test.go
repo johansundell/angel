@@ -181,7 +181,7 @@ func TestClientDashboard_RequiresClientSession(t *testing.T) {
 	app := newPinApp(t)
 	app.saveNote(types.DailyNote{Date: day("2026-10-05"), Text: "Privat anteckning"})
 	expired := app.clientSession()
-	app.clock.Advance(testSessionTTL + time.Second)
+	app.clock.Advance(testClientSessionTTL + time.Second)
 	// Taken after the clock moved, so it is a live caregiver session.
 	caregiver := app.caregiverSession()
 
@@ -202,5 +202,22 @@ func TestClientDashboard_RequiresClientSession(t *testing.T) {
 				t.Errorf("note modified: %+v, %v", n, ok)
 			}
 		})
+	}
+}
+
+func TestClientDashboard_HasSessionExpiredGuard(t *testing.T) {
+	app := newPinApp(t)
+
+	body := app.get("/admin", app.clientSession()).Body.String()
+
+	// The banner is in the page from the start, hidden, so the script only
+	// has to reveal it; it tells the Client to copy unsaved text first.
+	for _, want := range []string{
+		`id="session-expired"`, `role="alert"`, "hidden",
+		"Sessionen har gått ut – kopiera din text innan du loggar in igen",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("dashboard missing %q", want)
+		}
 	}
 }

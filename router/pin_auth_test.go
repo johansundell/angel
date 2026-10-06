@@ -21,9 +21,10 @@ import (
 )
 
 const (
-	testCaregiverPIN = "1234"
-	testMasterPIN    = "987654"
-	testSessionTTL   = 20 * time.Minute
+	testCaregiverPIN        = "1234"
+	testMasterPIN           = "987654"
+	testCaregiverSessionTTL = 20 * time.Minute
+	testClientSessionTTL    = 8 * time.Hour
 )
 
 // fakeClock is a settable time source shared by the authenticator under test.
@@ -53,12 +54,13 @@ func newPinApp(t *testing.T) *pinApp {
 
 	clock := &fakeClock{now: time.Date(2026, 10, 5, 9, 0, 0, 0, time.UTC)}
 	authn, err := auth.New(auth.Config{
-		CaregiverPIN: testCaregiverPIN,
-		MasterPIN:    testMasterPIN,
-		Secret:       []byte("test-secret-test-secret-test-secret"),
-		SessionTTL:   testSessionTTL,
-		SecureCookie: true,
-		Now:          clock.Now,
+		CaregiverPIN:        testCaregiverPIN,
+		MasterPIN:           testMasterPIN,
+		Secret:              []byte("test-secret-test-secret-test-secret"),
+		CaregiverSessionTTL: testCaregiverSessionTTL,
+		ClientSessionTTL:    testClientSessionTTL,
+		SecureCookie:        true,
+		Now:                 clock.Now,
 	})
 	if err != nil {
 		t.Fatalf("auth.New: %v", err)
@@ -240,7 +242,7 @@ func TestEntry_CaregiverSessionExpires(t *testing.T) {
 		t.Fatal("expected a session cookie")
 	}
 
-	app.clock.Advance(testSessionTTL - time.Minute)
+	app.clock.Advance(testCaregiverSessionTTL - time.Minute)
 	if w := app.get("/note", c); w.Code != http.StatusOK {
 		t.Fatalf("session should still be valid, got status %d", w.Code)
 	}
@@ -255,6 +257,26 @@ func TestEntry_CaregiverSessionExpires(t *testing.T) {
 		t.Fatalf("GET / after expiry status = %d, want 200", w.Code)
 	}
 	assertEntryPage(t, w)
+}
+
+func TestEntry_ClientSessionOutlivesCaregiverSession(t *testing.T) {
+	app := newPinApp(t)
+	w := app.submitPIN(testMasterPIN, "10.0.0.1:1111")
+	c := sessionCookie(t, w)
+	if c == nil {
+		t.Fatal("expected a session cookie")
+	}
+	if got := time.Duration(c.MaxAge) * time.Second; got != testClientSessionTTL {
+		t.Errorf("cookie MaxAge = %v, want %v", got, testClientSessionTTL)
+	}
+
+	app.clock.Advance(testClientSessionTTL - time.Minute)
+	if w := app.get("/admin", c); w.Code != http.StatusOK {
+		t.Fatalf("client session should still be valid, got status %d", w.Code)
+	}
+
+	app.clock.Advance(2 * time.Minute)
+	assertRedirect(t, app.get("/admin", c), "/")
 }
 
 func TestEntry_TamperedCookieIsRejected(t *testing.T) {
