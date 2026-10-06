@@ -126,11 +126,10 @@ func (p *program) run(startup chan<- error) error {
 
 	ensureSessionSecret()
 	authn, err := auth.New(auth.Config{
-		CaregiverPIN: settings.PIN.CaregiverPIN,
-		MasterPIN:    settings.PIN.MasterPIN,
-		Secret:       []byte(settings.PIN.SessionSecret),
-		SecureCookie: settings.PIN.SecureCookie,
-
+		CaregiverPIN:        settings.PIN.CaregiverPIN,
+		MasterPIN:           settings.PIN.MasterPIN,
+		Secret:              []byte(settings.PIN.SessionSecret),
+		SecureCookie:        settings.PIN.SecureCookie,
 		CaregiverSessionTTL: settings.PIN.CaregiverSessionTTL,
 		ClientSessionTTL:    settings.PIN.ClientSessionTTL,
 	})

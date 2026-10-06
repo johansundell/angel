@@ -72,7 +72,8 @@ type Authenticator struct {
 	caregiverPIN []byte
 	masterPIN    []byte
 	secret       []byte
-	ttl          map[Role]time.Duration
+	caregiverTTL time.Duration
+	clientTTL    time.Duration
 	secure       bool
 	now          func() time.Time
 	limiter      *limiter
@@ -105,7 +106,8 @@ func New(cfg Config) (*Authenticator, error) {
 		caregiverPIN: []byte(cfg.CaregiverPIN),
 		masterPIN:    []byte(cfg.MasterPIN),
 		secret:       append([]byte(nil), cfg.Secret...),
-		ttl:          map[Role]time.Duration{RoleCaregiver: cfg.CaregiverSessionTTL, RoleClient: cfg.ClientSessionTTL},
+		caregiverTTL: cfg.CaregiverSessionTTL,
+		clientTTL:    cfg.ClientSessionTTL,
 		secure:       cfg.SecureCookie,
 		now:          cfg.Now,
 		limiter:      newLimiter(cfg.MaxFailures, cfg.FailureWindow),
@@ -137,7 +139,11 @@ func (a *Authenticator) Login(clientAddr, pin string) (Role, error) {
 // StartSession sets a session cookie for role on w, lasting that role's
 // session lifetime.
 func (a *Authenticator) StartSession(w http.ResponseWriter, role Role) {
-	ttl := a.ttl[role]
+	// Anything but a Client session gets the shorter Caregiver lifetime.
+	ttl := a.caregiverTTL
+	if role == RoleClient {
+		ttl = a.clientTTL
+	}
 	expires := a.now().Add(ttl)
 	c := a.cookie(a.sign(role, expires), int(ttl/time.Second))
 	c.Expires = expires

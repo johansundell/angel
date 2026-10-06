@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"log"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -47,8 +46,8 @@ func TestRun_WarnsAboutDeprecatedSessionTimeout(t *testing.T) {
 	originalSettings := settings
 	defer func() { settings = originalSettings }()
 	var out bytes.Buffer
+	defer log.SetOutput(log.Writer())
 	log.SetOutput(&out)
-	defer log.SetOutput(os.Stderr)
 
 	for _, legacy := range []bool{false, true} {
 		out.Reset()
