@@ -18,12 +18,13 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     -o angel .
 
 # Run stage
-FROM alpine:3.21
+FROM alpine:3.22
 
 WORKDIR /app
 
 # Install runtime dependencies, create non-root user, and prepare app directory
-RUN apk add --no-cache ca-certificates \
+RUN apk upgrade --no-cache \
+  && apk add --no-cache ca-certificates \
     && addgroup -S appgroup \
     && adduser -S appuser -G appgroup \
     && mkdir -p /app/data \
