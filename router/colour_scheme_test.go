@@ -4,22 +4,22 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"regexp"
 	"strings"
 	"testing"
 )
 
-// pageBackgrounds reads --bg from the stylesheet's light :root block and from
-// its prefers-color-scheme: dark block.
-func pageBackgrounds(t *testing.T) (light, dark string) {
+// pageBackgrounds reads --bg from the served stylesheet's light :root block
+// and from its prefers-color-scheme: dark block.
+func (a *pinApp) pageBackgrounds() (light, dark string) {
+	t := a.t
 	t.Helper()
-	css, err := os.ReadFile("../assets/css/main.css")
-	if err != nil {
-		t.Fatalf("read stylesheet: %v", err)
+	w := a.get("/assets/css/main.css")
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET stylesheet: status = %d", w.Code)
 	}
 	bg := regexp.MustCompile(`--bg:\s*([^;]+);`)
-	s := string(css)
+	s := w.Body.String()
 	m := bg.FindStringSubmatch(s)
 	if m == nil {
 		t.Fatal("stylesheet has no --bg token")
@@ -37,11 +37,11 @@ func pageBackgrounds(t *testing.T) (light, dark string) {
 }
 
 // Every page declares both colour schemes and carries a theme-color per
-// scheme matching that scheme's page background, so the phone's address bar
-// blends in.
+// scheme matching that scheme's --bg, so the phone's address bar blends in.
+// /health paints its own dark panel over --bg but shares the base template.
 func TestPages_FollowDeviceColourScheme(t *testing.T) {
 	app := newPinApp(t)
-	light, dark := pageBackgrounds(t)
+	light, dark := app.pageBackgrounds()
 
 	healthReq := httptest.NewRequest(http.MethodGet, "/health", nil)
 	healthReq.Header.Set("Accept", "text/html")
