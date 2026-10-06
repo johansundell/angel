@@ -40,6 +40,10 @@ _Avoid_: Expiration, reset, turnover
 A shared 4-digit numeric code entered by visiting Caregivers to view the current day's note.
 _Avoid_: Password, door code, passcode, visitor code
 
+**PIN Alert**:
+A notice to the Client that an unusual number of wrong PINs have been entered, suggesting someone may be guessing the Caregiver PIN. It stays until the Caregiver PIN is changed.
+_Avoid_: Intrusion alert, alarm, lockout, security warning
+
 **Master PIN**:
 A private numeric code entered by the Client to open the note authoring and management view.
 _Avoid_: Admin password, master key, credentials

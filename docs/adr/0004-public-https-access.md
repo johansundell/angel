@@ -9,4 +9,4 @@ Angel will be served over public HTTPS (via Cloudflare Tunnel, VPS, or reverse p
 ## Reasons
 - **Zero Wi-Fi friction**: Visiting staff do not need to be onboarded to or remember credentials for a home Wi-Fi network.
 - **Immediate availability**: Scanning a QR code immediately opens the PIN entry screen on any visiting caregiver's phone.
-- **Security model**: The shared 4-digit Caregiver PIN protects note contents, and rate limiting / session timeouts prevent unauthorized brute-forcing.
+- **Security model**: The shared 4-digit Caregiver PIN protects note contents. Session timeouts and per-address rate limiting stop brute-forcing from a single address; guessing from many addresses is not blocked but raises a PIN Alert to the Client (ADR-0005).
