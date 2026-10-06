@@ -61,7 +61,7 @@ const maxCaregiverNameLen = 40
 
 // CaregiverView shows today's Daily Note to a caregiver, or an affirmative
 // empty state when there is none, then the times of today's
-// acknowledgements and the Kvittera form. After acknowledging, it also
+// Acknowledgements and the Kvittera form. After acknowledging, it also
 // confirms who acknowledged and when.
 func (h *Handler) CaregiverView(c *gin.Context) error {
 	if h.notes == nil {
@@ -131,9 +131,9 @@ func (h *Handler) setAckCookie(c *gin.Context, value string, maxAge int) {
 
 // takeAckConfirmation consumes the one-time cookie set by AcknowledgeNote
 // and returns its confirmation text, or "" when there is nothing to confirm.
-// Only today's acknowledgements are passed in, so a leftover cookie does not
+// Only today's Acknowledgements are passed in, so a leftover cookie does not
 // claim a new day's note has been read.
-func (h *Handler) takeAckConfirmation(c *gin.Context, today []types.Acknowledgement) string {
+func (h *Handler) takeAckConfirmation(c *gin.Context, todaysAcks []types.Acknowledgement) string {
 	v, err := c.Cookie(ackCookieName)
 	if err != nil {
 		return ""
@@ -143,21 +143,29 @@ func (h *Handler) takeAckConfirmation(c *gin.Context, today []types.Acknowledgem
 	if err != nil {
 		return ""
 	}
-	if i := slices.IndexFunc(today, func(a types.Acknowledgement) bool { return a.ID == id }); i >= 0 {
-		return ackConfirmation(today[i])
+	if i := slices.IndexFunc(todaysAcks, func(a types.Acknowledgement) bool { return a.ID == id }); i >= 0 {
+		return ackConfirmation(todaysAcks[i])
 	}
 	return ""
 }
 
-// ackTimes returns the times of acks, which are oldest first, newest first.
-// Caregivers see only the times: the Caregiver PIN is shared, so names would
-// tell anyone who knows it who visits the Client and when.
+// ackTimes returns the times of acks, newest first. Caregivers see only the
+// times: the Caregiver PIN is shared, so names would tell anyone who knows it
+// who visits the Client and when.
 func ackTimes(acks []types.Acknowledgement) []string {
-	times := make([]string, len(acks))
-	for i, a := range acks {
-		times[len(acks)-1-i] = clockTime(a.CreatedAt)
+	times := make([]string, 0, len(acks))
+	for _, a := range newestFirst(acks) {
+		times = append(times, clockTime(a.CreatedAt))
 	}
 	return times
+}
+
+// newestFirst returns a reversed copy of acks, which the store lists oldest
+// first.
+func newestFirst(acks []types.Acknowledgement) []types.Acknowledgement {
+	out := slices.Clone(acks)
+	slices.Reverse(out)
+	return out
 }
 
 // caregiverName trims the optional first name and caps its length.

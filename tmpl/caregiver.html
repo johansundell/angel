@@ -14,8 +14,8 @@
 	</section>
 	{{end}}
 	{{with .confirmation}}<p class="ack-confirmation" role="status">✓ {{.}}</p>{{end}}
-	<section class="ack-feed-section ack-feed-caregiver" aria-labelledby="ack-feed-heading">
-		<h2 id="ack-feed-heading">Kvitteringar idag</h2>
+	<section class="ack-feed-section ack-feed-caregiver" aria-labelledby="caregiver-acks-heading">
+		<h2 id="caregiver-acks-heading">Kvitteringar idag</h2>
 		{{- if .ackTimes}}
 		<ul class="ack-feed">
 			{{- range .ackTimes}}
