@@ -190,6 +190,10 @@ docker compose cp angel:/app/data/angel.db ./angel.db
 
 Inside the container the service always listens on **8080** (the image sets `PORT=:8080`), which the image's `EXPOSE` and health check rely on. Choose the port on the host instead: `HOST_PORT=9090 docker compose up`, or `docker run -p 9090:8080 ...`. Don't set `PORT` for the container. The health check calls `GET /health`, so the container turns unhealthy when the storage backend is unreachable.
 
+### Running behind a reverse proxy
+
+[`examples/reverse-proxy/`](examples/reverse-proxy/) has nginx and Apache configurations with HTTPS from Let's Encrypt, step-by-step setup instructions, a local demo for each proxy, and `check.sh`, which tests that the PIN rate limit works through the proxy. Behind a proxy, set `PORT` to a local address (for example `127.0.0.1:8080`) and `TRUSTED_PROXIES` to the proxy's address.
+
 ## Configuration
 
 The application is configured via environment variables. You can set these in a `.env` file in the root directory. Environment variables explicitly set in the system or terminal take precedence over values in the `.env` file.
@@ -208,7 +212,7 @@ The application is configured via environment variables. You can set these in a 
 | `SESSION_TIMEOUT` | duration | `20m` | How long a PIN session lasts before the entry screen is shown again. Must be between `15m` and `30m`. |
 | `SESSION_SECRET` | string | random per start | Key that signs session cookies, at least 32 characters. When unset, a random key is generated at start, so everyone enters the PIN again after a restart. It is never logged. |
 | `COOKIE_SECURE` | bool | `true` | Mark the session cookie `Secure` (sent over HTTPS only). Browsers also accept it on `http://localhost`; set `false` only to test over plain HTTP from another device. |
-| `TRUSTED_PROXIES` | string | - | Comma-separated IPs or CIDRs of reverse proxies (for example `127.0.0.1` for cloudflared on the same host). Only these may set the client address through `X-Forwarded-For`, which the PIN rate limit is keyed on. Leave empty when clients connect directly; behind a proxy, set it, or every caregiver shares one rate limit. |
+| `TRUSTED_PROXIES` | string | - | Comma-separated IPs or CIDRs of reverse proxies (for example `127.0.0.1` for cloudflared on the same host). Only these may set the client address through `X-Forwarded-For`, which the PIN rate limit is keyed on. Leave empty when clients connect directly; behind a proxy, set it, or every caregiver shares one rate limit. See [`examples/reverse-proxy/`](examples/reverse-proxy/). |
 | `MYSQL_USERNAME` | string | - | MySQL username (required when `STORAGE=mysql`, as are `MYSQL_HOST` and `MYSQL_DATABASE`). |
 | `MYSQL_PASSWORD` | string | - | MySQL password. |
 | `MYSQL_HOST` | string | - | MySQL host address. |
