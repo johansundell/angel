@@ -12,8 +12,12 @@ _Avoid_: Admin, patient, customer, user
 A visiting home care professional who accesses the board on-site to read daily instructions.
 _Avoid_: Personnel, staff, worker, employee
 
+**Day**:
+A calendar date in the Client's home, beginning and ending at the Rollover. Daily Notes are written for a Day, and Acknowledgements belong to the Day they were made on.
+_Avoid_: Date, calendar day, note date
+
 **Daily Note**:
-An informational note or set of instructions published by the Client for a specific calendar date.
+An informational note or set of instructions published by the Client for a specific Day. A Day has at most one Daily Note.
 _Avoid_: Message, post, bulletin, announcement, ticket
 
 **Acknowledgement**:
@@ -25,11 +29,11 @@ A visual status applied to a Daily Note to emphasize critical routine or medical
 _Avoid_: Priority, alert level, urgent message
 
 **Advance Note**:
-A Daily Note drafted ahead of time for tomorrow, activating automatically at the daily rollover.
+A Daily Note drafted ahead of time for the next Day, activating automatically at the Rollover.
 _Avoid_: Scheduled post, draft, future note
 
 **Rollover**:
-The daily transition time (default midnight) when the current day advances and the next Daily Note becomes active.
+Midnight in the Client's home, when one Day ends, the next begins, and that Day's Daily Note becomes active.
 _Avoid_: Expiration, reset, turnover
 
 **Caregiver PIN**:
