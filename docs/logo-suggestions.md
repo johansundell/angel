@@ -48,8 +48,20 @@ This document outlines brand identity and logo concept proposals for **Angel** (
 
 ---
 
-## Integration Plan Once Selected
+---
 
-1. **Favicon**: Generate 16×16, 32×32, 180×180 apple-touch-icon and `assets/img/favicon.png` from the chosen vector emblem.
-2. **App Header**: Embed the vector logo above the entry keypad on `/` and optional compact icon on `/note` and `/admin`.
-3. **Template Cleanup**: Replace the legacy template logo at `assets/img/logo.png`.
+## Status & Integration
+
+**Selected Concept**: **Concept 3: The Guiding Halo Note (*Gloria & Anteckning*)** was selected as the brand identity for Angel.
+
+### Production Assets Delivered
+
+1. **Favicon**:
+   - Vector: [`assets/img/favicon.svg`](file:///home/johan/repos/johansundell/angel/assets/img/favicon.svg) (adaptive light & dark modes)
+   - Raster: [`assets/img/favicon.png`](file:///home/johan/repos/johansundell/angel/assets/img/favicon.png) (96×96 RGBA crisp emblem)
+   - Linked in [`tmpl/base.html`](file:///home/johan/repos/johansundell/angel/tmpl/base.html) with SVG priority and PNG fallback.
+2. **App Logo**:
+   - Vector: [`assets/img/logo.svg`](file:///home/johan/repos/johansundell/angel/assets/img/logo.svg) (adaptive light & dark styling, clean typography)
+   - Raster: [`assets/img/logo.png`](file:///home/johan/repos/johansundell/angel/assets/img/logo.png) (replacing legacy template image)
+3. **App Header**:
+   - Integrated into the PIN entry screen [`tmpl/entry.html`](file:///home/johan/repos/johansundell/angel/tmpl/entry.html) with `.entry-logo` responsive styling in [`assets/css/main.css`](file:///home/johan/repos/johansundell/angel/assets/css/main.css).
