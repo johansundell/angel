@@ -15,13 +15,13 @@ func TestMakeDockerPushTargetsGHCR(t *testing.T) {
 	}
 	// Account and name come from the Makefile, so the test still passes after
 	// the template rename changes GHACCOUNT.
-	out, err := exec.Command("make", "-s", "--eval=print-repo: ; @echo $(GHACCOUNT)/$(NAME)", "print-repo").Output()
+	repo, err := exec.Command("make", "-s", "--eval=print-repo: ; @echo $(GHACCOUNT)/$(NAME)", "print-repo").Output()
 	if err != nil {
 		t.Fatalf("read GHACCOUNT and NAME from the Makefile: %v", err)
 	}
-	image := "ghcr.io/" + strings.TrimSpace(string(out))
+	image := "ghcr.io/" + strings.TrimSpace(string(repo))
 
-	out, err = exec.Command("make", "-n", "docker-push", "VERSION=v9.9.9").CombinedOutput()
+	out, err := exec.Command("make", "-n", "docker-push", "VERSION=v9.9.9").CombinedOutput()
 	if err != nil {
 		t.Fatalf("make -n docker-push: %v\n%s", err, out)
 	}

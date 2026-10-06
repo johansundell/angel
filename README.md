@@ -218,7 +218,7 @@ GHCR makes a new package private. After the first publish, make it public once u
 echo "$GHCR_TOKEN" | docker login ghcr.io -u <github-user> --password-stdin
 ```
 
-`make docker-push` builds the image with the `Makefile` `VERSION` and pushes the same two tags from your machine, which needs a login with a token that has `write:packages`. `make release` runs it too, so the image is there even before the workflow finishes. In a service made from this template, `GHACCOUNT` and the service name in the `Makefile` set the image name, and the workflow publishes to `ghcr.io/<owner>/<repo>`.
+`make release` leaves the image to the workflow. `make docker-push` builds the image with the `Makefile` `VERSION` and pushes the same two tags from your machine, which needs a login with a token that has `write:packages`. In a service made from this template, `GHACCOUNT` and the service name in the `Makefile` set the image name, and the workflow publishes to `ghcr.io/<owner>/<repo>`.
 
 #### Port and health check
 

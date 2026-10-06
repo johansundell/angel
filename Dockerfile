@@ -20,6 +20,10 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
 # Run stage
 FROM alpine:3.22
 
+# Links the GHCR package to the repository, so the repo's workflow may push it
+# even if the first push came from make docker-push.
+LABEL org.opencontainers.image.source=https://github.com/johansundell/angel
+
 WORKDIR /app
 
 # Install runtime dependencies, create non-root user, and prepare app directory

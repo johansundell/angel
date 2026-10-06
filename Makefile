@@ -62,7 +62,8 @@ docker-run-local:
 	mkdir -p $${LOCAL_DATA_DIR:-data}
 	VERSION=$(VERSION) LOCAL_UID=$$(id -u) LOCAL_GID=$$(id -g) docker compose -f docker-compose.local.yml up -d --build
 
-release: dist docker-push
+# The tag this creates makes CI publish the Docker image (.github/workflows/docker.yml).
+release: dist
 	@latest_tag=$$(git describe --tags `git rev-list --tags --max-count=1`); \
 	comparison="$$latest_tag..HEAD"; \
 	if [ -z "$$latest_tag" ]; then comparison=""; fi; \
