@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Angel Logo Concepts Preview</title>
+  <title>Angel Logo Concepts: Light & Dark Mode Preview</title>
   <style>
     :root {
       --bg: #f8fafc;
@@ -11,15 +11,6 @@
       --text: #0f172a;
       --muted: #64748b;
       --border: #e2e8f0;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0f172a;
-        --card: #1e293b;
-        --text: #f8fafc;
-        --muted: #94a3b8;
-        --border: #334155;
-      }
     }
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -32,11 +23,36 @@
     .header {
       text-align: center;
       max-width: 800px;
-      margin: 0 auto 3rem;
+      margin: 0 auto 2.5rem;
     }
     .header h1 {
       margin: 0 0 0.5rem;
       font-size: 2.25rem;
+    }
+    .section-title {
+      max-width: 1200px;
+      margin: 3rem auto 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .section-title h2 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+    .pill {
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+    }
+    .pill-light {
+      background: #e2e8f0;
+      color: #334155;
+    }
+    .pill-dark {
+      background: #334155;
+      color: #f8fafc;
     }
     .grid {
       display: grid;
@@ -54,6 +70,12 @@
       display: flex;
       flex-direction: column;
     }
+    .card.dark-theme {
+      background: #1e293b;
+      border-color: #334155;
+      color: #f8fafc;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
     .card-preview {
       width: 100%;
       height: 280px;
@@ -63,6 +85,10 @@
       justify-content: center;
       border-bottom: 1px solid var(--border);
       overflow: hidden;
+    }
+    .card.dark-theme .card-preview {
+      background: #0f172a;
+      border-bottom-color: #334155;
     }
     .card-preview img {
       width: 100%;
@@ -79,10 +105,11 @@
       align-items: center;
       box-sizing: border-box;
     }
-    .svg-preview.dark {
+    .card.dark-theme .svg-preview {
       background: #0f172a;
+      border-bottom-color: #334155;
     }
-    .svg-preview object, .svg-preview img {
+    .svg-preview img, .svg-preview object {
       max-width: 220px;
       height: auto;
     }
@@ -105,94 +132,140 @@
       background: #e0f2fe;
       color: #0369a1;
     }
+    .card.dark-theme .badge {
+      background: #0369a1;
+      color: #e0f2fe;
+    }
     .desc {
       color: var(--muted);
       font-size: 0.95rem;
       margin-bottom: 1rem;
     }
-    .palette {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 1rem;
+    .card.dark-theme .desc {
+      color: #94a3b8;
     }
-    .swatch {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      border: 2px solid #fff;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    .dark-container {
+      background: #090d16;
+      padding: 2.5rem 1rem;
+      border-radius: 1.5rem;
+      max-width: 1240px;
+      margin: 1.5rem auto 3rem;
     }
   </style>
 </head>
 <body>
 
   <div class="header">
-    <h1>Angel Logo Design Proposals</h1>
-    <p>Utforskning av logotyper och grafisk profil för hemtjänst- och omsorgsplattformen Angel.</p>
+    <h1>Angel Logo Concepts</h1>
+    <p>Utforskning av logotyper och grafisk profil för hemtjänst- och omsorgsplattformen Angel i ljust och mörkt läge.</p>
+  </div>
+
+  <!-- LIGHT MODE SECTION -->
+  <div class="section-title">
+    <h2>Ljust läge (Light Mode)</h2>
+    <span class="pill pill-light">Bakgrund: #f8fafc</span>
   </div>
 
   <div class="grid">
-
-    <!-- Concept 1 -->
+    <!-- Concept 1 Light -->
     <div class="card">
       <div class="card-preview">
-        <img src="concept-1-wings.jpg" alt="Concept 1: The Embracing Wings" />
+        <img src="concept-1-wings.jpg" alt="Concept 1 Light Render" />
       </div>
       <div class="svg-preview">
-        <img src="concept-1-wings.svg" alt="Concept 1 SVG Vector" />
+        <img src="concept-1-wings.svg" alt="Concept 1 SVG" />
       </div>
       <div class="card-body">
         <span class="badge">Koncept 1</span>
-        <h2 class="card-title">De skyddande vingarna</h2>
-        <p class="desc">Symmetriska koboltblå vingar som omfamnar en gyllene sol/portal. Förmedlar trygghet, ankomst och hemtjänstens omhändertagande närvaro.</p>
-        <div class="palette">
-          <div class="swatch" style="background:#2563eb" title="Royal Blue #2563eb"></div>
-          <div class="swatch" style="background:#f59e0b" title="Warm Amber #f59e0b"></div>
-          <div class="swatch" style="background:#0f172a" title="Deep Slate #0f172a"></div>
-        </div>
+        <h3 class="card-title">De skyddande vingarna</h3>
+        <p class="desc">Symmetriska koboltblå vingar och en varm gyllene sol/båge. Förmedlar trygghet, ankomst och omhändertagande.</p>
       </div>
     </div>
 
-    <!-- Concept 2 -->
+    <!-- Concept 2 Light -->
     <div class="card">
       <div class="card-preview">
-        <img src="concept-2-heart.jpg" alt="Concept 2: Heart & Wings" />
+        <img src="concept-2-heart.jpg" alt="Concept 2 Light Render" />
       </div>
       <div class="svg-preview">
-        <img src="concept-2-heart.svg" alt="Concept 2 SVG Vector" />
+        <img src="concept-2-heart.svg" alt="Concept 2 SVG" />
       </div>
       <div class="card-body">
         <span class="badge" style="background:#ccfbf1;color:#0f766e;">Koncept 2</span>
-        <h2 class="card-title">Hjärta & Vingar (Line Art)</h2>
-        <p class="desc">Mjuk sammanhängande linjekonst som förenar ett hjärta med änglavingar. Fokuserar på medmänsklighet, empati och omsorg i vardagen.</p>
-        <div class="palette">
-          <div class="swatch" style="background:#0d9488" title="Teal #0d9488"></div>
-          <div class="swatch" style="background:#f43f5e" title="Rose/Coral #f43f5e"></div>
-          <div class="swatch" style="background:#faf9f6" title="Soft Neutral #faf9f6"></div>
-        </div>
+        <h3 class="card-title">Hjärta & Vingar</h3>
+        <p class="desc">Mjuk linjekonst som förenar ett hjärta med änglavingar. Fokuserar på medmänsklighet, empati och omsorg.</p>
       </div>
     </div>
 
-    <!-- Concept 3 -->
+    <!-- Concept 3 Light -->
     <div class="card">
       <div class="card-preview">
-        <img src="concept-3-halo.jpg" alt="Concept 3: Halo & Note" />
+        <img src="concept-3-halo.jpg" alt="Concept 3 Light Render" />
       </div>
       <div class="svg-preview">
-        <img src="concept-3-halo-note.svg" alt="Concept 3 SVG Vector" />
+        <img src="concept-3-halo-note.svg" alt="Concept 3 SVG" />
       </div>
       <div class="card-body">
         <span class="badge" style="background:#fef3c7;color:#92400e;">Koncept 3</span>
-        <h2 class="card-title">Gloria & Anteckning</h2>
-        <p class="desc">Ett stilrent meddelandekort / talbubbla krönt av en lysande gyllene gloria. Tydligt förankrat i appens funktion: dagens anteckningar och kontakt.</p>
-        <div class="palette">
-          <div class="swatch" style="background:#1e293b" title="Midnight #1e293b"></div>
-          <div class="swatch" style="background:#f59e0b" title="Halo Gold #f59e0b"></div>
-          <div class="swatch" style="background:#38bdf8" title="Sky Blue #38bdf8"></div>
+        <h3 class="card-title">Gloria & Anteckning</h3>
+        <p class="desc">Stilrent meddelandekort krönt av en gyllene gloria. Direkt förankrat i appens funktion: dagens anteckningar.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- DARK MODE SECTION -->
+  <div class="section-title">
+    <h2>Mörkt läge (Dark Mode)</h2>
+    <span class="pill pill-dark">Bakgrund: #0f172a (Angel Midnight)</span>
+  </div>
+
+  <div class="dark-container">
+    <div class="grid">
+      <!-- Concept 1 Dark -->
+      <div class="card dark-theme">
+        <div class="card-preview">
+          <img src="concept-1-wings-dark.jpg" alt="Concept 1 Dark Render" />
+        </div>
+        <div class="svg-preview">
+          <img src="concept-1-wings.svg" alt="Concept 1 SVG Dark" />
+        </div>
+        <div class="card-body">
+          <span class="badge">Koncept 1</span>
+          <h3 class="card-title">De skyddande vingarna</h3>
+          <p class="desc">Den gyllene bågen glöder mjukt som en fyr i natten, medan vingarna framträder i lysande neon-kobolt.</p>
+        </div>
+      </div>
+
+      <!-- Concept 2 Dark -->
+      <div class="card dark-theme">
+        <div class="card-preview">
+          <img src="concept-2-heart-dark.jpg" alt="Concept 2 Dark Render" />
+        </div>
+        <div class="svg-preview">
+          <img src="concept-2-heart.svg" alt="Concept 2 SVG Dark" />
+        </div>
+        <div class="card-body">
+          <span class="badge" style="background:#0f766e;color:#ccfbf1;">Koncept 2</span>
+          <h3 class="card-title">Hjärta & Vingar</h3>
+          <p class="desc">Ljusande linjer i mint/turkos och korall. Får en modern, varm och trygg OLED-effekt mot den mörka ytan.</p>
+        </div>
+      </div>
+
+      <!-- Concept 3 Dark -->
+      <div class="card dark-theme">
+        <div class="card-preview">
+          <img src="concept-3-halo-dark.jpg" alt="Concept 3 Dark Render" />
+        </div>
+        <div class="svg-preview">
+          <img src="concept-3-halo-note.svg" alt="Concept 3 SVG Dark" />
+        </div>
+        <div class="card-body">
+          <span class="badge" style="background:#78350f;color:#fef3c7;">Koncept 3</span>
+          <h3 class="card-title">Gloria & Anteckning</h3>
+          <p class="desc">Glorians gyllene ring lyser upp över ett diskret skifferblått kort. Minimalistiskt, lugnt och elegant.</p>
         </div>
       </div>
     </div>
-
   </div>
 
 </body>
