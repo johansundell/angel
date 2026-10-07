@@ -66,7 +66,7 @@ self.addEventListener("fetch", function (event) {
 	if (req.method !== "GET") return;
 	const url = new URL(req.url);
 	if (url.origin !== self.location.origin) return;
-	if (url.pathname === "/health" || url.pathname.startsWith("/logs/")) return;
+	if (url.pathname === "/healthz" || url.pathname.startsWith("/logs/")) return;
 
 	if (req.mode === "navigate") {
 		event.respondWith(fetch(req).catch(function () {

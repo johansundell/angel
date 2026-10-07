@@ -47,7 +47,7 @@ Every response carries an `X-Version` header with the build version. Errors are 
 - **POST /admin/advance**, **POST /admin/advance/clear**
   - The Advance Note editor on `/admin`. They work like `/admin/note` and `/admin/note/clear`, but for tomorrow's calendar date in Europe/Stockholm, so `date` must be tomorrow. An Advance Note is stored as tomorrow's Daily Note, so caregivers cannot see it today; at midnight (the Rollover) it becomes today's note on `/note` and in the dashboard's today editor, with no publish step or background job.
 
-- **GET /health**
+- **GET /healthz**
   - Health check. Pings the storage backend and returns an HTML page, or JSON `{"title", "name", "version", "dbStatus"}` when the request's `Accept` header prefers JSON (for example `application/json` or `application/json, text/plain`). Browsers and requests without an `Accept` header get HTML.
   - `dbStatus` is `OK`, or the storage error. The status is **200** when storage answers and **503** when it doesn't, so Docker's `HEALTHCHECK` and load balancers see the service as unhealthy.
 
@@ -168,7 +168,7 @@ The cross-platform targets (`make compile`, `make dist`, `make release`) need `g
 
 The service resolves paths relative to **its binary's folder**: the `assets` and `tmpl` folders when `USE_FILE_SYSTEM=true`, a `.env` file (after the current directory), and the default `SQLITE_PATH`. `go run .` builds the binary in a temporary Go folder, which has two effects:
 
-- **`USE_FILE_SYSTEM=true` doesn't work with `go run .`**: the assets and templates aren't found, so pages such as `GET /health` return 500 and `/assets/...` returns 404. Use embedded assets (the default), or build first with `go build` or `make build` and run the binary from the repo, as above.
+- **`USE_FILE_SYSTEM=true` doesn't work with `go run .`**: the assets and templates aren't found, so pages such as `GET /healthz` return 500 and `/assets/...` returns 404. Use embedded assets (the default), or build first with `go build` or `make build` and run the binary from the repo, as above.
 - **The default SQLite file lands in that temporary folder** and is gone after the next build. With `go run .`, set `SQLITE_PATH`, for example `SQLITE_PATH=./angel.db go run .` (`*.db` is gitignored).
 
 ### Running with Docker
@@ -223,7 +223,7 @@ echo "$GHCR_TOKEN" | docker login ghcr.io -u <github-user> --password-stdin
 
 #### Port and health check
 
-Inside the container the service always listens on **8080** (the image sets `PORT=:8080`), which the image's `EXPOSE` and health check rely on. Choose the port on the host instead: `HOST_PORT=9090 docker compose up`, or `docker run -p 9090:8080 ...`. Don't set `PORT` for the container. The health check calls `GET /health`, so the container turns unhealthy when the storage backend is unreachable.
+Inside the container the service always listens on **8080** (the image sets `PORT=:8080`), which the image's `EXPOSE` and health check rely on. Choose the port on the host instead: `HOST_PORT=9090 docker compose up`, or `docker run -p 9090:8080 ...`. Don't set `PORT` for the container. The health check calls `GET /healthz`, so the container turns unhealthy when the storage backend is unreachable.
 
 #### Running with HTTPS (Let's Encrypt)
 

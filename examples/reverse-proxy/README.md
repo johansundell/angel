@@ -56,7 +56,7 @@ The HTTPS config points at certificate files that only exist once certbot has ru
 
 **1. DNS and firewall.** Point an `A` (and `AAAA`, if the server has IPv6) record for `angel.example.com` at the server, and open ports 80 and 443. Let's Encrypt must reach port 80 from the internet.
 
-**2. Angel.** Install Angel with the `.env` from [Settings for Angel](#settings-for-angel) and start it, for example as a system service: `sudo ./angel -service install` then `sudo ./angel -service start`. Check it with `curl http://127.0.0.1:8080/health`.
+**2. Angel.** Install Angel with the `.env` from [Settings for Angel](#settings-for-angel) and start it, for example as a system service: `sudo ./angel -service install` then `sudo ./angel -service start`. Check it with `curl http://127.0.0.1:8080/healthz`.
 
 **3. Proxy and certbot.**
 
@@ -143,7 +143,7 @@ CAREGIVER_PIN=<your PIN> ./check.sh https://angel.example.com  # your server
 
 The script checks that, through the proxy:
 
-1. `GET /health` answers 200,
+1. `GET /healthz` answers 200,
 2. the Caregiver PIN logs in and sets the session cookie,
 3. five wrong PINs are refused and the sixth is rate limited (429),
 4. a wrong PIN sent with a made-up `X-Forwarded-For` is still rate limited. If the proxy passed that header on unchanged, this attempt would count as a new address and get through.
