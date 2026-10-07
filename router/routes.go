@@ -86,7 +86,7 @@ func GetRoutes(handler *handlers.Handler) Routes {
 		Route{
 			Name:        "HealthCheck",
 			Method:      "GET",
-			Pattern:     "/health",
+			Pattern:     "/healthz",
 			HandlerFunc: handler.HealthCheck,
 		},
 		Route{

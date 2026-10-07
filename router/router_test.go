@@ -179,7 +179,7 @@ func TestGetRoutes(t *testing.T) {
 		"ClearNote":        {method: "POST", pattern: "/admin/note/clear", useLogger: false, useAuth: false, role: auth.RoleClient},
 		"SaveAdvanceNote":  {method: "POST", pattern: "/admin/advance", useLogger: false, useAuth: false, role: auth.RoleClient},
 		"ClearAdvanceNote": {method: "POST", pattern: "/admin/advance/clear", useLogger: false, useAuth: false, role: auth.RoleClient},
-		"HealthCheck":      {method: "GET", pattern: "/health", useLogger: false, useAuth: false},
+		"HealthCheck":      {method: "GET", pattern: "/healthz", useLogger: false, useAuth: false},
 		"GetLogs":          {method: "GET", pattern: "/logs/:from/:to", useLogger: false, useAuth: true},
 	}
 
