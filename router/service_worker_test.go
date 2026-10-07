@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -44,8 +45,8 @@ func precache(t *testing.T, sw string) []string {
 	return urls
 }
 
-// offlinePage reads the URL the service worker answers failed navigations with.
-func offlinePage(t *testing.T, sw string) string {
+// offlineURL reads the URL the service worker answers failed navigations with.
+func offlineURL(t *testing.T, sw string) string {
 	t.Helper()
 	m := regexp.MustCompile(`const OFFLINE = ("[^"]*");`).FindStringSubmatch(sw)
 	if m == nil {
@@ -102,18 +103,18 @@ func TestServiceWorker_PrecachesOnlyAppShell(t *testing.T) {
 			t.Errorf("service worker names %s…, a page behind a PIN", private)
 		}
 	}
-	for _, want := range []string{"/assets/css/main.css", "/manifest.webmanifest", offlinePage(t, sw)} {
-		if !contains(urls, want) {
+	for _, want := range []string{"/assets/css/main.css", "/manifest.webmanifest", offlineURL(t, sw)} {
+		if !slices.Contains(urls, want) {
 			t.Errorf("PRECACHE does not hold %s", want)
 		}
 	}
 }
 
 // Offline, the app says so in Swedish, reveals nothing about the Client and
-// lets the visitor try again.
+// lets them try again.
 func TestOfflinePage_ServedWithoutSession(t *testing.T) {
 	app := newPinApp(t)
-	page := offlinePage(t, app.serviceWorker())
+	page := offlineURL(t, app.serviceWorker())
 
 	w := app.get(page)
 	if w.Code != http.StatusOK {
@@ -143,13 +144,4 @@ func TestPages_RegisterServiceWorker(t *testing.T) {
 			t.Errorf("%s page does not register the service worker", name)
 		}
 	}
-}
-
-func contains(list []string, s string) bool {
-	for _, v := range list {
-		if v == s {
-			return true
-		}
-	}
-	return false
 }

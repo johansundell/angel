@@ -1,6 +1,7 @@
 package router_test
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -86,10 +87,14 @@ func TestCaregiverAcks_NoPolling(t *testing.T) {
 	body := app.get("/note", app.caregiverSession()).Body.String()
 
 	// The shared head registers the service worker; nothing else may run.
-	for _, poll := range []string{"fetch(", "setInterval", "setTimeout", "XMLHttpRequest"} {
-		if strings.Contains(body, poll) {
-			t.Errorf("caregiver view has %s; the list refreshes on reload only", poll)
+	scripts := regexp.MustCompile(`(?s)<script\b[^>]*>(.*?)</script>`).FindAllStringSubmatch(body, -1)
+	for _, s := range scripts {
+		if src := strings.TrimSpace(s[1]); src != `if ("serviceWorker" in navigator) `+serviceWorkerRegistration+";" {
+			t.Errorf("caregiver view runs %q; the list refreshes on reload only", src)
 		}
+	}
+	if len(scripts) != strings.Count(body, "<script") {
+		t.Error("caregiver view has a script tag that is not a plain inline script")
 	}
 }
 
