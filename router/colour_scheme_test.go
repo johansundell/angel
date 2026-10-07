@@ -36,28 +36,39 @@ func (a *pinApp) pageBackgrounds() (light, dark string) {
 	return light, strings.TrimSpace(m[1])
 }
 
-// Every page declares both colour schemes and carries a theme-color per
-// scheme matching that scheme's --bg, so the phone's address bar blends in.
+// everyPage renders each page that shares the base template and returns
+// the bodies of those that load, keyed by page name.
 // /health paints its own dark panel over --bg but shares the base template.
-func TestPages_FollowDeviceColourScheme(t *testing.T) {
-	app := newPinApp(t)
-	light, dark := app.pageBackgrounds()
-
+func (a *pinApp) everyPage() map[string]string {
+	t := a.t
+	t.Helper()
 	healthReq := httptest.NewRequest(http.MethodGet, "/health", nil)
 	healthReq.Header.Set("Accept", "text/html")
 
 	pages := map[string]*httptest.ResponseRecorder{
-		"entry":     app.get("/"),
-		"caregiver": app.get("/note", app.caregiverSession()),
-		"client":    app.get("/admin", app.clientSession()),
-		"health":    app.do(healthReq),
+		"entry":     a.get("/"),
+		"caregiver": a.get("/note", a.caregiverSession()),
+		"client":    a.get("/admin", a.clientSession()),
+		"health":    a.do(healthReq),
 	}
+	bodies := map[string]string{}
 	for name, w := range pages {
 		if w.Code != http.StatusOK {
 			t.Errorf("%s: status = %d, want 200", name, w.Code)
 			continue
 		}
-		body := w.Body.String()
+		bodies[name] = w.Body.String()
+	}
+	return bodies
+}
+
+// Every page declares both colour schemes and carries a theme-color per
+// scheme matching that scheme's --bg, so the phone's address bar blends in.
+func TestPages_FollowDeviceColourScheme(t *testing.T) {
+	app := newPinApp(t)
+	light, dark := app.pageBackgrounds()
+
+	for name, body := range app.everyPage() {
 		for _, want := range []string{
 			`<meta name="color-scheme" content="light dark" />`,
 			fmt.Sprintf(`<meta name="theme-color" content="%s" media="(prefers-color-scheme: light)" />`, light),

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"image/png"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
@@ -76,7 +75,9 @@ func (a *pinApp) assertPNG(path string, size int) {
 // The installed app is named Angel, opens standalone at the PIN keypad and
 // follows the device's orientation.
 func TestManifest_DescribesInstallableApp(t *testing.T) {
-	m := newPinApp(t).manifest()
+	app := newPinApp(t)
+	m := app.manifest()
+	light, _ := app.pageBackgrounds()
 
 	if m.Name != "Angel" || m.ShortName != "Angel" {
 		t.Errorf("name, short_name = %q, %q, want Angel", m.Name, m.ShortName)
@@ -96,8 +97,9 @@ func TestManifest_DescribesInstallableApp(t *testing.T) {
 	if m.StartURL != "/" || m.Scope != "/" {
 		t.Errorf("start_url, scope = %q, %q, want /", m.StartURL, m.Scope)
 	}
-	if m.ThemeColor != "#f8fafc" || m.BackgroundColor != "#f8fafc" {
-		t.Errorf("theme_color, background_color = %q, %q, want #f8fafc", m.ThemeColor, m.BackgroundColor)
+	// The splash screen and title bar match the light page background.
+	if m.ThemeColor != light || m.BackgroundColor != light {
+		t.Errorf("theme_color, background_color = %q, %q, want %s", m.ThemeColor, m.BackgroundColor, light)
 	}
 }
 
@@ -142,21 +144,7 @@ func TestAppleTouchIcon_Is180(t *testing.T) {
 func TestPages_LinkManifestAndAppleTouchIcon(t *testing.T) {
 	app := newPinApp(t)
 
-	healthReq := httptest.NewRequest(http.MethodGet, "/health", nil)
-	healthReq.Header.Set("Accept", "text/html")
-
-	pages := map[string]*httptest.ResponseRecorder{
-		"entry":     app.get("/"),
-		"caregiver": app.get("/note", app.caregiverSession()),
-		"client":    app.get("/admin", app.clientSession()),
-		"health":    app.do(healthReq),
-	}
-	for name, w := range pages {
-		if w.Code != http.StatusOK {
-			t.Errorf("%s: status = %d, want 200", name, w.Code)
-			continue
-		}
-		body := w.Body.String()
+	for name, body := range app.everyPage() {
 		for _, want := range []string{manifestLink, appleTouchIconLink} {
 			if !strings.Contains(body, want) {
 				t.Errorf("%s page missing %s", name, want)
