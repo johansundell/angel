@@ -29,7 +29,7 @@ status() { # curl arguments...
     curl -s -o /dev/null -w '%{http_code}' "$@"
 }
 
-check "GET /health" 200 "$(status "$url/health")"
+check "GET /healthz" 200 "$(status "$url/healthz")"
 
 headers=$(curl -s -o /dev/null -D - -d "pin=$pin" "$url/pin")
 check "correct PIN redirects" 303 "$(echo "$headers" | awk 'NR==1 {print $2}')"

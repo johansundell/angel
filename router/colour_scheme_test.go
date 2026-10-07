@@ -38,11 +38,11 @@ func (a *pinApp) pageBackgrounds() (light, dark string) {
 
 // everyPage renders each page that shares the base template and returns
 // the bodies of those that load, keyed by page name.
-// /health paints its own dark panel over --bg but shares the base template.
+// /healthz paints its own dark panel over --bg but shares the base template.
 func (a *pinApp) everyPage() map[string]string {
 	t := a.t
 	t.Helper()
-	healthReq := httptest.NewRequest(http.MethodGet, "/health", nil)
+	healthReq := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	healthReq.Header.Set("Accept", "text/html")
 
 	pages := map[string]*httptest.ResponseRecorder{

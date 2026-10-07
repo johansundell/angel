@@ -362,18 +362,21 @@ func TestEntry_ForwardedForIsIgnoredWithoutTrustedProxies(t *testing.T) {
 	}
 }
 
-func TestHealthCheckMovedToHealthPath(t *testing.T) {
+func TestHealthCheckAtHealthzPath(t *testing.T) {
 	app := newPinApp(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	req.Header.Set("Accept", "application/json")
 	w := app.do(req)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("GET /health status = %d, want 200", w.Code)
+		t.Fatalf("GET /healthz status = %d, want 200", w.Code)
 	}
 	if !strings.Contains(w.Body.String(), `"dbStatus":"OK"`) {
 		t.Errorf("unexpected health body %q", w.Body.String())
+	}
+	if w := app.get("/health"); w.Code != http.StatusNotFound {
+		t.Errorf("GET /health status = %d, want 404 now that it is /healthz", w.Code)
 	}
 }
 
