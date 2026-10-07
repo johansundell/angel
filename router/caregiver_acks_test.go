@@ -85,8 +85,11 @@ func TestCaregiverAcks_NoPolling(t *testing.T) {
 
 	body := app.get("/note", app.caregiverSession()).Body.String()
 
-	if strings.Contains(body, "<script") {
-		t.Error("caregiver view has a script; the list refreshes on reload only")
+	// The shared head registers the service worker; nothing else may run.
+	for _, poll := range []string{"fetch(", "setInterval", "setTimeout", "XMLHttpRequest"} {
+		if strings.Contains(body, poll) {
+			t.Errorf("caregiver view has %s; the list refreshes on reload only", poll)
+		}
 	}
 }
 

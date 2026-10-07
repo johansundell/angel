@@ -162,6 +162,12 @@ func NewRouter(cfg Config) (*gin.Engine, error) {
 		c.FileFromFS("manifest.webmanifest", fsys)
 	})
 
+	sw, err := serviceWorker(cfg.Version)
+	if err != nil {
+		return nil, err
+	}
+	router.GET("/sw.js", sw)
+
 	return router, nil
 }
 

@@ -344,6 +344,20 @@ body {
 }
 
 
+/* Offline page, shown by the service worker without a connection */
+
+.offline-message {
+    max-width: 22rem;
+    margin: 0 0 1.5rem;
+    font-size: 1.15rem;
+    color: var(--fg);
+}
+
+.offline-retry {
+    width: 100%;
+    max-width: 22rem;
+}
+
 /* ==========================================================================
    Daily Note Card
    ========================================================================== */
