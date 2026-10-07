@@ -155,6 +155,13 @@ func NewRouter(cfg Config) (*gin.Engine, error) {
 	}
 	router.StaticFS("/assets", fsys)
 
+	// Browsers look for the web app manifest by the link in the page head;
+	// it sits at the root so its scope can cover the whole site.
+	router.GET("/manifest.webmanifest", func(c *gin.Context) {
+		c.Header("Content-Type", "application/manifest+json")
+		c.FileFromFS("manifest.webmanifest", fsys)
+	})
+
 	return router, nil
 }
 
