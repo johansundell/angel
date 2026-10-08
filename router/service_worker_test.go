@@ -127,6 +127,7 @@ func TestOfflinePage_ServedWithoutSession(t *testing.T) {
 		fmt.Sprintf(`<meta name="theme-color" content="%s" media="(prefers-color-scheme: dark)" />`, dark),
 		"Ingen anslutning. Anteckningen kan inte visas utan internet.",
 		"Försök igen</button>",
+		"<title>Angel – Ingen anslutning</title>",
 		`<html lang="sv">`,
 		`<link rel="stylesheet" href="/assets/css/main.css" />`,
 	} {
