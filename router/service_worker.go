@@ -59,14 +59,14 @@ self.addEventListener("activate", function (event) {
 // Everything is fetched from the network and nothing new is stored. Page
 // loads that fail show the offline page; app-shell files fall back to the
 // copy stored at install so the offline page has its styling and logo. All
-// other requests (POSTs, the dashboard's poll, the health check and the
-// logs) are left to the browser.
+// other requests (POSTs, the dashboard's poll and the health check) are
+// left to the browser.
 self.addEventListener("fetch", function (event) {
 	const req = event.request;
 	if (req.method !== "GET") return;
 	const url = new URL(req.url);
 	if (url.origin !== self.location.origin) return;
-	if (url.pathname === "/healthz" || url.pathname.startsWith("/logs/")) return;
+	if (url.pathname === "/healthz") return;
 
 	if (req.mode === "navigate") {
 		event.respondWith(fetch(req).catch(function () {

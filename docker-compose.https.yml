@@ -29,23 +29,7 @@ services:
       CAREGIVER_SESSION_TIMEOUT:
       CLIENT_SESSION_TIMEOUT:
       SHARE_CAREGIVER_NAMES:
-      AUTH_TOKEN:
       DEBUG:
-      STORAGE:
-      MYSQL_USERNAME:
-      MYSQL_PASSWORD:
-      MYSQL_HOST:
-      MYSQL_PORT:
-      MYSQL_DATABASE:
-      FMS_HOST:
-      FMS_DATABASE:
-      FMS_USERNAME:
-      FMS_PASSWORD:
-      FMS_TIMEOUT:
-      FMS_LOG_TABLE:
-      FMS_INSECURE_SKIP_VERIFY:
-      # Not FMS_CA_FILE: a host path means nothing in the container. Mount
-      # the file and set FMS_CA_FILE to its path here if you need it.
     networks:
       proxy:
     restart: unless-stopped

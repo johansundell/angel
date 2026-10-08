@@ -9,23 +9,6 @@ import (
 	"github.com/johansundell/angel/types"
 )
 
-// NoteStore keeps Daily Notes, one per Day, and the Caregivers'
-// Acknowledgements of them.
-type NoteStore interface {
-	// GetDailyNote returns the note for day; ok is false when there is none.
-	GetDailyNote(ctx context.Context, day types.Day) (note types.DailyNote, ok bool, err error)
-	// SaveDailyNote creates or replaces the note for n.Date. CreatedAt and
-	// UpdatedAt are set by the store.
-	SaveDailyNote(ctx context.Context, n types.DailyNote) error
-	// DeleteDailyNote removes the note for day, if any.
-	DeleteDailyNote(ctx context.Context, day types.Day) error
-	// AddAcknowledgement records a and returns its ID. The caller sets Date
-	// and CreatedAt.
-	AddAcknowledgement(ctx context.Context, a types.Acknowledgement) (id int64, err error)
-	// ListAcknowledgements returns the acknowledgements made on day, oldest
-	// first.
-	ListAcknowledgements(ctx context.Context, day types.Day) ([]types.Acknowledgement, error)
-}
 
 func (s *SQLiteStore) GetDailyNote(ctx context.Context, day types.Day) (types.DailyNote, bool, error) {
 	n := types.DailyNote{Date: day}

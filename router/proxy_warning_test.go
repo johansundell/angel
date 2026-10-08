@@ -29,8 +29,7 @@ func newProxyTestRouter(t *testing.T, trusted []string) (*gin.Engine, *testLogge
 	tl := &testLogger{}
 	r, err := router.NewRouter(router.Config{
 		Handler:  mustNewHandler(t, nopStore{}, false, fstest.MapFS{}, "test", "dev"),
-		LogSink:  &recordingSink{},
-		Settings: types.AppSettings{AuthToken: "secret-token", TrustedProxies: trusted},
+		Settings: types.AppSettings{TrustedProxies: trusted},
 		Assets:   fstest.MapFS{},
 		Logger:   tl,
 		Routes:   testRoutes(),

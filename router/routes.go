@@ -14,7 +14,6 @@ func GetRoutes(handler *handlers.Handler) Routes {
 			Pattern:     "/",
 			HandlerFunc: handler.Entry,
 		},
-		// Never UseLogger: the request log would store the submitted PIN.
 		Route{
 			Name:        "SubmitPIN",
 			Method:      "POST",
@@ -88,13 +87,6 @@ func GetRoutes(handler *handlers.Handler) Routes {
 			Method:      "GET",
 			Pattern:     "/healthz",
 			HandlerFunc: handler.HealthCheck,
-		},
-		Route{
-			Name:        "GetLogs",
-			Method:      "GET",
-			Pattern:     "/logs/:from/:to",
-			HandlerFunc: handler.GetLogs,
-			UseAuth:     true,
 		},
 	}
 }
