@@ -161,7 +161,7 @@ Go to **Actions → Deploy → Run workflow**, enter the running version (for ex
 From now on, `make release` also deploys:
 
 1. `make release` creates the GitHub release with your token. Publishing the release starts the `Deploy` workflow.
-2. `deploy.sh` waits for the release files to finish uploading. It retries for up to about five minutes.
+2. `deploy.sh` waits for the release files to finish uploading. It retries each file for up to 10 minutes, and gives up on a download attempt that stalls for 2 minutes.
 3. The binary is replaced, the service restarts, and `/healthz` is checked.
 
 **Pre-releases** (releases marked "This is a pre-release" on GitHub) are not deployed.

@@ -24,6 +24,9 @@ jobs:
     if: ${{ !github.event.release.prerelease }}
     runs-on: ubuntu-latest
     environment: production
+    # deploy.sh gives up on its own after about 25 minutes; this is a backstop
+    # for a hung SSH session.
+    timeout-minutes: 40
     steps:
     - name: Deploy over SSH
       env:

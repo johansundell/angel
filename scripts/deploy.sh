@@ -35,29 +35,40 @@ trap 'rm -rf "$WORK"' EXIT
 cd "$WORK"
 
 # make release publishes the release before it uploads the files, so a deploy
-# started by the release event may have to wait for them.
+# started by the release event may have to wait for them. Each attempt is cut
+# off after 2 minutes and the retries stop after 10, so a stalled connection
+# can't hold up later deploys.
 for f in "$NAME.tar.gz" "$NAME.sha512"; do
-	curl -fsSL --retry 20 --retry-delay 15 --retry-all-errors -o "$f" "$URL/$f"
+	curl -fsSL --connect-timeout 10 --max-time 120 \
+		--retry 20 --retry-delay 15 --retry-max-time 600 --retry-all-errors \
+		-o "$f" "$URL/$f"
 done
 sha512sum -c "$NAME.sha512"
 tar -xzf "$NAME.tar.gz" angel
+
+# rollback puts the previous binary back, restarts the service and fails the
+# deploy with the given reason.
+rollback() {
+	echo "$1 after deploying $TAG; rolling back" >&2
+	mv "$DIR/angel.prev" "$DIR/angel"
+	systemctl restart "$SERVICE" || echo "restarting $SERVICE with the previous binary failed too" >&2
+	exit 1
+}
 
 # Swap the binary with a rename, which is safe while the old one is running.
 install -m 0755 angel "$DIR/angel.new"
 cp -p "$DIR/angel" "$DIR/angel.prev"
 mv "$DIR/angel.new" "$DIR/angel"
-systemctl restart "$SERVICE"
+systemctl restart "$SERVICE" || rollback "systemctl restart $SERVICE failed"
 
-for _ in $(seq 1 15); do
-	if curl -fsS -H 'Accept: application/json' "$HEALTH_URL"; then
+# Give the service 30 seconds to answer, each request at most 5 of them.
+deadline=$((SECONDS + 30))
+while ((SECONDS < deadline)); do
+	if curl -fsS --max-time 5 -H 'Accept: application/json' "$HEALTH_URL"; then
 		echo
 		echo "deployed $TAG"
 		exit 0
 	fi
 	sleep 2
 done
-
-echo "$HEALTH_URL did not answer after deploying $TAG; rolling back" >&2
-mv "$DIR/angel.prev" "$DIR/angel"
-systemctl restart "$SERVICE"
-exit 1
+rollback "$HEALTH_URL did not answer"
