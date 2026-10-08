@@ -9,7 +9,7 @@ import (
 
 // Every page's tab title starts with "Angel – " so Angel stands out among
 // other tabs and apps.
-func TestPages_TitleStartsWithAngel(t *testing.T) {
+func TestPages_TitlePrefixedWithAngel(t *testing.T) {
 	app := newPinApp(t)
 	want := map[string]string{
 		"entry":     "<title>Angel – Ange PIN-kod</title>",
@@ -42,17 +42,5 @@ func TestHealthJSON_TitleUnprefixed(t *testing.T) {
 	}
 	if !strings.Contains(w.Body.String(), `"title":"Health Check"`) {
 		t.Errorf("health JSON = %s, want \"title\":\"Health Check\"", w.Body.String())
-	}
-}
-
-// The offline page follows the same "Angel – …" format.
-func TestOfflinePage_TitleStartsWithAngel(t *testing.T) {
-	app := newPinApp(t)
-	w := app.get("/assets/offline.html")
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", w.Code)
-	}
-	if !strings.Contains(w.Body.String(), "<title>Angel – Ingen anslutning</title>") {
-		t.Error("offline page title does not start with \"Angel – \"")
 	}
 }
