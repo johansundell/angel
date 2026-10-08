@@ -98,25 +98,6 @@ git clone https://github.com/johansundell/angel.git
 cd angel
 ```
 
-### Creating a new service from the template
-
-Rename the Go module and the service. The service name is used for the binary, the system service, the default SQLite file, the Docker image and the compose service. Run this in the fresh clone (GNU `sed`; on macOS use `sed -i ''`):
-
-```bash
-NEW_MODULE=github.com/acme/billing-service   # Go module path of the new service
-NEW_NAME=billing-service                     # service, binary and Docker name
-NEW_ACCOUNT=acme                             # GitHub account for `make release` and the image
-
-OLD_MODULE=github.com/johansundell/angel
-git grep -lz "$OLD_MODULE" | xargs -0 sed -i "s#$OLD_MODULE#$NEW_MODULE#g"
-git grep -lz angel -- ':!.agents' | xargs -0 sed -i "s#angel#$NEW_NAME#g"
-sed -i "s#^GHACCOUNT := .*#GHACCOUNT := $NEW_ACCOUNT#" Makefile
-
-go build ./... && go test ./...
-```
-
-The first command rewrites the module path in `go.mod`, the imports and the docs; the second renames the service everywhere else (`main.go`'s `nameOfService`, the `Makefile`, `Dockerfile`, `docker-compose.yml`, `.gitignore` and the READMEs). `.agents/skills` is left alone, because the skill describes the template. Then start a fresh history if you like (`rm -rf .git && git init`), and set the version in the `Makefile`.
-
 ### Running Locally
 
 You can run the service directly using Go:
