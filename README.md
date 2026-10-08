@@ -297,6 +297,10 @@ For a Cloudflare Tunnel with cloudflared on the same host, `TRUSTED_PROXIES=127.
 
 If a request carries `X-Forwarded-For` or `CF-Connecting-IP` from an address that isn't in `TRUSTED_PROXIES`, Angel logs a warning once with that address. It usually means the proxy's address is missing from `TRUSTED_PROXIES`.
 
+### Deploying releases to a VPS
+
+When Angel runs as a system service on a VPS, the `Deploy` workflow ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)) can install each new GitHub release automatically. It connects over SSH and runs [`scripts/deploy.sh`](scripts/deploy.sh) on the server. The script downloads the release, checks its checksum, replaces the binary and restarts the service, and puts the previous binary back if `/healthz` doesn't answer. [docs/deploy-vps.md](docs/deploy-vps.md) walks through the setup step by step.
+
 ### Third-party licences
 
 `THIRD_PARTY_LICENSES.txt` holds the licence texts of the Go standard library and of every module compiled into the binary. `make compile` copies it next to each binary, so it is in the release archives, and the Docker image has it at `/app/THIRD_PARTY_LICENSES.txt`. Run `make licenses` after changing dependencies and commit the result.
