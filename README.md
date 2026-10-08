@@ -98,25 +98,6 @@ git clone https://github.com/johansundell/angel.git
 cd angel
 ```
 
-### Creating a new service from the template
-
-Rename the Go module and the service. The service name is used for the binary, the system service, the default SQLite file, the Docker image and the compose service. Run this in the fresh clone (GNU `sed`; on macOS use `sed -i ''`):
-
-```bash
-NEW_MODULE=github.com/acme/billing-service   # Go module path of the new service
-NEW_NAME=billing-service                     # service, binary and Docker name
-NEW_ACCOUNT=acme                             # GitHub account for `make release` and the image
-
-OLD_MODULE=github.com/johansundell/angel
-git grep -lz "$OLD_MODULE" | xargs -0 sed -i "s#$OLD_MODULE#$NEW_MODULE#g"
-git grep -lz angel -- ':!.agents' | xargs -0 sed -i "s#angel#$NEW_NAME#g"
-sed -i "s#^GHACCOUNT := .*#GHACCOUNT := $NEW_ACCOUNT#" Makefile
-
-go build ./... && go test ./...
-```
-
-The first command rewrites the module path in `go.mod`, the imports and the docs; the second renames the service everywhere else (`main.go`'s `nameOfService`, the `Makefile`, `Dockerfile`, `docker-compose.yml`, `.gitignore` and the READMEs). `.agents/skills` is left alone, because the skill describes the template. Then start a fresh history if you like (`rm -rf .git && git init`), and set the version in the `Makefile`.
-
 ### Running Locally
 
 You can run the service directly using Go:
@@ -203,7 +184,7 @@ GHCR makes a new package private. After the first publish, make it public once u
 echo "$GHCR_TOKEN" | docker login ghcr.io -u <github-user> --password-stdin
 ```
 
-`make release` leaves the image to the workflow. `make docker-push` builds the image with the `Makefile` `VERSION` and pushes the same two tags from your machine, which needs a login with a token that has `write:packages`. In a service made from this template, `GHACCOUNT` and the service name in the `Makefile` set the image name, and the workflow publishes to `ghcr.io/<owner>/<repo>`.
+`make release` leaves the image to the workflow. `make docker-push` builds the image with the `Makefile` `VERSION` and pushes the same two tags from your machine, which needs a login with a token that has `write:packages`. `GHACCOUNT` and `NAME` in the `Makefile` set the image name for `make docker-push`; the workflow publishes to `ghcr.io/<owner>/<repo>`.
 
 #### Port and health check
 
