@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"time"
 
@@ -12,13 +13,12 @@ import (
 // length and does not.
 const sqliteTimeLayout = "2006-01-02T15:04:05.000000Z07:00"
 
-// SQLiteStore keeps request logs, Daily Notes and Acknowledgements in one
-// SQLite file.
+// SQLiteStore keeps Daily Notes and Acknowledgements in one SQLite file.
 type SQLiteStore struct {
-	*SQLStore
+	db *sql.DB
 }
 
-var _ NoteStore = (*SQLiteStore)(nil)
+var _ Store = (*SQLiteStore)(nil)
 
 // NewSQLite opens (or creates) the SQLite database at file and returns a store
 // that owns the connection.
@@ -27,11 +27,19 @@ func NewSQLite(file string) (*SQLiteStore, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &SQLiteStore{&SQLStore{
-		db:      db,
-		timeArg: func(t time.Time) any { return t.UTC().Format(sqliteTimeLayout) },
-		noLimit: -1, // SQLite: a negative LIMIT means no limit
-	}}, nil
+	return &SQLiteStore{db: db}, nil
+}
+
+func (s *SQLiteStore) Ping(ctx context.Context) error {
+	return s.db.PingContext(ctx)
+}
+
+func (s *SQLiteStore) Close() error {
+	return s.db.Close()
+}
+
+func (s *SQLiteStore) timeArg(t time.Time) string {
+	return t.UTC().Format(sqliteTimeLayout)
 }
 
 func openSQLite(file string) (*sql.DB, error) {
@@ -47,21 +55,6 @@ func openSQLite(file string) (*sql.DB, error) {
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
 	db.SetConnMaxLifetime(0 * time.Second)
-
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS request_logs (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		status INTEGER,
-		method TEXT,
-		error TEXT,
-		endpoint TEXT,
-		created_at DATETIME,
-		response TEXT,
-		request TEXT
-	)`)
-	if err != nil {
-		db.Close()
-		return nil, err
-	}
 
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS daily_notes (
 		date TEXT PRIMARY KEY,

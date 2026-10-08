@@ -36,8 +36,6 @@ SESSION_SECRET="..."          # at least 32 characters, e.g. from: openssl rand 
 
 Without a fixed `SESSION_SECRET`, everyone has to enter the PIN again after Angel restarts.
 
-`GET /logs` is reachable through the proxy too. It needs `AUTH_TOKEN`, and Caregivers never use it, so you can also block `/logs` in the proxy if you like.
-
 ### Angel in Docker, proxy on the host
 
 This setup is easy to get wrong. Publish the port on localhost only (`ports: ["127.0.0.1:8080:8080"]`) and point the proxy at `127.0.0.1:8080`. Requests then reach Angel from the Docker network's **gateway**, not from `127.0.0.1`, so `TRUSTED_PROXIES` must be the gateway's address. Look it up with:

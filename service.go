@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/rand"
-	"fmt"
 	"net"
 	"net/http"
 	"sync"
@@ -12,10 +11,8 @@ import (
 	"github.com/johansundell/angel/auth"
 	"github.com/johansundell/angel/handlers"
 	"github.com/johansundell/angel/logging"
-	"github.com/johansundell/angel/logqueue"
 	"github.com/johansundell/angel/router"
 	"github.com/johansundell/angel/store"
-	"github.com/johansundell/angel/types"
 	"github.com/kardianos/service"
 )
 
@@ -35,27 +32,9 @@ func newProgram() *program {
 	return &program{failed: make(chan error, 1)}
 }
 
-// injectable constructors so tests can mock storage initialization and listening
+// injectable constructor so tests can mock storage initialization
 var newSQLiteStore = func(path string) (store.Store, error) {
-	s, err := store.NewSQLite(path)
-	if err != nil {
-		return nil, err
-	}
-	return s, nil
-}
-var newMySQLStore = func(cfg types.MySQLSettings) (store.Store, error) {
-	s, err := store.NewMySQL(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return s, nil
-}
-var newFileMakerStore = func(ctx context.Context, cfg types.FileMakerSettings) (store.Store, error) {
-	s, err := store.NewFileMaker(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-	return s, nil
+	return store.NewSQLite(path)
 }
 var netListen = net.Listen
 
@@ -96,15 +75,15 @@ func (p *program) run(startup chan<- error) error {
 		logWarning("SESSION_TIMEOUT is deprecated; rename it to CAREGIVER_SESSION_TIMEOUT.")
 	}
 
-	st, pingTimeout, err := openStore()
+	st, err := newSQLiteStore(settings.SqlitePath)
 	if err != nil {
-		logError("failed to initialize %s storage: %v", settings.Storage, err)
+		logError("failed to initialize SQLite storage: %v", err)
 		startup <- err
 		return err
 	}
 	defer st.Close()
 
-	pingCtx, cancelPing := context.WithTimeout(context.Background(), pingTimeout)
+	pingCtx, cancelPing := context.WithTimeout(context.Background(), 5*time.Second)
 	err = st.Ping(pingCtx)
 	cancelPing()
 	if err != nil {
@@ -112,17 +91,6 @@ func (p *program) run(startup chan<- error) error {
 		startup <- err
 		return err
 	}
-	ensureAuthToken()
-
-	// Request logs are written in the background. The deferred Close runs after
-	// the HTTP server has shut down, drains the queue for up to 5 more seconds
-	// and runs before the store is closed.
-	logQueue := logqueue.New(st, appLogger(), settings.Debug)
-	defer func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		logQueue.Close(ctx)
-	}()
 
 	ensureSessionSecret()
 	authn, err := auth.New(auth.Config{
@@ -140,16 +108,8 @@ func (p *program) run(startup chan<- error) error {
 		return err
 	}
 
-	notes, closeNotes, err := openNotes(st)
-	if err != nil {
-		logError("failed to open note storage: %v", err)
-		startup <- err
-		return err
-	}
-	defer closeNotes()
-
 	handler, err := handlers.NewHandler(st, settings.UseFileSystem, embeddedTemplates, nameOfService, Version,
-		handlers.WithAuth(authn), handlers.WithNotes(notes),
+		handlers.WithAuth(authn), handlers.WithNotes(st),
 		handlers.WithShareCaregiverNames(settings.PIN.ShareCaregiverNames))
 	if err != nil {
 		logError("failed to create handlers: %v", err)
@@ -160,7 +120,6 @@ func (p *program) run(startup chan<- error) error {
 	routerEngine, err := router.NewRouter(router.Config{
 		Handler:  handler,
 		Auth:     authn,
-		LogSink:  logQueue,
 		Settings: settings,
 		Assets:   embeddedAssets,
 		Version:  Version,
@@ -217,59 +176,6 @@ func (p *program) run(startup chan<- error) error {
 	return nil
 }
 
-func wrapStore[T store.Store](s T, err error) (store.Store, error) {
-	if err != nil {
-		return nil, err
-	}
-	return s, nil
-}
-
-// storeOpeners opens each STORAGE backend. Keep it in step with
-// types.StorageBackends (TestStoreOpenersMatchStorageBackends).
-var storeOpeners = map[string]func() (store.Store, time.Duration, error){
-	types.StorageSQLite: func() (store.Store, time.Duration, error) {
-		s, err := newSQLiteStore(settings.SqlitePath)
-		return s, 5 * time.Second, err
-	},
-	types.StorageMySQL: func() (store.Store, time.Duration, error) {
-		s, err := newMySQLStore(settings.MySQL)
-		return s, 5 * time.Second, err
-	},
-	types.StorageFileMaker: func() (store.Store, time.Duration, error) {
-		fm := settings.FileMaker
-		if fm.InsecureSkipVerify {
-			logWarning("FMS_INSECURE_SKIP_VERIFY is set: the FileMaker Server certificate is NOT verified, so credentials can be intercepted. Use FMS_CA_FILE instead.")
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), fm.Timeout)
-		defer cancel()
-		s, err := newFileMakerStore(ctx, fm)
-		return s, fm.Timeout, err
-	},
-}
-
-// openStore opens the storage backend chosen with STORAGE.
-func openStore() (store.Store, time.Duration, error) {
-	open, ok := storeOpeners[settings.Storage]
-	if !ok {
-		return nil, 0, fmt.Errorf("unsupported STORAGE %q", settings.Storage)
-	}
-	return open()
-}
-
-// openNotes returns where Daily Notes are kept. They always live in SQLite
-// (ADR-0003): the main store when STORAGE=sqlite, otherwise a separate SQLite
-// file at SQLITE_PATH. The returned func closes what openNotes opened.
-func openNotes(st store.Store) (store.NoteStore, func() error, error) {
-	if ns, ok := st.(store.NoteStore); ok {
-		return ns, func() error { return nil }, nil
-	}
-	s, err := store.NewSQLite(settings.SqlitePath)
-	if err != nil {
-		return nil, nil, err
-	}
-	return s, s.Close, nil
-}
-
 // Stop waits for graceful shutdown to finish: once it returns,
 // kardianos/service returns from Run and the process exits.
 func (p *program) Stop(s service.Service) error {
@@ -282,21 +188,9 @@ func (p *program) Stop(s service.Service) error {
 	return p.runErr
 }
 
-// ensureAuthToken generates a temporary random token when AUTH_TOKEN is not
-// configured, so protected routes stay locked down. The token is logged
-// because it is the only way to call those routes during this run.
-func ensureAuthToken() {
-	if settings.AuthToken != "" {
-		return
-	}
-	settings.AuthToken = rand.Text()
-	logWarning("AUTH_TOKEN is not set; using temporary token for this run: %s", settings.AuthToken)
-}
-
 // ensureSessionSecret generates a random signing secret when SESSION_SECRET
 // is not configured. Sessions then end whenever the service restarts, which
-// only means caregivers enter the PIN again. Unlike the AUTH_TOKEN, the secret
-// is never logged.
+// only means caregivers enter the PIN again.
 func ensureSessionSecret() {
 	if settings.PIN.SessionSecret != "" {
 		return

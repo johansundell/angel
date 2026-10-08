@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"net"
 	"net/http"
@@ -10,10 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/johansundell/angel/handlers"
-	"github.com/johansundell/angel/router"
-	"github.com/johansundell/angel/store"
 	"github.com/johansundell/angel/types"
 )
 
@@ -37,9 +32,7 @@ func useTestSettings(t *testing.T, port string) {
 	settings = types.AppSettings{
 		Port:       port,
 		Timeout:    15 * time.Second,
-		Storage:    types.StorageSQLite,
 		SqlitePath: filepath.Join(t.TempDir(), "test_stop.db"),
-		AuthToken:  "test-token",
 		PIN:        testPINSettings,
 	}
 	t.Cleanup(func() { settings = originalSettings })
@@ -106,56 +99,5 @@ func TestRun_ServeFailureIsReported(t *testing.T) {
 	// run has already returned, so Stop must return its error without blocking.
 	if err := p.Stop(nil); err == nil || !strings.Contains(err.Error(), "accept failed") {
 		t.Errorf("expected Stop to return the serve error, got %v", err)
-	}
-}
-
-func TestStop_DrainsRequestLogs(t *testing.T) {
-	addr := freeAddr(t)
-	useTestSettings(t, addr)
-	// No production route is logged yet, so serve a logged one for the test.
-	originalRoutes := routesFor
-	routesFor = func(h *handlers.Handler) router.Routes {
-		return append(originalRoutes(h), router.Route{
-			Name:    "Drained",
-			Method:  http.MethodGet,
-			Pattern: "/drained",
-			HandlerFunc: func(c *gin.Context) error {
-				c.Status(http.StatusOK)
-				return nil
-			},
-			UseLogger: true,
-		})
-	}
-	t.Cleanup(func() { routesFor = originalRoutes })
-
-	p := newProgram()
-	if err := p.startWorker(); err != nil {
-		t.Fatalf("expected startup to succeed, got %v", err)
-	}
-
-	// Logged route; the entry waits in the queue (flush interval 1s).
-	resp, err := http.Get("http://" + addr + "/drained")
-	if err != nil {
-		t.Fatalf("expected the request to succeed, got %v", err)
-	}
-	resp.Body.Close()
-
-	// Stop right away: draining must write the entry before the store closes.
-	if err := p.Stop(nil); err != nil {
-		t.Fatalf("expected Stop to succeed, got %v", err)
-	}
-
-	st, err := store.NewSQLite(settings.SqlitePath)
-	if err != nil {
-		t.Fatalf("failed to reopen the database: %v", err)
-	}
-	defer st.Close()
-	now := time.Now().UTC()
-	logs, err := st.GetLogs(context.Background(), now.Add(-time.Hour), now.Add(time.Hour), store.Page{})
-	if err != nil {
-		t.Fatalf("GetLogs failed: %v", err)
-	}
-	if len(logs) != 1 || !strings.HasSuffix(logs[0].Endpoint, "/drained") {
-		t.Errorf("expected the /drained entry to be persisted on Stop, got %+v", logs)
 	}
 }

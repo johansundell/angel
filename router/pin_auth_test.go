@@ -75,12 +75,10 @@ func newPinApp(t *testing.T, opts ...handlers.Option) *pinApp {
 		t.Fatalf("NewHandler: %v", err)
 	}
 	r, err := router.NewRouter(router.Config{
-		Handler:  h,
-		Auth:     authn,
-		LogSink:  &recordingSink{},
-		Settings: types.AppSettings{AuthToken: "secret-token"},
-		Assets:   repoRoot,
-		Version:  "dev",
+		Handler: h,
+		Auth:    authn,
+		Assets:  repoRoot,
+		Version: "dev",
 	})
 	if err != nil {
 		t.Fatalf("NewRouter: %v", err)
@@ -388,10 +386,8 @@ func TestNewRouter_RoleRoutesRequirePINAuth(t *testing.T) {
 	}
 
 	_, err = router.NewRouter(router.Config{
-		Handler:  h,
-		LogSink:  &recordingSink{},
-		Settings: types.AppSettings{AuthToken: "secret-token"},
-		Assets:   fstest.MapFS{},
+		Handler: h,
+		Assets:  fstest.MapFS{},
 	})
 	if err == nil || !strings.Contains(err.Error(), "PIN authentication must be configured") {
 		t.Fatalf("expected NewRouter to fail closed without PIN auth, got %v", err)
@@ -404,8 +400,7 @@ func TestNewRouter_RejectsInvalidTrustedProxies(t *testing.T) {
 	_, err := router.NewRouter(router.Config{
 		Handler:  mustNewHandler(t, nopStore{}, false, fstest.MapFS{}, "test", "dev"),
 		Auth:     mustNewAuth(t),
-		LogSink:  &recordingSink{},
-		Settings: types.AppSettings{AuthToken: "secret-token", TrustedProxies: []string{"not-an-ip"}},
+		Settings: types.AppSettings{TrustedProxies: []string{"not-an-ip"}},
 		Assets:   fstest.MapFS{},
 	})
 	if err == nil || !strings.Contains(err.Error(), "TRUSTED_PROXIES") {
@@ -418,8 +413,7 @@ func TestEntry_TrustedProxyForwardsClientAddress(t *testing.T) {
 	r, err := router.NewRouter(router.Config{
 		Handler:  mustNewHandler(t, nopStore{}, false, os.DirFS(".."), "test", "dev"),
 		Auth:     mustNewAuth(t),
-		LogSink:  &recordingSink{},
-		Settings: types.AppSettings{AuthToken: "secret-token", TrustedProxies: []string{"127.0.0.1"}},
+		Settings: types.AppSettings{TrustedProxies: []string{"127.0.0.1"}},
 		Assets:   os.DirFS(".."),
 	})
 	if err != nil {

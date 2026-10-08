@@ -16,7 +16,6 @@ services:
       - data:/app/data
     environment:
       - USE_FILE_SYSTEM=false
-      - STORAGE=sqlite
       - SQLITE_PATH=/app/data/angel.db
       - DEBUG=false
       # Passed through from the host environment or an .env file next to
