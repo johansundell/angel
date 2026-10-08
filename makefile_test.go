@@ -36,6 +36,19 @@ func TestMakeDockerPushTargetsGHCR(t *testing.T) {
 	}
 }
 
+// TestMakeBumpRelease checks that make bump-release delegates to
+// scripts/bump-release.sh with BUMP and DRY_RUN forwarded.
+func TestMakeBumpRelease(t *testing.T) {
+	if _, err := exec.LookPath("make"); err != nil {
+		t.Skip("make not installed")
+	}
+	cmds := makeDryRun(t, "bump-release", "BUMP=minor", "DRY_RUN=1")
+	want := "./scripts/bump-release.sh minor"
+	if !strings.Contains(cmds, want) {
+		t.Errorf("make bump-release doesn't run %q; it runs:\n%s", want, cmds)
+	}
+}
+
 // makeDryRun returns the commands make would run for target, without running
 // them.
 func makeDryRun(t *testing.T, target string, args ...string) string {

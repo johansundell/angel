@@ -84,5 +84,9 @@ release: dist
 	changelog=$$(git log $$comparison --oneline --no-merges); \
 	github-release $(GHACCOUNT)/$(NAME) $(VERSION) "$$(git rev-parse --abbrev-ref HEAD)" "**Changelog**<br/>$$changelog" 'dist/*'; \
 	git pull
+# Bumps version, runs tests, commits and pushes to main, and runs make release.
+# Usage: make bump-release [BUMP=patch|minor|major|vX.Y.Z] [DRY_RUN=1]
+bump-release:
+	@DRY_RUN=$(DRY_RUN) ./scripts/bump-release.sh $(BUMP)
 
-.PHONY: build compile licenses install deps dist release docker docker-push docker-run docker-run-local docker-run-https docker-build-https
+.PHONY: build compile licenses install deps dist release docker docker-push docker-run docker-run-local docker-run-https docker-build-https bump-release
