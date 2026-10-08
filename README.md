@@ -1,3 +1,4 @@
+[![Go](https://github.com/johansundell/angel/actions/workflows/go.yml/badge.svg)](https://github.com/johansundell/angel/actions/workflows/go.yml)
 # angel
 
 A robust Go-based service template designed for quick bootstrapping of web services. It includes built-in support for system service management, request logging to SQLite, MySQL or FileMaker, authentication, and Docker deployment.
