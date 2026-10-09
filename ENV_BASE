@@ -8,6 +8,8 @@ TIMEOUT=15
 SQLITE_PATH=""
 # optional folder for angel backup archives (defaults to a backups folder beside the database)
 BACKUP_DIR=""
+# days angel backup keeps archives; the newest is always kept (default 7)
+RETENTION_DAYS=7
 # keypad PINs (required): caregivers enter exactly 4 digits, the client 4-12 digits
 CAREGIVER_PIN=""
 MASTER_PIN=""

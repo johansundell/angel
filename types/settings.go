@@ -12,7 +12,11 @@ type AppSettings struct {
 	Timeout       time.Duration `json:"timeout"` // TIMEOUT, in whole seconds
 	SqlitePath    string        `json:"sqlitePath"`
 	BackupDir     string        `json:"backupDir"` // BACKUP_DIR; empty means backups beside the database
-	PIN           PINSettings   `json:"pin"`
+	// BackupRetentionDays is how many days angel backup keeps archives
+	// (RETENTION_DAYS); an invalid value is 0, which angel backup refuses to
+	// prune with. The service itself doesn't use it.
+	BackupRetentionDays int         `json:"backupRetentionDays"`
+	PIN                 PINSettings `json:"pin"`
 	// TrustedProxies lists proxy addresses/CIDRs whose X-Forwarded-For is
 	// believed (TRUSTED_PROXIES); empty trusts none.
 	TrustedProxies []string `json:"trustedProxies"`

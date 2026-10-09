@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/johansundell/angel/store"
 	"github.com/johansundell/angel/types"
@@ -49,7 +50,7 @@ func TestBackupOptions(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			opts, err := backupOptions(tt.args, types.AppSettings{SqlitePath: tt.sqlitePath, BackupDir: tt.envDir}, io.Discard)
+			opts, _, err := backupOptions(tt.args, types.AppSettings{SqlitePath: tt.sqlitePath, BackupDir: tt.envDir, BackupRetentionDays: 7}, io.Discard)
 			if err != nil {
 				t.Fatalf("backupOptions: %v", err)
 			}
@@ -62,9 +63,152 @@ func TestBackupOptions(t *testing.T) {
 
 func TestBackupOptionsRejectsBadArgs(t *testing.T) {
 	for _, args := range [][]string{{"-nope"}, {"extra"}} {
-		if _, err := backupOptions(args, types.AppSettings{SqlitePath: "/app/data/angel.db"}, io.Discard); err == nil {
+		if _, _, err := backupOptions(args, types.AppSettings{SqlitePath: "/app/data/angel.db", BackupRetentionDays: 7}, io.Discard); err == nil {
 			t.Errorf("backupOptions(%q) should fail", args)
 		}
+	}
+}
+
+func TestBackupOptionsRetention(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		envDays int
+		want    string
+	}{
+		{"RETENTION_DAYS sets it", nil, 14, "14"},
+		{"the flag wins", []string{"-retention-days", "3"}, 14, "3"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, days, err := backupOptions(tt.args, types.AppSettings{SqlitePath: "/app/data/angel.db", BackupRetentionDays: tt.envDays}, io.Discard)
+			if err != nil {
+				t.Fatalf("backupOptions: %v", err)
+			}
+			if days != tt.want {
+				t.Errorf("retention = %q days, want %q", days, tt.want)
+			}
+		})
+	}
+}
+
+func TestRetentionPeriod(t *testing.T) {
+	if keep, err := retentionPeriod("7"); err != nil || keep != 7*24*time.Hour {
+		t.Errorf("retentionPeriod(7) = %v, %v", keep, err)
+	}
+	// 0 is also what an invalid RETENTION_DAYS loads as. Huge values would
+	// overflow time.Duration and wrap to a small or negative period.
+	for _, days := range []string{"0", "-3", "36501", "200000", "week", "7.5", ""} {
+		if _, err := retentionPeriod(days); err == nil || !strings.Contains(err.Error(), "RETENTION_DAYS") {
+			t.Errorf("retentionPeriod(%q) err = %v, want one naming RETENTION_DAYS", days, err)
+		}
+	}
+}
+
+// TestRunBackupBadRetentionStillBacksUp checks that a bad retention setting
+// skips pruning and fails the run, but never costs the backup itself.
+func TestRunBackupBadRetentionStillBacksUp(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		args []string
+	}{
+		{"invalid RETENTION_DAYS", nil},
+		{"malformed flag", []string{"-retention-days", "week"}},
+		{"zero flag", []string{"-retention-days", "0"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) { testBadRetentionStillBacksUp(t, tt.args) })
+	}
+}
+
+func testBadRetentionStillBacksUp(t *testing.T, args []string) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "angel.db")
+	s, err := store.NewSQLite(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	backups := filepath.Join(dir, "backups")
+	if err := os.Mkdir(backups, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	old := "angel_" + time.Now().UTC().AddDate(0, 0, -30).Format("20060102T150405Z") + ".db.gz"
+	if err := os.WriteFile(filepath.Join(backups, old), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr strings.Builder
+	// BackupRetentionDays 0 is what an invalid RETENTION_DAYS loads as; with
+	// a retention flag, the flag decides.
+	if code := runBackup(args, types.AppSettings{SqlitePath: dbPath}, &stdout, &stderr); code != 1 {
+		t.Fatalf("runBackup exit %d with a bad retention, want 1; stderr: %s", code, stderr.String())
+	}
+	if archive := strings.TrimSpace(stdout.String()); archive == "" {
+		t.Error("the backup should still be stored and printed")
+	} else if _, err := os.Stat(archive); err != nil {
+		t.Errorf("archive missing: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(backups, old)); err != nil {
+		t.Errorf("nothing should be pruned with a bad retention: %v", err)
+	}
+	if !strings.Contains(stderr.String(), "RETENTION_DAYS") {
+		t.Errorf("stderr should name RETENTION_DAYS, got %q", stderr.String())
+	}
+}
+
+func TestLoadSettings_RetentionDays(t *testing.T) {
+	defer unsetEnv("RETENTION_DAYS")()
+	for _, tt := range []struct {
+		env  string
+		want int
+	}{{"", 7}, {"14", 14}, {"week", 0}} {
+		if tt.env == "" {
+			os.Unsetenv("RETENTION_DAYS")
+		} else {
+			os.Setenv("RETENTION_DAYS", tt.env)
+		}
+		loadSettings(filepath.Join(t.TempDir(), "missing.env"))
+		if settings.BackupRetentionDays != tt.want {
+			t.Errorf("RETENTION_DAYS=%q: BackupRetentionDays = %d, want %d", tt.env, settings.BackupRetentionDays, tt.want)
+		}
+	}
+}
+
+// TestRunBackupPrunes checks that a backup removes archives past the
+// retention and reports them, keeping the recent ones.
+func TestRunBackupPrunes(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "angel.db")
+	s, err := store.NewSQLite(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	backups := filepath.Join(dir, "backups")
+	if err := os.Mkdir(backups, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	old := "angel_" + now.AddDate(0, 0, -10).Format("20060102T150405Z") + ".db.gz"
+	recent := "angel_" + now.AddDate(0, 0, -2).Format("20060102T150405Z") + ".db.gz"
+	for _, name := range []string{old, recent} {
+		if err := os.WriteFile(filepath.Join(backups, name), nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var stdout, stderr strings.Builder
+	if code := runBackup(nil, types.AppSettings{SqlitePath: dbPath, BackupRetentionDays: 7}, &stdout, &stderr); code != 0 {
+		t.Fatalf("runBackup exit %d, stderr: %s", code, stderr.String())
+	}
+	if _, err := os.Stat(filepath.Join(backups, old)); !os.IsNotExist(err) {
+		t.Errorf("%s is past the retention and should be gone", old)
+	}
+	if _, err := os.Stat(filepath.Join(backups, recent)); err != nil {
+		t.Errorf("%s is within the retention and should stay: %v", recent, err)
+	}
+	if !strings.Contains(stderr.String(), old) {
+		t.Errorf("stderr should report the removed archive, got %q", stderr.String())
 	}
 }
 
@@ -81,7 +225,7 @@ func TestRunBackupCommand(t *testing.T) {
 	backups := filepath.Join(dir, "out")
 
 	var stdout, stderr strings.Builder
-	if code := runBackup(nil, types.AppSettings{SqlitePath: dbPath, BackupDir: backups}, &stdout, &stderr); code != 0 {
+	if code := runBackup(nil, types.AppSettings{SqlitePath: dbPath, BackupDir: backups, BackupRetentionDays: 7}, &stdout, &stderr); code != 0 {
 		t.Fatalf("runBackup exit %d, stderr: %s", code, stderr.String())
 	}
 	entries, err := os.ReadDir(backups)
@@ -96,7 +240,7 @@ func TestRunBackupCommand(t *testing.T) {
 func TestRunBackupCommandFails(t *testing.T) {
 	missing := filepath.Join(t.TempDir(), "missing.db")
 	var stdout, stderr strings.Builder
-	if code := runBackup(nil, types.AppSettings{SqlitePath: missing}, &stdout, &stderr); code != 1 {
+	if code := runBackup(nil, types.AppSettings{SqlitePath: missing, BackupRetentionDays: 7}, &stdout, &stderr); code != 1 {
 		t.Fatalf("runBackup exit %d for a missing database, want 1", code)
 	}
 	if stderr.Len() == 0 {
