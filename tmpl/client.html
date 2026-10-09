@@ -47,10 +47,12 @@
 		t.content.querySelectorAll("[data-target]").forEach(function (part) {
 			var el = document.getElementById(part.dataset.target);
 			if (!el || el.innerHTML === part.innerHTML) return;
-			var body = el.querySelector(".pin-alert-body");
-			var next = part.querySelector(".pin-alert-body");
-			if (body && next) body.textContent = next.textContent;
-			else el.innerHTML = part.innerHTML;
+			if (part.dataset.target === "pin-alert") {
+				var body = el.querySelector(".pin-alert-body");
+				var next = part.querySelector(".pin-alert-body");
+				if (body && next) { body.textContent = next.textContent; return; }
+			}
+			el.innerHTML = part.innerHTML;
 		});
 	}
 	function refresh() {

@@ -101,7 +101,7 @@ func TestPINAlert_AnnouncedOnceByTitleNotOnEveryCount(t *testing.T) {
 	}
 	// While the alert shows, polling updates only its body, leaving the
 	// title, and so the announcement, alone.
-	if !strings.Contains(body, `.pin-alert-body`) {
+	if !strings.Contains(body, `body.textContent = next.textContent`) {
 		t.Error("dashboard script does not update the PIN Alert body on its own")
 	}
 }
