@@ -22,6 +22,10 @@ var embeddedTemplates embed.FS
 var embeddedAssets embed.FS
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "backup" {
+		os.Exit(runBackup(os.Args[2:], os.Stdout, os.Stderr))
+	}
+
 	svcFlag := flag.String("service", "", "Control the system service.")
 	flag.Parse()
 
