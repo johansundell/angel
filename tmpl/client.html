@@ -1,7 +1,7 @@
 {{define "content"}}
 <main class="app">
 	{{template "logout"}}
-	<div id="pin-alert" role="alert">{{template "pin-alert" .pinAlert}}</div>
+	<div id="pin-alert">{{template "pin-alert" .pinAlert}}</div>
 	<p id="session-expired" class="session-expired" role="alert" hidden>Sessionen har gått ut – kopiera din text innan du loggar in igen.</p>
 	<section class="editor-section" aria-labelledby="today-heading">
 		<h1 id="today-heading">Dagens anteckning</h1>
@@ -21,8 +21,9 @@
 <script>
 // Keep the PIN Alert and the acknowledgement feed live without reloading the
 // page, which would lose unsaved edits. Each part is replaced only when it
-// changed, so the alert is announced when it appears or its count changes,
-// not on every poll. Redirects are not followed: one means the session has
+// changed. Once the PIN Alert shows, only its body is updated as the count
+// rises, so its title, the alert, is announced once when it appears and not
+// on every new wrong PIN. Redirects are not followed: one means the session has
 // ended, so instead of pasting the keypad into the feed, say the feed has
 // stopped and stop polling. Saving then would also redirect to the keypad and
 // lose the text being written, so show the banner and disable the buttons;
@@ -45,7 +46,13 @@
 		t.innerHTML = html;
 		t.content.querySelectorAll("[data-target]").forEach(function (part) {
 			var el = document.getElementById(part.dataset.target);
-			if (el && el.innerHTML !== part.innerHTML) el.innerHTML = part.innerHTML;
+			if (!el || el.innerHTML === part.innerHTML) return;
+			if (part.dataset.target === "pin-alert") {
+				var body = el.querySelector(".pin-alert-body");
+				var next = part.querySelector(".pin-alert-body");
+				if (body && next) { body.textContent = next.textContent; return; }
+			}
+			el.innerHTML = part.innerHTML;
 		});
 	}
 	function refresh() {
@@ -74,8 +81,8 @@ contents of the element with that ID. */}}
 {{define "pin-alert"}}
 {{- with .}}
 <div class="pin-alert">
-	<p class="pin-alert-title">Många felaktiga PIN-försök – byt Caregiver PIN</p>
-	<p>{{.Count}} felaktiga PIN-koder har angetts, den första {{.First}} och den senaste {{.Last}}. Någon kan försöka gissa Caregiver PIN. Byt den så snart som möjligt.</p>
+	<p class="pin-alert-title" role="alert">Många felaktiga PIN-försök – byt Caregiver PIN</p>
+	<p class="pin-alert-body">{{.Count}} felaktiga PIN-koder har angetts, den första {{.First}} och den senaste {{.Last}}. Någon kan försöka gissa Caregiver PIN. Byt den så snart som möjligt.</p>
 </div>
 {{- end}}
 {{end}}

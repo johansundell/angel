@@ -122,7 +122,7 @@ func TestPINAlert_CountsOnlyTheRollingWindow(t *testing.T) {
 	}
 }
 
-func TestPINAlert_StaysAndKeepsCounting(t *testing.T) {
+func TestPINAlert_StaysAndKeepsCountingRegardlessOfWindow(t *testing.T) {
 	app := newAlertApp(t)
 	app.wrongPINs(AlertFailures)
 	first, _ := app.a.PINAlert()
@@ -131,13 +131,21 @@ func TestPINAlert_StaysAndKeepsCounting(t *testing.T) {
 	if _, ok := app.a.PINAlert(); !ok {
 		t.Fatal("alert cleared after 24h")
 	}
-	app.wrongPINs(1)
-	alert, _ := app.a.PINAlert()
-	if alert.Count != AlertFailures+1 {
-		t.Errorf("Count = %d, want %d", alert.Count, AlertFailures+1)
+	// Slow guessing, one a day, would never trigger the alert, but once it
+	// has, each guess is counted and moves Last on.
+	app.step = AlertWindow
+	for i := 1; i <= 5; i++ {
+		app.wrongPINs(1)
+		alert, _ := app.a.PINAlert()
+		if alert.Count != AlertFailures+i {
+			t.Fatalf("after %d more: Count = %d, want %d", i, alert.Count, AlertFailures+i)
+		}
+		if want := app.now.Add(-AlertWindow); !alert.First.Equal(first.First) || !alert.Last.Equal(want) {
+			t.Fatalf("after %d more: alert = %+v, want First %v and Last %v", i, alert, first.First, want)
+		}
 	}
-	if !alert.First.Equal(first.First) || !alert.Last.Equal(app.now.Add(-time.Minute)) {
-		t.Errorf("alert = %+v", alert)
+	if len(app.log.warnings) != 1 {
+		t.Errorf("got %d warnings, want 1: %q", len(app.log.warnings), app.log.warnings)
 	}
 }
 
