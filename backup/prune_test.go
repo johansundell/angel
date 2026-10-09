@@ -138,6 +138,11 @@ func TestPruneLeavesOtherFilesAlone(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// A symlink with an archive's name.
+	if err := os.Symlink("notes.txt", filepath.Join(dir, "angel_20200102T000000Z.db.gz")); err != nil {
+		t.Fatal(err)
+	}
+
 	removed, err := Prune(dir, week, now)
 	if err != nil {
 		t.Fatalf("Prune: %v", err)
@@ -145,8 +150,8 @@ func TestPruneLeavesOtherFilesAlone(t *testing.T) {
 	if len(removed) != 0 {
 		t.Errorf("Prune removed files that aren't archives: %v", removed)
 	}
-	if n := len(listDir(t, dir)); n != len(others)+2 {
-		t.Errorf("dir has %d entries, want %d", n, len(others)+2)
+	if n := len(listDir(t, dir)); n != len(others)+3 {
+		t.Errorf("dir has %d entries, want %d", n, len(others)+3)
 	}
 }
 

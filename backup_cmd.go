@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/johansundell/angel/backup"
@@ -59,17 +60,19 @@ func runBackup(args []string, s types.AppSettings, stdout, stderr io.Writer) int
 // many days to keep archives, unchecked (see retentionPeriod). Flags win over SQLITE_PATH, BACKUP_DIR and
 // RETENTION_DAYS; without either directory, backups go to a backups folder
 // beside the database.
-func backupOptions(args []string, s types.AppSettings, output io.Writer) (backup.Options, int, error) {
+func backupOptions(args []string, s types.AppSettings, output io.Writer) (backup.Options, string, error) {
 	fs := flag.NewFlagSet("backup", flag.ContinueOnError)
 	fs.SetOutput(output)
 	db := fs.String("db", s.SqlitePath, "database file to back up (SQLITE_PATH)")
 	dir := fs.String("dir", s.BackupDir, "directory for the archives (BACKUP_DIR; default: backups beside the database)")
-	days := fs.Int("retention-days", s.BackupRetentionDays, "delete archives older than this many days, always keeping the newest (RETENTION_DAYS)")
+	// A string, so a malformed value reaches retentionPeriod after the backup
+	// instead of failing the flag parsing before it.
+	days := fs.String("retention-days", strconv.Itoa(s.BackupRetentionDays), "delete archives older than this many days, always keeping the newest (RETENTION_DAYS)")
 	if err := fs.Parse(args); err != nil {
-		return backup.Options{}, 0, err
+		return backup.Options{}, "", err
 	}
 	if fs.NArg() > 0 {
-		return backup.Options{}, 0, fmt.Errorf("unexpected arguments: %q", fs.Args())
+		return backup.Options{}, "", fmt.Errorf("unexpected arguments: %q", fs.Args())
 	}
 	opts := backup.Options{DBPath: *db, Dir: *dir}
 	if opts.Dir == "" {
@@ -82,11 +85,13 @@ func backupOptions(args []string, s types.AppSettings, output io.Writer) (backup
 // overflows past about 106,751 days.
 const maxRetentionDays = 36500
 
-// retentionPeriod turns a retention in days into a period, refusing values
-// outside 1 to maxRetentionDays. An invalid RETENTION_DAYS loads as 0.
-func retentionPeriod(days int) (time.Duration, error) {
-	if days < 1 || days > maxRetentionDays {
-		return 0, fmt.Errorf("retention must be 1 to %d days (-retention-days or RETENTION_DAYS), got %d", maxRetentionDays, days)
+// retentionPeriod turns a retention in days into a period, refusing anything
+// but a whole number from 1 to maxRetentionDays. An invalid RETENTION_DAYS
+// loads as 0.
+func retentionPeriod(value string) (time.Duration, error) {
+	days, err := strconv.Atoi(value)
+	if err != nil || days < 1 || days > maxRetentionDays {
+		return 0, fmt.Errorf("retention must be 1 to %d days (-retention-days or RETENTION_DAYS), got %q", maxRetentionDays, value)
 	}
 	return time.Duration(days) * 24 * time.Hour, nil
 }

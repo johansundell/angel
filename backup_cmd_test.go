@@ -74,10 +74,10 @@ func TestBackupOptionsRetention(t *testing.T) {
 		name    string
 		args    []string
 		envDays int
-		want    int
+		want    string
 	}{
-		{"RETENTION_DAYS sets it", nil, 14, 14},
-		{"the flag wins", []string{"-retention-days", "3"}, 14, 3},
+		{"RETENTION_DAYS sets it", nil, 14, "14"},
+		{"the flag wins", []string{"-retention-days", "3"}, 14, "3"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -86,21 +86,21 @@ func TestBackupOptionsRetention(t *testing.T) {
 				t.Fatalf("backupOptions: %v", err)
 			}
 			if days != tt.want {
-				t.Errorf("retention = %d days, want %d", days, tt.want)
+				t.Errorf("retention = %q days, want %q", days, tt.want)
 			}
 		})
 	}
 }
 
 func TestRetentionPeriod(t *testing.T) {
-	if keep, err := retentionPeriod(7); err != nil || keep != 7*24*time.Hour {
+	if keep, err := retentionPeriod("7"); err != nil || keep != 7*24*time.Hour {
 		t.Errorf("retentionPeriod(7) = %v, %v", keep, err)
 	}
 	// 0 is also what an invalid RETENTION_DAYS loads as. Huge values would
 	// overflow time.Duration and wrap to a small or negative period.
-	for _, days := range []int{0, -3, 36501, 200000} {
+	for _, days := range []string{"0", "-3", "36501", "200000", "week", "7.5", ""} {
 		if _, err := retentionPeriod(days); err == nil || !strings.Contains(err.Error(), "RETENTION_DAYS") {
-			t.Errorf("retentionPeriod(%d) err = %v, want one naming RETENTION_DAYS", days, err)
+			t.Errorf("retentionPeriod(%q) err = %v, want one naming RETENTION_DAYS", days, err)
 		}
 	}
 }
@@ -108,6 +108,19 @@ func TestRetentionPeriod(t *testing.T) {
 // TestRunBackupBadRetentionStillBacksUp checks that a bad retention setting
 // skips pruning and fails the run, but never costs the backup itself.
 func TestRunBackupBadRetentionStillBacksUp(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		args []string
+	}{
+		{"invalid RETENTION_DAYS", nil},
+		{"malformed flag", []string{"-retention-days", "week"}},
+		{"zero flag", []string{"-retention-days", "0"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) { testBadRetentionStillBacksUp(t, tt.args) })
+	}
+}
+
+func testBadRetentionStillBacksUp(t *testing.T, args []string) {
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "angel.db")
 	s, err := store.NewSQLite(dbPath)
@@ -125,8 +138,10 @@ func TestRunBackupBadRetentionStillBacksUp(t *testing.T) {
 	}
 
 	var stdout, stderr strings.Builder
-	if code := runBackup(nil, types.AppSettings{SqlitePath: dbPath}, &stdout, &stderr); code != 1 {
-		t.Fatalf("runBackup exit %d with RETENTION_DAYS invalid, want 1", code)
+	// BackupRetentionDays 0 is what an invalid RETENTION_DAYS loads as; with
+	// a retention flag, the flag decides.
+	if code := runBackup(args, types.AppSettings{SqlitePath: dbPath}, &stdout, &stderr); code != 1 {
+		t.Fatalf("runBackup exit %d with a bad retention, want 1; stderr: %s", code, stderr.String())
 	}
 	if archive := strings.TrimSpace(stdout.String()); archive == "" {
 		t.Error("the backup should still be stored and printed")

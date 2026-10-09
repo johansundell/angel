@@ -34,7 +34,13 @@ func Prune(dir string, keep time.Duration, now time.Time) ([]string, error) {
 	newest := -1
 	for _, e := range entries {
 		takenAt, ok := archiveTime(e.Name())
-		if !ok || !e.Type().IsRegular() {
+		if !ok {
+			continue
+		}
+		// Info, not Type: Type is 0, which reads as regular, on filesystems
+		// that don't report entry types.
+		info, err := e.Info()
+		if err != nil || !info.Mode().IsRegular() {
 			continue
 		}
 		archives = append(archives, archive{filepath.Join(dir, e.Name()), takenAt})
