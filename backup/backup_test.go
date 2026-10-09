@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -114,6 +115,7 @@ func TestRunDuringWrites(t *testing.T) {
 
 	stop := make(chan struct{})
 	var wg sync.WaitGroup
+	var writes atomic.Int64
 	var writeErr error
 	wg.Add(1)
 	go func() {
@@ -128,10 +130,17 @@ func TestRunDuringWrites(t *testing.T) {
 				writeErr = err
 				return
 			}
+			writes.Add(1)
 		}
 	}()
+	// Let the writer get going, so the backup starts mid-stream.
+	for writes.Load() < 20 {
+		time.Sleep(time.Millisecond)
+	}
 
+	before := writes.Load()
 	archive, err := Run(ctx, Options{DBPath: dbPath, Dir: t.TempDir(), Now: fixedNow})
+	during := writes.Load() - before
 	close(stop)
 	wg.Wait()
 	if err != nil {
@@ -140,8 +149,16 @@ func TestRunDuringWrites(t *testing.T) {
 	if writeErr != nil {
 		t.Fatalf("service write failed during backup: %v", writeErr)
 	}
+	t.Logf("%d writes landed while the backup ran", during)
 
 	db := restore(t, archive)
+	var acks int64
+	if err := db.QueryRow(`SELECT count(*) FROM acknowledgements`).Scan(&acks); err != nil {
+		t.Fatal(err)
+	}
+	if acks < before {
+		t.Errorf("snapshot holds %d acknowledgements, but %d were written before it began", acks, before)
+	}
 	var notes int
 	if err := db.QueryRow(`SELECT count(*) FROM daily_notes`).Scan(&notes); err != nil || notes != 1 {
 		t.Errorf("restored notes = %d, %v; want 1", notes, err)
@@ -188,4 +205,32 @@ func TestRunRejectsCorruptSnapshot(t *testing.T) {
 	if entries, _ := os.ReadDir(backups); len(entries) != 0 {
 		t.Errorf("failed Run left files behind: %v", entries)
 	}
+}
+
+// TestRunSameSecond starts two backups with the same timestamp at once: one
+// stores the archive, the other fails without touching it.
+func TestRunSameSecond(t *testing.T) {
+	_, dbPath := newLiveStore(t)
+	dir := t.TempDir()
+	opts := Options{DBPath: dbPath, Dir: dir, Now: fixedNow}
+
+	var wg sync.WaitGroup
+	errs := make([]error, 2)
+	for i := range errs {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, errs[i] = Run(context.Background(), opts)
+		}()
+	}
+	wg.Wait()
+
+	if (errs[0] == nil) == (errs[1] == nil) {
+		t.Fatalf("want exactly one run to succeed, got errors %v and %v", errs[0], errs[1])
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil || len(entries) != 1 {
+		t.Fatalf("backup dir should hold only the archive, has %v (%v)", entries, err)
+	}
+	restore(t, filepath.Join(dir, entries[0].Name()))
 }

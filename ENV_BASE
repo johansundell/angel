@@ -6,6 +6,8 @@ USE_FILE_SYSTEM=false
 TIMEOUT=15
 # optional path to sqlite database file (defaults to <binary dir>/<nameOfService>.db)
 SQLITE_PATH=""
+# optional folder for angel backup archives (defaults to a backups folder beside the database)
+BACKUP_DIR=""
 # keypad PINs (required): caregivers enter exactly 4 digits, the client 4-12 digits
 CAREGIVER_PIN=""
 MASTER_PIN=""

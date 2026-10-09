@@ -281,6 +281,7 @@ The application is configured via environment variables. You can set these in a 
 | `USE_FILE_SYSTEM` | bool | `false` | If true, serves assets and templates from the `assets` and `tmpl` folders next to the binary (edit them without rebuilding). If false, uses the embedded copies. Doesn't work with `go run .` (see [Running Locally](#running-locally)). |
 | `TIMEOUT` | int | `15` | Request timeout in seconds. |
 | `SQLITE_PATH` | string | `<binary dir>/<nameOfService>.db` | Path to the SQLite database file where Daily Notes and Acknowledgements are kept. Set it when using `go run .`, whose binary dir is temporary. |
+| `BACKUP_DIR` | string | `backups` beside the database | Where `angel backup` stores its `angel_<timestamp>.db.gz` archives. The `-dir` flag overrides it. |
 | `CAREGIVER_PIN` | string | - | **Required.** Shared 4-digit PIN that caregivers enter on the entry screen. |
 | `MASTER_PIN` | string | - | **Required.** The client's 4–12 digit PIN for the dashboard; must differ from `CAREGIVER_PIN`. |
 | `CAREGIVER_SESSION_TIMEOUT` | duration | `20m` | How long a caregiver session lasts before the entry screen is shown again. Must be between `15m` and `30m`. |

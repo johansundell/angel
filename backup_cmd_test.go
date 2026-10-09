@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -9,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/johansundell/angel/store"
+	"github.com/johansundell/angel/types"
 )
 
 func TestBackupOptions(t *testing.T) {
@@ -49,7 +49,7 @@ func TestBackupOptions(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			opts, err := backupOptions(tt.args, tt.sqlitePath, tt.envDir, io.Discard)
+			opts, err := backupOptions(tt.args, types.AppSettings{SqlitePath: tt.sqlitePath, BackupDir: tt.envDir}, io.Discard)
 			if err != nil {
 				t.Fatalf("backupOptions: %v", err)
 			}
@@ -62,16 +62,15 @@ func TestBackupOptions(t *testing.T) {
 
 func TestBackupOptionsRejectsBadArgs(t *testing.T) {
 	for _, args := range [][]string{{"-nope"}, {"extra"}} {
-		if _, err := backupOptions(args, "/app/data/angel.db", "", io.Discard); err == nil {
+		if _, err := backupOptions(args, types.AppSettings{SqlitePath: "/app/data/angel.db"}, io.Discard); err == nil {
 			t.Errorf("backupOptions(%q) should fail", args)
 		}
 	}
 }
 
 // TestRunBackupCommand runs the backup subcommand end to end against a live
-// database named by SQLITE_PATH and BACKUP_DIR.
+// database.
 func TestRunBackupCommand(t *testing.T) {
-	defer unsetEnv("SQLITE_PATH", "BACKUP_DIR")()
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "angel.db")
 	s, err := store.NewSQLite(dbPath)
@@ -79,15 +78,10 @@ func TestRunBackupCommand(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s.Close()
-	if err := s.Ping(context.Background()); err != nil {
-		t.Fatal(err)
-	}
 	backups := filepath.Join(dir, "out")
-	os.Setenv("SQLITE_PATH", dbPath)
-	os.Setenv("BACKUP_DIR", backups)
 
 	var stdout, stderr strings.Builder
-	if code := runBackup(nil, &stdout, &stderr); code != 0 {
+	if code := runBackup(nil, types.AppSettings{SqlitePath: dbPath, BackupDir: backups}, &stdout, &stderr); code != 0 {
 		t.Fatalf("runBackup exit %d, stderr: %s", code, stderr.String())
 	}
 	entries, err := os.ReadDir(backups)
@@ -100,14 +94,21 @@ func TestRunBackupCommand(t *testing.T) {
 }
 
 func TestRunBackupCommandFails(t *testing.T) {
-	defer unsetEnv("SQLITE_PATH", "BACKUP_DIR")()
-	dir := t.TempDir()
+	missing := filepath.Join(t.TempDir(), "missing.db")
 	var stdout, stderr strings.Builder
-	code := runBackup([]string{"-db", filepath.Join(dir, "missing.db")}, &stdout, &stderr)
-	if code == 0 {
-		t.Fatal("runBackup should fail for a missing database")
+	if code := runBackup(nil, types.AppSettings{SqlitePath: missing}, &stdout, &stderr); code != 1 {
+		t.Fatalf("runBackup exit %d for a missing database, want 1", code)
 	}
 	if stderr.Len() == 0 {
 		t.Error("runBackup should say why it failed")
+	}
+}
+
+func TestLoadSettings_BackupDir(t *testing.T) {
+	defer unsetEnv("BACKUP_DIR")()
+	os.Setenv("BACKUP_DIR", "/srv/backups")
+	loadSettings(filepath.Join(t.TempDir(), "missing.env"))
+	if settings.BackupDir != "/srv/backups" {
+		t.Errorf("BackupDir = %q, want /srv/backups", settings.BackupDir)
 	}
 }

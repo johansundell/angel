@@ -2,23 +2,22 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 
 	"github.com/johansundell/angel/backup"
+	"github.com/johansundell/angel/types"
 )
 
 // runBackup is the backup subcommand: angel backup [-db file] [-dir dir].
 // It prints the archive path and returns the process exit code.
-func runBackup(args []string, stdout, stderr io.Writer) int {
-	// Reads .env like the service does, so SQLITE_PATH and BACKUP_DIR match it.
-	loadSettings()
-	opts, err := backupOptions(args, settings.SqlitePath, os.Getenv("BACKUP_DIR"), stderr)
+func runBackup(args []string, s types.AppSettings, stdout, stderr io.Writer) int {
+	opts, err := backupOptions(args, s, stderr)
 	if err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return 0
 		}
 		fmt.Fprintln(stderr, "backup:", err)
@@ -33,14 +32,14 @@ func runBackup(args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
-// backupOptions reads the backup flags. Flags win over sqlitePath and
-// backupDir; without either, backups go to a backups folder beside the
-// database.
-func backupOptions(args []string, sqlitePath, backupDir string, output io.Writer) (backup.Options, error) {
+// backupOptions reads the backup flags. Flags win over SQLITE_PATH and
+// BACKUP_DIR; without either directory, backups go to a backups folder beside
+// the database.
+func backupOptions(args []string, s types.AppSettings, output io.Writer) (backup.Options, error) {
 	fs := flag.NewFlagSet("backup", flag.ContinueOnError)
 	fs.SetOutput(output)
-	db := fs.String("db", sqlitePath, "database file to back up (SQLITE_PATH)")
-	dir := fs.String("dir", backupDir, "directory for the archives (BACKUP_DIR; default: backups beside the database)")
+	db := fs.String("db", s.SqlitePath, "database file to back up (SQLITE_PATH)")
+	dir := fs.String("dir", s.BackupDir, "directory for the archives (BACKUP_DIR; default: backups beside the database)")
 	if err := fs.Parse(args); err != nil {
 		return backup.Options{}, err
 	}

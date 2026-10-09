@@ -37,15 +37,14 @@ type Options struct {
 // snapshot with PRAGMA integrity_check and stores it gzipped in opts.Dir as
 // angel_<timestamp>.db.gz. It returns the archive path. The service may keep
 // reading and writing meanwhile: in WAL mode the snapshot is one read
-// transaction and doesn't block writers. Run never overwrites an archive and
-// leaves nothing behind in opts.Dir when it fails.
+// transaction and doesn't block writers. Run never overwrites an archive, and
+// when it fails it leaves no files behind in opts.Dir.
 func Run(ctx context.Context, opts Options) (string, error) {
 	now := opts.Now
 	if now == nil {
 		now = time.Now
 	}
-	name := archivePrefix + now().UTC().Format(timestampLayout) + archiveSuffix
-	archive := filepath.Join(opts.Dir, name)
+	archive := filepath.Join(opts.Dir, archivePrefix+now().UTC().Format(timestampLayout)+archiveSuffix)
 
 	if _, err := os.Stat(opts.DBPath); err != nil {
 		return "", fmt.Errorf("database: %w", err)
@@ -57,23 +56,28 @@ func Run(ctx context.Context, opts Options) (string, error) {
 		return "", fmt.Errorf("%s already exists", archive)
 	}
 
-	// Work files are hidden, so nothing that lists archives mistakes them for one.
-	snapshot := filepath.Join(opts.Dir, "."+name+".snapshot")
-	defer removeDB(snapshot)
+	// Each run works in its own hidden folder, so runs started in the same
+	// second don't share files, and nothing that lists archives sees them.
+	work, err := os.MkdirTemp(opts.Dir, ".backup-")
+	if err != nil {
+		return "", fmt.Errorf("backup directory: %w", err)
+	}
+	defer os.RemoveAll(work)
+
+	snapshot := filepath.Join(work, "snapshot.db")
 	if err := takeSnapshot(ctx, opts.DBPath, snapshot); err != nil {
 		return "", err
 	}
-	if err := checkSnapshot(ctx, snapshot); err != nil {
+	if err := finalizeSnapshot(ctx, snapshot); err != nil {
 		return "", err
 	}
-
-	tmp := filepath.Join(opts.Dir, "."+name+".tmp")
-	defer os.Remove(tmp)
+	tmp := filepath.Join(work, "snapshot.db.gz")
 	if err := compress(snapshot, tmp); err != nil {
 		return "", fmt.Errorf("compress snapshot: %w", err)
 	}
-	if err := os.Rename(tmp, archive); err != nil {
-		return "", err
+	// Link, unlike Rename, fails when the archive exists.
+	if err := os.Link(tmp, archive); err != nil {
+		return "", fmt.Errorf("store archive: %w", err)
 	}
 	return archive, nil
 }
@@ -93,37 +97,39 @@ func takeSnapshot(ctx context.Context, src, dst string) error {
 	return nil
 }
 
-// checkSnapshot runs PRAGMA integrity_check on the snapshot, and switches it
-// out of WAL mode so the archive restores as a single file.
-func checkSnapshot(ctx context.Context, file string) error {
+// finalizeSnapshot runs PRAGMA integrity_check on the snapshot, then switches
+// it out of WAL mode so the archive restores as a single file.
+func finalizeSnapshot(ctx context.Context, file string) error {
 	db, err := sql.Open("sqlite3", "file:"+file+"?mode=rw")
 	if err != nil {
 		return err
 	}
 	defer db.Close()
-	if _, err := db.ExecContext(ctx, `PRAGMA journal_mode=DELETE`); err != nil {
-		return fmt.Errorf("snapshot journal mode: %w", err)
-	}
 	rows, err := db.QueryContext(ctx, `PRAGMA integrity_check`)
 	if err != nil {
 		return fmt.Errorf("snapshot integrity check: %w", err)
 	}
-	defer rows.Close()
 	var problems []error
 	for rows.Next() {
 		var msg string
 		if err := rows.Scan(&msg); err != nil {
+			rows.Close()
 			return err
 		}
 		if msg != "ok" {
 			problems = append(problems, errors.New(msg))
 		}
 	}
+	// Close before switching journal mode: the pool has one connection here.
+	rows.Close()
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("snapshot integrity check: %w", err)
 	}
 	if len(problems) > 0 {
 		return fmt.Errorf("snapshot failed integrity check: %w", errors.Join(problems...))
+	}
+	if _, err := db.ExecContext(ctx, `PRAGMA journal_mode=DELETE`); err != nil {
+		return fmt.Errorf("snapshot journal mode: %w", err)
 	}
 	return nil
 }
@@ -151,11 +157,4 @@ func compress(src, dst string) (err error) {
 		return err
 	}
 	return out.Sync()
-}
-
-// removeDB deletes a database file and any journal files SQLite left beside it.
-func removeDB(file string) {
-	for _, suffix := range []string{"", "-wal", "-shm", "-journal"} {
-		os.Remove(file + suffix)
-	}
 }
