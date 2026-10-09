@@ -16,9 +16,8 @@ compile:
 	@gox -ldflags "-X 'main.Version=$(VERSION)'" \
 	-osarch="darwin/amd64" \
 	-osarch="linux/amd64" \
-	-osarch="linux/arm" \
 	-osarch="linux/arm64" \
-	-os="windows" \
+	-osarch="windows/amd64" \
 	-output "build/{{.Dir}}_$(VERSION)_{{.OS}}_{{.Arch}}/$(NAME)" \
 	./...
 	@for d in build/*/; do cp THIRD_PARTY_LICENSES.txt "$$d"; done
