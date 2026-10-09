@@ -94,4 +94,8 @@ release: dist
 bump-release:
 	@DRY_RUN=$(DRY_RUN) ./scripts/bump-release.sh $(BUMP)
 
-.PHONY: build backup compile licenses install deps dist release docker docker-push docker-run docker-run-local docker-run-https docker-build-https bump-release
+# Generates PNG icons for the PWA and browser from SVG sources into assets/img/.
+icons:
+	./scripts/generate-icons.sh
+
+.PHONY: build backup compile licenses install deps dist release docker docker-push docker-run docker-run-local docker-run-https docker-build-https bump-release icons

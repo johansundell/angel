@@ -336,6 +336,14 @@ Then check `/healthz` and that today's Daily Note is the one you expect.
 
 `THIRD_PARTY_LICENSES.txt` holds the licence texts of the Go standard library and of every module compiled into the binary. `make compile` copies it next to each binary, so it is in the release archives, and the Docker image has it at `/app/THIRD_PARTY_LICENSES.txt`. Run `make licenses` after changing dependencies and commit the result.
 
+### Web app and PWA icons
+
+Source vector assets live in `assets/img/` (`favicon.svg`, `app-icon.svg`, and `app-icon-maskable.svg`). The PNG icons used by the PWA manifest, iOS home screen, and browser are committed to the repository (ADR-0002). To re-render them from vector sources:
+
+```bash
+make icons
+```
+
 ## Configuration
 
 The application is configured via environment variables. You can set these in a `.env` file in the root directory. Environment variables explicitly set in the system or terminal take precedence over values in the `.env` file.

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="maskableCardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Solid background matching theme_color / background_color -->
+  <rect width="512" height="512" fill="#f8fafc"/>
+
+  <!-- Centered mark: scaled ~5.8x to guarantee all points are well within the 80% safe zone circle (R=204.8) -->
+  <g transform="translate(256, 256) scale(5.8) translate(-32, -30)">
+    <!-- Halo ring (strong solid amber) -->
+    <ellipse cx="32" cy="13" rx="16" ry="5" fill="none" stroke="#f59e0b" stroke-width="3.5"/>
+
+    <!-- Note Card (Light variant) -->
+    <rect fill="url(#maskableCardGrad)" x="12" y="20" width="40" height="34" rx="8"/>
+
+    <!-- Note Lines -->
+    <line x1="20" y1="30" x2="44" y2="30" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-opacity="0.9"/>
+    <line x1="20" y1="37" x2="38" y2="37" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-opacity="0.8"/>
+    <line x1="20" y1="44" x2="28" y2="44" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+</svg>
