@@ -301,7 +301,11 @@ sudo sh -ec '
   cd /opt/angel
   trap "rm -f angel.db.restore" EXIT
   gunzip -c "$1" > angel.db.restore
-  if [ -f angel.db ]; then cp angel.db angel.db.before-restore; fi
+  if [ -f angel.db ]; then
+    cp -p angel.db angel.db.before-restore
+    chown --reference=angel.db angel.db.restore
+    chmod --reference=angel.db angel.db.restore
+  fi
   mv angel.db.restore angel.db
   rm -f angel.db-wal angel.db-shm
 ' sh "$ARCHIVE"
@@ -324,7 +328,7 @@ docker compose run --rm -T --no-deps angel sh -ec '
 docker compose start angel
 ```
 
-If the archive is damaged, `gunzip` stops the restore with an error before the database is touched. Otherwise the previous database is kept as `angel.db.before-restore`.
+If the archive is damaged, `gunzip` stops the restore with an error before the database is touched. Otherwise the previous database is kept as `angel.db.before-restore`. On the VPS, the restored file takes the owner and mode of the database it replaces, so a service with its own `User=` can still write it. If there was no database yet, `chown` it to the service's user yourself.
 
 Then check `/healthz` and that today's Daily Note is the one you expect.
 
