@@ -22,7 +22,7 @@ import (
 // reports them on stderr. With -cron-snippet it prints a crontab line for a
 // daily backup instead. It returns the process exit code.
 func runBackup(args []string, s types.AppSettings, stdout, stderr io.Writer) int {
-	a, err := backupOptions(args, s, stderr)
+	a, err := parseBackupArgs(args, s, stderr)
 	if err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return 0
@@ -79,10 +79,10 @@ type backupArgs struct {
 	forward     []string
 }
 
-// backupOptions reads the backup flags. Flags win over SQLITE_PATH,
+// parseBackupArgs reads the backup flags. Flags win over SQLITE_PATH,
 // BACKUP_DIR and RETENTION_DAYS; without either directory, backups go to a
 // backups folder beside the database.
-func backupOptions(args []string, s types.AppSettings, output io.Writer) (backupArgs, error) {
+func parseBackupArgs(args []string, s types.AppSettings, output io.Writer) (backupArgs, error) {
 	fs := flag.NewFlagSet("backup", flag.ContinueOnError)
 	fs.SetOutput(output)
 	db := fs.String("db", s.SqlitePath, "database file to back up (SQLITE_PATH)")
@@ -105,20 +105,31 @@ func backupOptions(args []string, s types.AppSettings, output io.Writer) (backup
 	if a.opts.Dir == "" {
 		a.opts.Dir = filepath.Join(filepath.Dir(a.opts.DBPath), "backups")
 	}
+	var err error
 	fs.Visit(func(f *flag.Flag) {
-		if f.Name != "cron-snippet" {
-			a.forward = append(a.forward, "-"+f.Name, f.Value.String())
+		v := f.Value.String()
+		switch f.Name {
+		case "cron-snippet":
+			return
+		case "db", "dir":
+			// cron runs elsewhere, so relative paths must be resolved here.
+			if abs, absErr := filepath.Abs(v); absErr != nil {
+				err = absErr
+			} else {
+				v = abs
+			}
 		}
+		a.forward = append(a.forward, "-"+f.Name, v)
 	})
-	return a, nil
+	return a, err
 }
 
 // cronSnippet returns a crontab line that runs exe's backup daily at 03:00
 // with args, sending its output to the system log (journalctl -t
-// angel-backup). The service finds its .env beside exe, so cron's working
-// folder doesn't matter.
+// angel-backup). It runs in exe's folder, so the backup reads the .env there
+// and resolves relative paths in it the way the service does.
 func cronSnippet(exe string, args []string) string {
-	words := []string{cronQuote(exe), "backup"}
+	words := []string{"cd", cronQuote(filepath.Dir(exe)), "&&", cronQuote(exe), "backup"}
 	for _, a := range args {
 		words = append(words, cronQuote(a))
 	}

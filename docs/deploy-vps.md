@@ -198,12 +198,12 @@ sudo crontab -e
 The line looks like this. It runs at 03:00 server time and sends its output to the system log:
 
 ```cron
-0 3 * * * /opt/angel/angel backup 2>&1 | logger -t angel-backup
+0 3 * * * cd /opt/angel && /opt/angel/angel backup 2>&1 | logger -t angel-backup
 ```
 
-Flags you give with `-cron-snippet` are copied into the line, for example `-retention-days 14`. `deploy.sh` replaces the binary at the same path, so the line keeps working after each release.
+The line changes to `/opt/angel` first, so the backup reads `/opt/angel/.env` like the service does. Flags you give with `-cron-snippet` are copied into the line, for example `-retention-days 14`, with `-db` and `-dir` made absolute. `deploy.sh` replaces the binary at the same path, so the line keeps working after each release.
 
-**Check:** the next morning, `journalctl -t angel-backup` shows the new archive path, and `ls /opt/angel/backups` lists it.
+**Check:** the next morning, `journalctl -t angel-backup` shows the new archive path, and `sudo ls /opt/angel/backups` lists it.
 
 The archives are on the same disk as the database. Copy them off the server too, for example with `rsync` from another machine.
 
@@ -216,5 +216,5 @@ The archives are on the same disk as the database. Copy them off the server too,
 - **SSH on a port other than 22.** Change the `ssh` line in the workflow to `ssh -p <port> -o BatchMode=yes deploy@"$HOST" "$TAG"`, and make sure `angel_known_hosts` was made with `ssh-keyscan -p <port>`.
 - **`rolling back`.** The new version started but `/healthz` didn't answer with 200. The previous binary is running again. Run `journalctl -u angel -n 100` on the server for the reason. Then fix the problem and release again, or run the workflow by hand with the same tag.
 - **No `angel-backup` lines in the journal.** Check that `cron` runs (`systemctl status cron`) and that the line is in the crontab of the service's user (`sudo crontab -l`). Run the line by hand to see its output.
-- **`backup failed: database: … no such file or directory`.** The backup can't find the database. It reads `SQLITE_PATH` from `/opt/angel/.env`, the same as the service. Check that the service and the backup run as the same user.
+- **`backup failed: database: … no such file or directory`.** The backup can't find the database. It reads `SQLITE_PATH` from `/opt/angel/.env`, the same as the service. Check that the service and the backup run as the same user, and that the crontab line starts with `cd /opt/angel &&`.
 - **`curl: (22) … 404` after many retries.** The release has no file for this server's architecture. Check that `make release` built `linux_amd64` (or `linux_arm64` on an ARM VPS).

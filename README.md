@@ -282,7 +282,7 @@ If the backup fails, nothing is deleted. If the retention value is wrong, the ba
 
 Backups in the same folder as the database don't survive a lost disk or server. Copy them somewhere else as well, for example with `rsync` from another machine.
 
-**Daily backups.** `./angel backup -cron-snippet` prints a crontab line that runs the backup every day at 03:00, with any other flags you give. Output goes to the system log (`journalctl -t angel-backup`). On a VPS, see [docs/deploy-vps.md](docs/deploy-vps.md#9-schedule-daily-backups). With Docker, run the backup in the container from the host's crontab. Use the folder that holds your compose file, and add `-f docker-compose.https.yml` after `docker compose` for the HTTPS stack:
+**Daily backups.** `./angel backup -cron-snippet` prints a crontab line that runs the backup every day at 03:00, with any other flags you give. The line changes to the binary's folder first, so the backup reads the same `.env` as the service, and `-db` and `-dir` become absolute paths. Output goes to the system log (`journalctl -t angel-backup`). Run `-cron-snippet` with the installed binary on the host; inside a container it prints the container's paths. On a VPS, see [docs/deploy-vps.md](docs/deploy-vps.md#9-schedule-daily-backups). With Docker, run the backup in the container from the host's crontab. Use the folder that holds your compose file, and add `-f docker-compose.https.yml` after `docker compose` for the HTTPS stack:
 
 ```cron
 0 3 * * * cd /path/to/angel && docker compose exec -T angel ./angel backup 2>&1 | logger -t angel-backup
@@ -290,24 +290,22 @@ Backups in the same folder as the database don't survive a lost disk or server. 
 
 In Docker, the archives are in the `data` volume at `/app/data/backups`. Copy them to the host with `docker compose cp angel:/app/data/backups ./backups`.
 
-**Restoring a backup.** Stop the service, replace the database with the unpacked archive, delete the old database's `-wal` and `-shm` files so SQLite doesn't mix them in, and start the service again. Keep a copy of the current database first, in case you picked the wrong archive.
+**Restoring a backup.** Stop the service, unpack the archive next to the database and move it into its place, delete the old database's `-wal` and `-shm` files so SQLite doesn't mix them in, and start the service again. Unpacking to a separate file first means a damaged archive stops the restore before the database is touched. Keep a copy of the current database too, in case you picked the wrong archive.
 
 On a VPS (systemd service, database at `/opt/angel/angel.db`):
 
 ```bash
 sudo systemctl stop angel
 sudo cp /opt/angel/angel.db /opt/angel/angel.db.before-restore
-gunzip -c /opt/angel/backups/angel_20261009T030000Z.db.gz | sudo tee /opt/angel/angel.db >/dev/null
-sudo rm -f /opt/angel/angel.db-wal /opt/angel/angel.db-shm
+sudo sh -c 'gunzip -c /opt/angel/backups/angel_20261009T030000Z.db.gz > /opt/angel/angel.db.restore && mv /opt/angel/angel.db.restore /opt/angel/angel.db && rm -f /opt/angel/angel.db-wal /opt/angel/angel.db-shm'
 sudo systemctl start angel
 ```
 
-With Docker, from an archive on the host. `docker compose run` writes the file as the container's user, so the service can open it:
+With Docker, from an archive on the host. `docker compose run` writes the files as the container's user, so the service can open them, and `gunzip` in the container checks the archive before anything is replaced:
 
 ```bash
 docker compose stop angel
-gunzip -c ./backups/angel_20261009T030000Z.db.gz | docker compose run --rm -T --no-deps angel \
-  sh -c 'cp /app/data/angel.db /app/data/angel.db.before-restore; cat > /app/data/angel.db && rm -f /app/data/angel.db-wal /app/data/angel.db-shm'
+docker compose run --rm -T --no-deps angel sh -c 'cd /app/data && cat > restore.db.gz && cp angel.db angel.db.before-restore; gunzip -c restore.db.gz > angel.db.restore && mv angel.db.restore angel.db && rm -f angel.db-wal angel.db-shm; rm -f restore.db.gz' < ./backups/angel_20261009T030000Z.db.gz
 docker compose start angel
 ```
 
