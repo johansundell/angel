@@ -85,7 +85,7 @@ The application can be installed as a system service.
 
 ### Prerequisites
 
-- [Go](https://golang.org/dl/) 1.27.1 or higher
+- [Go](https://golang.org/dl/) 1.27.2 or higher
 - [Make](https://www.gnu.org/software/make/) (optional, for build scripts)
 - [Docker](https://www.docker.com/) (optional, for containerized run)
 
