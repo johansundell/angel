@@ -49,6 +49,26 @@ func TestMakeBumpRelease(t *testing.T) {
 	}
 }
 
+// TestMakeBackup checks that make backup builds the binary and runs its
+// backup subcommand with ARGS forwarded.
+func TestMakeBackup(t *testing.T) {
+	if _, err := exec.LookPath("make"); err != nil {
+		t.Skip("make not installed")
+	}
+	cmds := makeDryRun(t, "backup", "ARGS=-dir /srv/backups -retention-days 14")
+	for _, want := range []string{
+		"go build",
+		"./angel backup -dir /srv/backups -retention-days 14",
+	} {
+		if !strings.Contains(cmds, want) {
+			t.Errorf("make backup doesn't run %q; it runs:\n%s", want, cmds)
+		}
+	}
+	if strings.Index(cmds, "go build") > strings.Index(cmds, "./angel backup") {
+		t.Errorf("make backup must build before it runs the backup:\n%s", cmds)
+	}
+}
+
 // makeDryRun returns the commands make would run for target, without running
 // them.
 func makeDryRun(t *testing.T, target string, args ...string) string {

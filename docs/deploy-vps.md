@@ -168,6 +168,45 @@ From now on, `make release` also deploys:
 
 **To go back to an older version**, run the workflow by hand (step 7) with the older tag.
 
+## 9. Schedule daily backups
+
+`angel backup` snapshots the database while the service runs, and deletes archives older than 7 days, but always keeps the newest one. The [README](../README.md#backups) describes the options and how to restore a backup.
+
+Run it as the same user as the service, so it can read the database and its `.env`. Check the user:
+
+```bash
+systemctl show angel -p User
+```
+
+An empty `User=` means root. The steps below assume root; for another user, use `sudo -u <user>` and `sudo crontab -u <user> -e` instead.
+
+Take a first backup by hand:
+
+```bash
+sudo /opt/angel/angel backup
+```
+
+**Check:** it prints the archive path, for example `/opt/angel/backups/angel_20261009T030000Z.db.gz`. The archives go to a `backups` folder beside the database unless `BACKUP_DIR` is set in `/opt/angel/.env`.
+
+Print the crontab line and add it to root's crontab:
+
+```bash
+sudo /opt/angel/angel backup -cron-snippet
+sudo crontab -e
+```
+
+The line looks like this. It runs at 03:00 server time and sends its output to the system log:
+
+```cron
+0 3 * * * /opt/angel/angel backup 2>&1 | logger -t angel-backup
+```
+
+Flags you give with `-cron-snippet` are copied into the line, for example `-retention-days 14`. `deploy.sh` replaces the binary at the same path, so the line keeps working after each release.
+
+**Check:** the next morning, `journalctl -t angel-backup` shows the new archive path, and `ls /opt/angel/backups` lists it.
+
+The archives are on the same disk as the database. Copy them off the server too, for example with `rsync` from another machine.
+
 ## Troubleshooting
 
 - **The workflow did not start after a release.** Releases created by a workflow with the built-in `GITHUB_TOKEN` don't start other workflows. `make release` uses your own token, so this only happens if releases are created another way. Run the workflow by hand.
@@ -176,4 +215,6 @@ From now on, `make release` also deploys:
 - **`sudo: a password is required`.** The sudoers path must match exactly: `/opt/angel/deploy.sh`.
 - **SSH on a port other than 22.** Change the `ssh` line in the workflow to `ssh -p <port> -o BatchMode=yes deploy@"$HOST" "$TAG"`, and make sure `angel_known_hosts` was made with `ssh-keyscan -p <port>`.
 - **`rolling back`.** The new version started but `/healthz` didn't answer with 200. The previous binary is running again. Run `journalctl -u angel -n 100` on the server for the reason. Then fix the problem and release again, or run the workflow by hand with the same tag.
+- **No `angel-backup` lines in the journal.** Check that `cron` runs (`systemctl status cron`) and that the line is in the crontab of the service's user (`sudo crontab -l`). Run the line by hand to see its output.
+- **`backup failed: database: … no such file or directory`.** The backup can't find the database. It reads `SQLITE_PATH` from `/opt/angel/.env`, the same as the service. Check that the service and the backup run as the same user.
 - **`curl: (22) … 404` after many retries.** The release has no file for this server's architecture. Check that `make release` built `linux_amd64` (or `linux_arm64` on an ARM VPS).
