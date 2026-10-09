@@ -57,6 +57,8 @@ func loadSettings(filenames ...string) {
 		settings.SqlitePath = filepath.Join(utils.GetBinaryBasePath(), nameOfService+".db")
 	}
 
+	settings.BackupDir = os.Getenv("BACKUP_DIR")
+
 	settings.PIN.CaregiverPIN = strings.TrimSpace(os.Getenv("CAREGIVER_PIN"))
 	settings.PIN.MasterPIN = strings.TrimSpace(os.Getenv("MASTER_PIN"))
 	// Invalid durations become 0, which Validate rejects.

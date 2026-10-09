@@ -11,6 +11,7 @@ type AppSettings struct {
 	UseFileSystem bool          `json:"useFileSystem"`
 	Timeout       time.Duration `json:"timeout"` // TIMEOUT, in whole seconds
 	SqlitePath    string        `json:"sqlitePath"`
+	BackupDir     string        `json:"backupDir"` // BACKUP_DIR; empty means backups beside the database
 	PIN           PINSettings   `json:"pin"`
 	// TrustedProxies lists proxy addresses/CIDRs whose X-Forwarded-For is
 	// believed (TRUSTED_PROXIES); empty trusts none.
