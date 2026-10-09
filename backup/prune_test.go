@@ -97,6 +97,25 @@ func TestPruneKeepsNewestArchive(t *testing.T) {
 	})
 }
 
+// TestPruneIgnoresFutureArchiveForNewest checks that an archive stamped ahead
+// of now (written while the clock was wrong) doesn't take the newest slot, so
+// the latest real backup stays protected.
+func TestPruneIgnoresFutureArchiveForNewest(t *testing.T) {
+	dir := t.TempDir()
+	now := fixedNow()
+	writeArchives(t, dir, now, -365*24*time.Hour, 20*24*time.Hour, 30*24*time.Hour)
+
+	if _, err := Prune(dir, week, now); err != nil {
+		t.Fatalf("Prune: %v", err)
+	}
+	if left := listDir(t, dir); !slices.Equal(left, []string{
+		"angel_20260919T030000Z.db.gz", // newest real backup
+		"angel_20271009T030000Z.db.gz", // future: not older than the retention
+	}) {
+		t.Errorf("left %v", left)
+	}
+}
+
 func TestPruneLeavesOtherFilesAlone(t *testing.T) {
 	dir := t.TempDir()
 	now := fixedNow()

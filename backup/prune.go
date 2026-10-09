@@ -13,7 +13,10 @@ import (
 // returns their paths. The age comes from the timestamp in the archive name,
 // not the file time, which copying can change. Prune always keeps the newest
 // archive, however old, so a backup job that stopped working can't prune the
-// last backup away. Files that aren't archives are left alone.
+// last backup away. An archive stamped after now (written while the clock was
+// ahead) doesn't count as the newest, so it can't take that protection from
+// the latest real backup. Files that aren't archives, and symlinks, are left
+// alone.
 func Prune(dir string, keep time.Duration, now time.Time) ([]string, error) {
 	if keep <= 0 {
 		return nil, fmt.Errorf("retention must be positive, got %v", keep)
@@ -35,7 +38,7 @@ func Prune(dir string, keep time.Duration, now time.Time) ([]string, error) {
 			continue
 		}
 		archives = append(archives, archive{filepath.Join(dir, e.Name()), takenAt})
-		if newest < 0 || takenAt.After(archives[newest].takenAt) {
+		if !takenAt.After(now) && (newest < 0 || takenAt.After(archives[newest].takenAt)) {
 			newest = len(archives) - 1
 		}
 	}

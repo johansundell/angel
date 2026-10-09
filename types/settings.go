@@ -13,7 +13,8 @@ type AppSettings struct {
 	SqlitePath    string        `json:"sqlitePath"`
 	BackupDir     string        `json:"backupDir"` // BACKUP_DIR; empty means backups beside the database
 	// BackupRetentionDays is how many days angel backup keeps archives
-	// (RETENTION_DAYS); an invalid value is 0, which the backup refuses.
+	// (RETENTION_DAYS); an invalid value is 0, which angel backup refuses to
+	// prune with. The service itself doesn't use it.
 	BackupRetentionDays int         `json:"backupRetentionDays"`
 	PIN                 PINSettings `json:"pin"`
 	// TrustedProxies lists proxy addresses/CIDRs whose X-Forwarded-For is
