@@ -290,24 +290,41 @@ Backups in the same folder as the database don't survive a lost disk or server. 
 
 In Docker, the archives are in the `data` volume at `/app/data/backups`. Copy them to the host with `docker compose cp angel:/app/data/backups ./backups`.
 
-**Restoring a backup.** Stop the service, unpack the archive next to the database and move it into its place, delete the old database's `-wal` and `-shm` files so SQLite doesn't mix them in, and start the service again. Unpacking to a separate file first means a damaged archive stops the restore before the database is touched. Keep a copy of the current database too, in case you picked the wrong archive.
+**Restoring a backup.** Stop the service, unpack the archive next to the database and move it into its place, delete the old database's `-wal` and `-shm` files so SQLite doesn't mix them in, and start the service again. The commands below unpack to a separate file first, and keep a copy of the current database in case you picked the wrong archive.
 
-On a VPS (systemd service, database at `/opt/angel/angel.db`):
+On a VPS (systemd service, database at `/opt/angel/angel.db`). Put the archive's name in `ARCHIVE`:
 
 ```bash
+ARCHIVE=/opt/angel/backups/angel_20261009T030000Z.db.gz
 sudo systemctl stop angel
-sudo cp /opt/angel/angel.db /opt/angel/angel.db.before-restore
-sudo sh -c 'gunzip -c /opt/angel/backups/angel_20261009T030000Z.db.gz > /opt/angel/angel.db.restore && mv /opt/angel/angel.db.restore /opt/angel/angel.db && rm -f /opt/angel/angel.db-wal /opt/angel/angel.db-shm'
+sudo sh -ec '
+  cd /opt/angel
+  trap "rm -f angel.db.restore" EXIT
+  gunzip -c "$1" > angel.db.restore
+  if [ -f angel.db ]; then cp angel.db angel.db.before-restore; fi
+  mv angel.db.restore angel.db
+  rm -f angel.db-wal angel.db-shm
+' sh "$ARCHIVE"
 sudo systemctl start angel
 ```
 
-With Docker, from an archive on the host. `docker compose run` writes the files as the container's user, so the service can open them, and `gunzip` in the container checks the archive before anything is replaced:
+With Docker, from an archive on the host. `docker compose run` writes the files as the container's user, so the service can open them:
 
 ```bash
 docker compose stop angel
-docker compose run --rm -T --no-deps angel sh -c 'cd /app/data && cat > restore.db.gz && cp angel.db angel.db.before-restore; gunzip -c restore.db.gz > angel.db.restore && mv angel.db.restore angel.db && rm -f angel.db-wal angel.db-shm; rm -f restore.db.gz' < ./backups/angel_20261009T030000Z.db.gz
+docker compose run --rm -T --no-deps angel sh -ec '
+  cd /app/data
+  trap "rm -f restore.db.gz angel.db.restore" EXIT
+  cat > restore.db.gz
+  gunzip -c restore.db.gz > angel.db.restore
+  if [ -f angel.db ]; then cp angel.db angel.db.before-restore; fi
+  mv angel.db.restore angel.db
+  rm -f angel.db-wal angel.db-shm
+' < ./backups/angel_20261009T030000Z.db.gz
 docker compose start angel
 ```
+
+If the archive is damaged, `gunzip` stops the restore with an error before the database is touched. Otherwise the previous database is kept as `angel.db.before-restore`.
 
 Then check `/healthz` and that today's Daily Note is the one you expect.
 
