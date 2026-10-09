@@ -58,6 +58,10 @@ func loadSettings(filenames ...string) {
 	}
 
 	settings.BackupDir = os.Getenv("BACKUP_DIR")
+	settings.BackupRetentionDays = 7
+	if v := os.Getenv("RETENTION_DAYS"); v != "" {
+		settings.BackupRetentionDays, _ = strconv.Atoi(v)
+	}
 
 	settings.PIN.CaregiverPIN = strings.TrimSpace(os.Getenv("CAREGIVER_PIN"))
 	settings.PIN.MasterPIN = strings.TrimSpace(os.Getenv("MASTER_PIN"))

@@ -282,6 +282,7 @@ The application is configured via environment variables. You can set these in a 
 | `TIMEOUT` | int | `15` | Request timeout in seconds. |
 | `SQLITE_PATH` | string | `<binary dir>/<nameOfService>.db` | Path to the SQLite database file where Daily Notes and Acknowledgements are kept. Set it when using `go run .`, whose binary dir is temporary. |
 | `BACKUP_DIR` | string | `backups` beside the database | Where `angel backup` stores its `angel_<timestamp>.db.gz` archives. The `-dir` flag overrides it. |
+| `RETENTION_DAYS` | int | `7` | After each backup, `angel backup` deletes archives older than this many days. The newest archive is always kept, however old. The `-retention-days` flag overrides it. |
 | `CAREGIVER_PIN` | string | - | **Required.** Shared 4-digit PIN that caregivers enter on the entry screen. |
 | `MASTER_PIN` | string | - | **Required.** The client's 4–12 digit PIN for the dashboard; must differ from `CAREGIVER_PIN`. |
 | `CAREGIVER_SESSION_TIMEOUT` | duration | `20m` | How long a caregiver session lasts before the entry screen is shown again. Must be between `15m` and `30m`. |
