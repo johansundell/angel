@@ -4,7 +4,7 @@
 
 GHACCOUNT := johansundell
 NAME := angel
-VERSION := v1.0.0
+VERSION := v1.0.1
 # Pushing a v* git tag also publishes the image here (.github/workflows/docker.yml).
 IMAGE := ghcr.io/$(GHACCOUNT)/$(NAME)
 
