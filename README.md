@@ -150,11 +150,7 @@ This will start the service on port 8080, with the SQLite database (including it
 
 The service runs as a non-root user, and a named volume gets the right ownership automatically. A host folder like `./data` usually belongs to your own user and makes SQLite fail with `permission denied`; if you need one, `chown` it to the container user first (`docker compose run --rm --entrypoint id angel` shows the uid and gid).
 
-To copy the database out, for a backup or to inspect it:
-
-```bash
-docker compose cp angel:/app/data/angel.db ./angel.db
-```
+To back up the database while it runs, use `angel backup` in the container; see [Backups](#backups). Copying `angel.db` itself can miss recent changes, which may still be in the WAL file next to it.
 
 #### With your local .env and database
 
@@ -265,6 +261,76 @@ If a request carries `X-Forwarded-For` or `CF-Connecting-IP` from an address tha
 ### Deploying releases to a VPS
 
 When Angel runs as a system service on a VPS, the `Deploy` workflow ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)) can install each new GitHub release automatically. It connects over SSH and runs [`scripts/deploy.sh`](scripts/deploy.sh) on the server. The script downloads the release, checks its checksum, replaces the binary and restarts the service, and puts the previous binary back if `/healthz` doesn't answer. [docs/deploy-vps.md](docs/deploy-vps.md) walks through the setup step by step.
+
+### Backups
+
+`angel backup` takes a consistent snapshot of the database while the service keeps running, checks it with `PRAGMA integrity_check` and stores it gzipped as `angel_<timestamp>.db.gz`. The timestamp is UTC, for example `angel_20261009T030000Z.db.gz`. It then deletes archives older than the retention, but always keeps the newest one. It prints the new archive's path, and lists deleted archives on stderr.
+
+```bash
+./angel backup                               # SQLITE_PATH, BACKUP_DIR and RETENTION_DAYS from .env
+./angel backup -dir /srv/backups -retention-days 14
+make backup ARGS="-dir /srv/backups"         # builds first, then runs ./angel backup
+```
+
+| Flag | Variable | Default |
+|---|---|---|
+| `-db` | `SQLITE_PATH` | the service's database |
+| `-dir` | `BACKUP_DIR` | `backups` beside the database |
+| `-retention-days` | `RETENTION_DAYS` | `7` |
+
+If the backup fails, nothing is deleted. If the retention value is wrong, the backup is still stored, nothing is deleted, and the command exits 1.
+
+Backups in the same folder as the database don't survive a lost disk or server. Copy them somewhere else as well, for example with `rsync` from another machine.
+
+**Daily backups.** `./angel backup -cron-snippet` prints a crontab line that runs the backup every day at 03:00, with any other flags you give. The line changes to the binary's folder first, so the backup reads the same `.env` as the service, and `-db` and `-dir` become absolute paths. Output goes to the system log (`journalctl -t angel-backup`). Run `-cron-snippet` with the installed binary on the host; inside a container it prints the container's paths. On a VPS, see [docs/deploy-vps.md](docs/deploy-vps.md#9-schedule-daily-backups). With Docker, run the backup in the container from the host's crontab. Use the folder that holds your compose file, and add `-f docker-compose.https.yml` after `docker compose` for the HTTPS stack:
+
+```cron
+0 3 * * * cd /path/to/angel && docker compose exec -T angel ./angel backup 2>&1 | logger -t angel-backup
+```
+
+In Docker, the archives are in the `data` volume at `/app/data/backups`. Copy them to the host with `docker compose cp angel:/app/data/backups ./backups`.
+
+**Restoring a backup.** Stop the service, unpack the archive next to the database and move it into its place, delete the old database's `-wal` and `-shm` files so SQLite doesn't mix them in, and start the service again. The commands below unpack to a separate file first, and keep a copy of the current database in case you picked the wrong archive.
+
+On a VPS (systemd service, database at `/opt/angel/angel.db`). Put the archive's name in `ARCHIVE`:
+
+```bash
+ARCHIVE=/opt/angel/backups/angel_20261009T030000Z.db.gz
+sudo systemctl stop angel
+sudo sh -ec '
+  cd /opt/angel
+  trap "rm -f angel.db.restore" EXIT
+  gunzip -c "$1" > angel.db.restore
+  if [ -f angel.db ]; then
+    cp -p angel.db angel.db.before-restore
+    chown --reference=angel.db angel.db.restore
+    chmod --reference=angel.db angel.db.restore
+  fi
+  mv angel.db.restore angel.db
+  rm -f angel.db-wal angel.db-shm
+' sh "$ARCHIVE"
+sudo systemctl start angel
+```
+
+With Docker, from an archive on the host. `docker compose run` writes the files as the container's user, so the service can open them:
+
+```bash
+docker compose stop angel
+docker compose run --rm -T --no-deps angel sh -ec '
+  cd /app/data
+  trap "rm -f restore.db.gz angel.db.restore" EXIT
+  cat > restore.db.gz
+  gunzip -c restore.db.gz > angel.db.restore
+  if [ -f angel.db ]; then cp angel.db angel.db.before-restore; fi
+  mv angel.db.restore angel.db
+  rm -f angel.db-wal angel.db-shm
+' < ./backups/angel_20261009T030000Z.db.gz
+docker compose start angel
+```
+
+If the archive is damaged, `gunzip` stops the restore with an error before the database is touched. Otherwise the previous database is kept as `angel.db.before-restore`. On the VPS, the restored file takes the owner and mode of the database it replaces, so a service with its own `User=` can still write it. If there was no database yet, `chown` it to the service's user yourself.
+
+Then check `/healthz` and that today's Daily Note is the one you expect.
 
 ### Third-party licences
 

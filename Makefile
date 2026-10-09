@@ -23,6 +23,12 @@ compile:
 	./...
 	@for d in build/*/; do cp THIRD_PARTY_LICENSES.txt "$$d"; done
 
+# Backs up the database with a freshly built binary (angel backup). It reads
+# SQLITE_PATH, BACKUP_DIR and RETENTION_DAYS from .env; pass flags with ARGS,
+# e.g. make backup ARGS="-dir /srv/backups" or ARGS=-cron-snippet.
+backup: build
+	./$(NAME) backup $(ARGS)
+
 # Regenerates THIRD_PARTY_LICENSES.txt; run after changing dependencies.
 licenses:
 	./scripts/third-party-licenses.sh
@@ -89,4 +95,4 @@ release: dist
 bump-release:
 	@DRY_RUN=$(DRY_RUN) ./scripts/bump-release.sh $(BUMP)
 
-.PHONY: build compile licenses install deps dist release docker docker-push docker-run docker-run-local docker-run-https docker-build-https bump-release
+.PHONY: build backup compile licenses install deps dist release docker docker-push docker-run docker-run-local docker-run-https docker-build-https bump-release
