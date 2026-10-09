@@ -11,10 +11,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	_ "github.com/ncruces/go-sqlite3/driver"
+
+	"github.com/johansundell/angel/store"
 )
 
 const (
@@ -87,7 +88,7 @@ func Run(ctx context.Context, opts Options) (string, error) {
 func takeSnapshot(ctx context.Context, src, dst string) error {
 	// mode=rw: never create an empty database where the live one should be.
 	// The busy timeout matches the service's, in case it holds a lock.
-	db, err := sql.Open("sqlite3", fileURI(src)+"?mode=rw&_pragma=busy_timeout(5000)")
+	db, err := sql.Open("sqlite3", store.FileURI(src)+"?mode=rw&_pragma=busy_timeout(5000)")
 	if err != nil {
 		return err
 	}
@@ -101,7 +102,7 @@ func takeSnapshot(ctx context.Context, src, dst string) error {
 // finalizeSnapshot runs PRAGMA integrity_check on the snapshot, then switches
 // it out of WAL mode so the archive restores as a single file.
 func finalizeSnapshot(ctx context.Context, file string) error {
-	db, err := sql.Open("sqlite3", fileURI(file)+"?mode=rw")
+	db, err := sql.Open("sqlite3", store.FileURI(file)+"?mode=rw")
 	if err != nil {
 		return err
 	}
@@ -133,16 +134,6 @@ func finalizeSnapshot(ctx context.Context, file string) error {
 		return fmt.Errorf("snapshot journal mode: %w", err)
 	}
 	return nil
-}
-
-// uriEscaper escapes the characters that end or escape the path of an SQLite
-// URI filename.
-var uriEscaper = strings.NewReplacer("%", "%25", "?", "%3f", "#", "%23")
-
-// fileURI turns a file path into an SQLite URI filename, so a ? or # in the
-// path can't cut it short and open another file.
-func fileURI(path string) string {
-	return "file:" + uriEscaper.Replace(path)
 }
 
 func compress(src, dst string) (err error) {

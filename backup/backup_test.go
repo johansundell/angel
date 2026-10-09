@@ -58,7 +58,7 @@ func restore(t *testing.T, archive string) *sql.DB {
 	if err := out.Close(); err != nil {
 		t.Fatal(err)
 	}
-	db, err := sql.Open("sqlite3", fileURI(restored)+"?mode=ro")
+	db, err := sql.Open("sqlite3", store.FileURI(restored)+"?mode=ro")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -254,14 +254,17 @@ func TestRunPathsWithURICharacters(t *testing.T) {
 		t.Fatal(err)
 	}
 	dbPath := filepath.Join(base, "angel.db")
-	// Not store.NewSQLite: it doesn't escape the path yet.
-	src, err := sql.Open("sqlite3", fileURI(dbPath))
+	st, err := store.NewSQLite(dbPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer src.Close()
-	if _, err := src.Exec(`CREATE TABLE daily_notes (text TEXT); INSERT INTO daily_notes VALUES ('frukost')`); err != nil {
-		t.Fatalf("create database: %v", err)
+	defer st.Close()
+	day, err := types.ParseDay("2026-10-09")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := st.SaveDailyNote(context.Background(), types.DailyNote{Date: day, Text: "frukost"}); err != nil {
+		t.Fatalf("save note: %v", err)
 	}
 
 	archive, err := Run(context.Background(), Options{DBPath: dbPath, Dir: filepath.Join(base, "back?ups#"), Now: fixedNow})
