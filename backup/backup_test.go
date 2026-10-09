@@ -58,7 +58,7 @@ func restore(t *testing.T, archive string) *sql.DB {
 	if err := out.Close(); err != nil {
 		t.Fatal(err)
 	}
-	db, err := sql.Open("sqlite3", "file:"+restored+"?mode=ro")
+	db, err := sql.Open("sqlite3", fileURI(restored)+"?mode=ro")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,9 +117,11 @@ func TestRunDuringWrites(t *testing.T) {
 	var wg sync.WaitGroup
 	var writes atomic.Int64
 	var writeErr error
+	writerDone := make(chan struct{})
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		defer close(writerDone)
 		for {
 			select {
 			case <-stop:
@@ -134,8 +136,15 @@ func TestRunDuringWrites(t *testing.T) {
 		}
 	}()
 	// Let the writer get going, so the backup starts mid-stream.
+	deadline := time.After(10 * time.Second)
 	for writes.Load() < 20 {
-		time.Sleep(time.Millisecond)
+		select {
+		case <-writerDone:
+			t.Fatalf("writer stopped before the backup began: %v", writeErr)
+		case <-deadline:
+			t.Fatalf("only %d writes in 10s before the backup began", writes.Load())
+		case <-time.After(time.Millisecond):
+		}
 	}
 
 	before := writes.Load()
@@ -149,7 +158,9 @@ func TestRunDuringWrites(t *testing.T) {
 	if writeErr != nil {
 		t.Fatalf("service write failed during backup: %v", writeErr)
 	}
-	t.Logf("%d writes landed while the backup ran", during)
+	if during == 0 {
+		t.Error("no writes landed while the backup ran; it must not block the service")
+	}
 
 	db := restore(t, archive)
 	var acks int64
@@ -233,4 +244,32 @@ func TestRunSameSecond(t *testing.T) {
 		t.Fatalf("backup dir should hold only the archive, has %v (%v)", entries, err)
 	}
 	restore(t, filepath.Join(dir, entries[0].Name()))
+}
+
+// TestRunPathsWithURICharacters backs up from and into folders whose names
+// hold ? and #, which SQLite URIs would otherwise treat as query and fragment.
+func TestRunPathsWithURICharacters(t *testing.T) {
+	base := filepath.Join(t.TempDir(), "a?b#c")
+	if err := os.MkdirAll(base, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	dbPath := filepath.Join(base, "angel.db")
+	// Not store.NewSQLite: it doesn't escape the path yet.
+	src, err := sql.Open("sqlite3", fileURI(dbPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer src.Close()
+	if _, err := src.Exec(`CREATE TABLE daily_notes (text TEXT); INSERT INTO daily_notes VALUES ('frukost')`); err != nil {
+		t.Fatalf("create database: %v", err)
+	}
+
+	archive, err := Run(context.Background(), Options{DBPath: dbPath, Dir: filepath.Join(base, "back?ups#"), Now: fixedNow})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	var text string
+	if err := restore(t, archive).QueryRow(`SELECT text FROM daily_notes`).Scan(&text); err != nil || text != "frukost" {
+		t.Errorf("restored note = %q, %v; want frukost", text, err)
+	}
 }
