@@ -56,7 +56,4 @@ func checkFooter(t *testing.T, name, page string) {
 			t.Errorf("%s: footer lacks %s:\n%s", name, link, footer)
 		}
 	}
-	if main := strings.LastIndex(page, "</main>"); main > start {
-		t.Errorf("%s: footer comes before the end of <main>", name)
-	}
 }

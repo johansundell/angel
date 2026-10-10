@@ -927,6 +927,14 @@ body {
     padding: 2rem;
 }
 
+/* The health page keeps its dark panel down to the bottom edge. */
+.health-container + .app-footer,
+.health-container + .app-footer a:hover,
+.health-container + .app-footer a:focus-visible {
+    background-color: var(--health-bg);
+    color: var(--health-fg);
+}
+
 .logo {
     max-width: 160px;
     margin-bottom: 2rem;
