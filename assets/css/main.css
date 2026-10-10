@@ -160,6 +160,8 @@ html {
 }
 
 body {
+    display: flex;
+    flex-direction: column;
     margin: 0;
     min-height: 100vh;
     min-height: 100dvh;
@@ -176,6 +178,8 @@ body {
 /* App Shell */
 
 .app {
+    flex: 1;
+    width: 100%;
     max-width: 32rem;
     margin: 0 auto;
     padding: 2rem 1.25rem 3rem;
@@ -194,6 +198,26 @@ body {
     font-weight: 700;
     letter-spacing: -0.02em;
     margin: 0 0 0.5rem;
+    color: var(--fg);
+}
+
+/* Footer */
+
+.app-footer {
+    padding: 1rem 1.25rem 1.5rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    text-align: center;
+}
+
+.app-footer a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+}
+
+.app-footer a:hover,
+.app-footer a:focus-visible {
     color: var(--fg);
 }
 
@@ -251,8 +275,6 @@ body {
    ========================================================================== */
 
 .entry {
-    min-height: 100vh;
-    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -892,12 +914,11 @@ body {
    ========================================================================== */
 
 .health-container {
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
-    min-height: 100dvh;
     text-align: center;
     background-color: var(--health-bg);
     color: var(--health-fg);
