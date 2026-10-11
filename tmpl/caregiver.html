@@ -3,7 +3,7 @@
 	{{template "logout"}}
 	<h1>Dagens anteckning</h1>
 	<p class="note-date">{{.date}}</p>
-	{{template "note-card" .note}}
+	{{template "note-card" .card}}
 	{{with .confirmation}}<p class="ack-confirmation" role="status">✓ {{.}}</p>{{end}}
 	<section class="ack-feed-section ack-feed-caregiver" aria-labelledby="caregiver-acks-heading">
 		<h2 id="caregiver-acks-heading">Kvitteringar idag</h2>

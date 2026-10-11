@@ -105,8 +105,8 @@ func (h *Handler) loadAckFeed(c *gin.Context) ([]ackFeedEntry, error) {
 }
 
 // noteEditor is one note editor on the dashboard: the fixed wording of the
-// form, and the day it edits with that day's note, if there is one, and a
-// preview of that note as caregivers will see it.
+// form, and the day it edits with that day's note, if there is one. Card
+// previews the note as caregivers will see it.
 type noteEditor struct {
 	Action       string // the save URL; clearing posts to Action + "/clear"
 	ID           string // the textarea's element ID
@@ -160,9 +160,11 @@ func (h *Handler) loadEditor(c *gin.Context, day types.Day, e noteEditor) (noteE
 		e.Note = &note
 		e.SavedAt = clockTime(note.UpdatedAt)
 	}
-	e.Card, err = newNoteCard(e.Note)
+	if e.Card, err = newNoteCard(e.Note); err != nil {
+		return e, err
+	}
 	e.Card.Preview = true
-	return e, err
+	return e, nil
 }
 
 // SaveNote creates or replaces today's Daily Note from the editor, then
