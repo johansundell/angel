@@ -640,6 +640,20 @@ body {
     border-left: 4px solid var(--primary);
 }
 
+/* The note as caregivers see it, above its editor */
+.note-preview {
+    margin: 0 0 1.75rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.note-preview-caption {
+    margin: 0 0 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--muted);
+}
+
 .editor-hint {
     margin: 0 0 1.25rem;
     font-size: 0.875rem;

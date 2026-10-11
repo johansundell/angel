@@ -101,6 +101,12 @@ contents of the element with that ID. */}}
 
 {{define "editor"}}
 <p class="note-date">{{.Day}}</p>
+{{- if or .Card.Note .ShowEmpty}}
+<div class="note-preview">
+	<p class="note-preview-caption">{{.Caption}}</p>
+	{{template "note-card" .Card}}
+</div>
+{{- end}}
 <form method="post" action="{{.Action}}" class="editor-form">
 	<input type="hidden" name="date" value="{{.Date}}" />
 	<label for="{{.ID}}" class="editor-label">{{.TextLabel}}</label>

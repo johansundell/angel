@@ -75,8 +75,12 @@ func TestMarkdownNote_EditorShowsSource(t *testing.T) {
 			t.Errorf("editor missing Markdown source %q", want)
 		}
 	}
-	if strings.Contains(body, "<strong>Två</strong>") || strings.Contains(body, "<h2>Medicin</h2>") {
-		t.Error("editor shows rendered HTML instead of the source")
+	// The preview above each editor is rendered; the textareas hold the source.
+	for _, id := range []string{`id="note-text"`, `id="advance-text"`} {
+		textarea := section(t, body, id, "</textarea>")
+		if strings.Contains(textarea, "<strong>") || strings.Contains(textarea, "<h2>") || strings.Contains(textarea, "<em>") {
+			t.Errorf("editor %s shows rendered HTML instead of the source", id)
+		}
 	}
 	for _, id := range []string{`id="note-text-hint"`, `id="advance-text-hint"`} {
 		assertInOrder(t, body, id, "Du kan använda Markdown")

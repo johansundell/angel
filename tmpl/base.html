@@ -36,3 +36,19 @@
 	<button type="submit" class="logout-button">Logga ut</button>
 </form>
 {{end}}
+
+{{/* note-card is a Daily Note as Caregivers see it, or the empty state when
+there is none. The dashboard shows the same card as a preview, without
+role="alert", so an Important note is not announced on every reload. */}}
+{{define "note-card"}}
+{{- with .Note}}
+<section class="note{{if .Important}} note-important{{end}}"{{if and .Important (not $.Preview)}} role="alert"{{end}}>
+	{{if .Important}}<p class="note-flag">Viktigt</p>{{end}}
+	<div class="note-text note-markdown">{{$.HTML}}</div>
+</section>
+{{- else}}
+<section class="note note-empty">
+	<p class="note-text">Inga särskilda instruktioner idag. Allt är som vanligt!</p>
+</section>
+{{- end}}
+{{end}}

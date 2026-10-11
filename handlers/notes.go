@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
 	"slices"
 	"strconv"
@@ -73,14 +74,13 @@ func (h *Handler) CaregiverView(c *gin.Context) error {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
 	data := gin.H{"title": "Dagens anteckning", "date": swedishDate(today), "maxNameLen": maxCaregiverNameLen}
+	var card noteCard
 	if ok {
-		noteHTML, err := renderMarkdown(note.Text)
-		if err != nil {
+		if card, err = newNoteCard(&note); err != nil {
 			return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 		}
-		data["note"] = note
-		data["noteHTML"] = noteHTML
 	}
+	data["card"] = card
 	acks, err := h.notes.ListAcknowledgements(c.Request.Context(), today)
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
@@ -189,4 +189,26 @@ func ackConfirmation(a types.Acknowledgement) string {
 		return "Kvitterat kl " + at
 	}
 	return "Kvitterat av " + a.Name + " kl " + at
+}
+
+// noteCard is what the note-card template shows: a Daily Note rendered for
+// caregivers, or the empty state when Note is nil.
+type noteCard struct {
+	Note    *types.DailyNote
+	HTML    template.HTML
+	Preview bool // shown on the Client Dashboard rather than to caregivers
+}
+
+// newNoteCard renders note, which may be nil, for the note-card template.
+func newNoteCard(note *types.DailyNote) (noteCard, error) {
+	card := noteCard{Note: note}
+	if note == nil {
+		return card, nil
+	}
+	rendered, err := renderMarkdown(note.Text)
+	if err != nil {
+		return card, err
+	}
+	card.HTML = rendered
+	return card, nil
 }
