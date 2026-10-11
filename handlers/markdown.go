@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"html/template"
 
+	"github.com/johansundell/angel/types"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/renderer/html"
 )
@@ -21,4 +22,26 @@ func renderMarkdown(src string) (template.HTML, error) {
 		return "", err
 	}
 	return template.HTML(buf.String()), nil
+}
+
+// noteCard is what the note-card template shows: a Daily Note rendered for
+// caregivers, or the empty state when Note is nil.
+type noteCard struct {
+	Note    *types.DailyNote
+	HTML    template.HTML
+	Preview bool // shown on the Client Dashboard rather than to caregivers
+}
+
+// newNoteCard renders note, which may be nil, for the note-card template.
+func newNoteCard(note *types.DailyNote) (noteCard, error) {
+	card := noteCard{Note: note}
+	if note == nil {
+		return card, nil
+	}
+	rendered, err := renderMarkdown(note.Text)
+	if err != nil {
+		return card, err
+	}
+	card.HTML = rendered
+	return card, nil
 }

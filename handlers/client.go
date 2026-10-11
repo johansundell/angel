@@ -105,7 +105,8 @@ func (h *Handler) loadAckFeed(c *gin.Context) ([]ackFeedEntry, error) {
 }
 
 // noteEditor is one note editor on the dashboard: the fixed wording of the
-// form, and the day it edits with that day's note, if there is one.
+// form, and the day it edits with that day's note, if there is one, and a
+// preview of that note as caregivers will see it.
 type noteEditor struct {
 	Action       string // the save URL; clearing posts to Action + "/clear"
 	ID           string // the textarea's element ID
@@ -113,12 +114,15 @@ type noteEditor struct {
 	Rows         int
 	ClearLabel   string
 	ClearConfirm string
+	Caption      string // above the note preview
+	ShowEmpty    bool   // preview the caregivers' empty state when there is no note
 	MaxLen       int
 
 	Date    types.Day // posted back so stale forms are refused
 	Day     string    // swedishDate
 	Note    *types.DailyNote
 	SavedAt string
+	Card    noteCard // the note as caregivers see it
 }
 
 var (
@@ -129,6 +133,8 @@ var (
 		Rows:         10,
 		ClearLabel:   "Rensa dagens anteckning",
 		ClearConfirm: "Rensa dagens anteckning? Vårdpersonalen ser då att allt är som vanligt.",
+		Caption:      "Så här ser vårdpersonalen lappen:",
+		ShowEmpty:    true,
 	}
 	advanceEditor = noteEditor{
 		Action:       "/admin/advance",
@@ -137,6 +143,7 @@ var (
 		Rows:         6,
 		ClearLabel:   "Rensa morgondagens anteckning",
 		ClearConfirm: "Rensa morgondagens anteckning?",
+		Caption:      "Så här visas lappen från midnatt:",
 	}
 )
 
@@ -153,7 +160,9 @@ func (h *Handler) loadEditor(c *gin.Context, day types.Day, e noteEditor) (noteE
 		e.Note = &note
 		e.SavedAt = clockTime(note.UpdatedAt)
 	}
-	return e, nil
+	e.Card, err = newNoteCard(e.Note)
+	e.Card.Preview = true
+	return e, err
 }
 
 // SaveNote creates or replaces today's Daily Note from the editor, then

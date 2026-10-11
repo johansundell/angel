@@ -73,14 +73,13 @@ func (h *Handler) CaregiverView(c *gin.Context) error {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 	}
 	data := gin.H{"title": "Dagens anteckning", "date": swedishDate(today), "maxNameLen": maxCaregiverNameLen}
+	var card noteCard
 	if ok {
-		noteHTML, err := renderMarkdown(note.Text)
-		if err != nil {
+		if card, err = newNoteCard(&note); err != nil {
 			return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
 		}
-		data["note"] = note
-		data["noteHTML"] = noteHTML
 	}
+	data["note"] = card
 	acks, err := h.notes.ListAcknowledgements(c.Request.Context(), today)
 	if err != nil {
 		return httperror.ReturnWithHTTPStatus(err, http.StatusInternalServerError)
