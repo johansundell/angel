@@ -53,6 +53,10 @@ func TestNotePreview_TodayImportantNote(t *testing.T) {
 
 	assertInOrder(t, today, todayCaption, `class="note note-important"`, `class="note-flag">Viktigt</p>`,
 		"<em>sjuksköterskan</em>", `action="/admin/note"`)
+	// Unlike for Caregivers, the preview is not announced on every reload.
+	if strings.Contains(today, `role="alert"`) {
+		t.Error("today's preview has role=\"alert\"")
+	}
 }
 
 func TestNotePreview_TodayEmptyState(t *testing.T) {
@@ -73,6 +77,9 @@ func TestNotePreview_AdvanceNoteRendered(t *testing.T) {
 
 	assertInOrder(t, advance, advanceCaption, `class="note note-important"`, "Viktigt",
 		"<li>Handla <em>mjölk</em></li>", `action="/admin/advance"`)
+	if strings.Contains(advance, `role="alert"`) {
+		t.Error("advance preview has role=\"alert\"")
+	}
 	// Today has no note, so only today shows the empty state.
 	if strings.Contains(advance, "note-empty") {
 		t.Error("advance section shows the empty state")
