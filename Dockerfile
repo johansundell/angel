@@ -18,7 +18,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     -o angel .
 
 # Run stage
-FROM alpine:3.22
+FROM alpine:3.24.2
 
 # Links the GHCR package to the repository, so the repo's workflow may push it
 # even if the first push came from make docker-push.
